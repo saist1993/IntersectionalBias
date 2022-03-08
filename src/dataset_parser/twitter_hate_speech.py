@@ -5,7 +5,7 @@ import pandas as pd
 from pathlib import Path
 from typing import Tuple, List
 from transformers import PreTrainedTokenizer, PreTrainedModel
-from common_functionality import CreateIterators, IteratorData
+from .common_functionality import CreateIterators, IteratorData
 from utils.encode_text_via_lm import load_lm, batch_tokenize, encode_text_batch
 
 
@@ -183,7 +183,7 @@ class DatasetTwitterHateSpeech:
         test_X, test_s, test_y = \
             self.test_encodings, self.get_private_attribute(self.test_df), self.get_label(self.test_df)
 
-        # Step3: Create iterators
+        # Step3: Create iterators - This can be abstracted out to dataset iterators.
         create_iterator = CreateIterators()
         iterator_data = IteratorData(
             train_X=train_X, train_y=train_y, train_s=train_s,
@@ -202,6 +202,9 @@ class DatasetTwitterHateSpeech:
         other_meta_data = {}
         other_meta_data['task'] = 'simple_classification'
         other_meta_data['dataset_name'] = self.dataset_name
+        other_meta_data['number_of_main_task_label'] = len(np.unique(train_y))
+        other_meta_data['number_of_aux_label_per_attribute'] = [len(np.unique(train_s[:,i])) for i in range(train_s.shape[1])]
+        other_meta_data['input_dim'] = train_X.shape[1]
         if self.return_numpy_array:
             raw_data = {
                 'train_X': train_X,
