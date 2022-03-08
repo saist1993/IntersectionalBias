@@ -24,16 +24,16 @@ class CreateIterators:
 
     @staticmethod
     def collate(batch):
-        labels, input, aux = zip(*batch)
+        labels, encoded_input, aux = zip(*batch)
 
         labels = torch.LongTensor(labels)
         aux = torch.LongTensor(aux)
-        lengths = torch.LongTensor([len(x) for x in input])
-        input = torch.FloatTensor(input)
+        lengths = torch.LongTensor([len(x) for x in encoded_input])
+        encoded_input = torch.FloatTensor(encoded_input)
 
         input_data = {
             'labels': labels,
-            'input': input,
+            'input': encoded_input,
             'lengths': lengths,
             'aux': aux
         }
