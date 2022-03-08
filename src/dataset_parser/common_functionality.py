@@ -1,7 +1,22 @@
-import numpy as np
 import torch
+import numpy as np
+from typing import NamedTuple
 from sklearn.preprocessing import StandardScaler
 from utils.iterator import TextClassificationDataset, sequential_transforms
+
+class IteratorData(NamedTuple):
+    """Input data to create iterators"""
+    train_X: np.asarray
+    train_y: np.asarray
+    train_s: np.asarray
+    dev_X: np.asarray
+    dev_y: np.asarray
+    dev_s: np.asarray
+    test_X: np.asarray
+    test_y: np.asarray
+    test_s: np.asarray
+    batch_size: int = 512
+    do_standard_scalar_transformation: bool = True
 
 
 class CreateIterators:
@@ -38,12 +53,10 @@ class CreateIterators:
 
         return TextClassificationDataset(final_data, vocab, transforms)
 
-    def get_iterators(self, train_X: np.asarray, train_y: np.asarray, train_s: np.asarray,
-                         dev_X: np.asarray, dev_y: np.asarray, dev_s: np.asarray,
-                         test_X: np.asarray, test_y: np.asarray, test_s: np.asarray,
-                         batch_size: int = 512,
-                         do_standard_scalar_transformation: bool = True,
-                         fairness_iterator_method: str = 'custom_3'):
+    def get_iterators(self, iterator_data:IteratorData):
+        train_X, train_y, train_s, dev_X, \
+        dev_y, dev_s, test_X, test_y, test_s,batch_size,do_standard_scalar_transformation= iterator_data
+
         if do_standard_scalar_transformation:
             scaler = StandardScaler().fit(train_X)
             train_X = scaler.transform(train_X)

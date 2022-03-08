@@ -4,8 +4,8 @@ import numpy as np
 import pandas as pd
 from pathlib import Path
 from typing import Tuple, List
-from common_functionality import CreateIterators
 from transformers import PreTrainedTokenizer, PreTrainedModel
+from common_functionality import CreateIterators, IteratorData
 from utils.encode_text_via_lm import load_lm, batch_tokenize, encode_text_batch
 
 
@@ -167,7 +167,6 @@ class DatasetTwitterHateSpeech:
     def get_label(df: pd.DataFrame) -> np.array:
         return np.asarray(df['label'].to_numpy(), dtype=int)
 
-
     def run(self):
         """Orchestrates the whole process"""
 
@@ -186,11 +185,14 @@ class DatasetTwitterHateSpeech:
 
         # Step3: Create iterators
         create_iterator = CreateIterators()
-        iterator_set, vocab = create_iterator.get_iterators(train_X=train_X, train_y=train_y, train_s=train_s,
-                                                            dev_X=valid_X, dev_y=valid_y, dev_s=valid_s,
-                                                            test_X=test_X, test_y=test_s, test_s=test_y,
-                                                            batch_size=self.batch_size,
-                                                            do_standard_scalar_transformation=True)
+        iterator_data = IteratorData(
+            train_X=train_X, train_y=train_y, train_s=train_s,
+            dev_X=valid_X, dev_y=valid_y, dev_s=valid_s,
+            test_X=test_X, test_y=test_s, test_s=test_y,
+            batch_size=self.batch_size,
+            do_standard_scalar_transformation=True
+        )
+        iterator_set, vocab = create_iterator.get_iterators(iterator_data)
 
         iterators = [iterator_set]  # If it was k-fold. One could append k iterators here.
 
@@ -217,7 +219,7 @@ class DatasetTwitterHateSpeech:
         return iterators, other_meta_data
 
 
-def test_consistency_of_hate_speech():
+def test_batch_shape_hate_speech():
     params = {
         'batch_size': 64,
         'dataset_location': config.hate_speech_dataset_path[0],
