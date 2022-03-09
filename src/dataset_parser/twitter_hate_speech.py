@@ -188,7 +188,7 @@ class DatasetTwitterHateSpeech:
         iterator_data = IteratorData(
             train_X=train_X, train_y=train_y, train_s=train_s,
             dev_X=valid_X, dev_y=valid_y, dev_s=valid_s,
-            test_X=test_X, test_y=test_s, test_s=test_y,
+            test_X=test_X, test_y=test_y, test_s=test_s,
             batch_size=self.batch_size,
             do_standard_scalar_transformation=True
         )

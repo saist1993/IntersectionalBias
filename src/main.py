@@ -3,14 +3,17 @@ import config
 import random
 import logging
 import numpy as np
+import torch.nn as nn
 from functools import partial
 from models import simple_model
 from typing import NamedTuple, Dict
 from dataset_iterators import generate_data_iterators
+from training_loops import unconstrained_training_loop
 from utils.misc import resolve_device, set_seed, make_opt, CustomError
 
 # Setting up logger
 logger = logging.getLogger(__name__)
+
 
 class RunnerArguments(NamedTuple):
     """Arguments for the main function"""
@@ -83,8 +86,26 @@ def runner(runner_arguments:RunnerArguments):
     model = get_model(model_name=runner_arguments.model, other_meta_data=other_meta_data, device=device)
     model = model.to(device)
 
-    # Create optimizer
+    print(type(model))
+    # Create optimizer and loss function
     optimizer = make_opt(model, get_optimizer(runner_arguments.optimizer_name), lr=runner_arguments.lr)
+    criterion = nn.CrossEntropyLoss(reduction='none')
+
+    # Fairness function (Later)
+
+    # Training Loops
+    training_loop_params = unconstrained_training_loop.TrainingLoopParameters(
+        n_epochs=runner_arguments.epochs,
+        model=model,
+        iterators=iterators,
+        optimizer=optimizer,
+        criterion=criterion,
+        device=device,
+        save_model_as=runner_arguments.save_model_as,
+        other_params={}
+    )
+    # Combine everything
+    unconstrained_training_loop.training_loop(training_loop_params)
 
 if __name__ == '__main__':
     runner_arguments = RunnerArguments(
@@ -92,7 +113,7 @@ if __name__ == '__main__':
         dataset_name = 'twitter_hate_speech',
         batch_size = 64,
         model = 'simple_non_linear',
-        epochs = 20,
+        epochs = 50,
         adv_loss_scale = 0.0,
         save_model_as = 'dummy',
         method = 'unconstrained',
