@@ -1,6 +1,6 @@
 import numpy as np
-from typing import List
 from itertools import product
+from typing import List, Union
 
 
 def create_mask(data, condition):
@@ -42,34 +42,62 @@ def create_all_possible_groups(number_of_attributes: int):
     return [i for i in product([0, 1, 'x'], repeat=number_of_attributes)]
 
 
-def get_gerrymandering_groups(groups: List[tuple]):
+def get_gerrymandering_groups(groups: List):
+
     tuple_to_remove = tuple(['x' for _ in range(len(groups[0]))])
+    all_index = [i for i in range(len(groups))]
+    index = None
     try:
-        groups.remove(tuple_to_remove)
+        index = groups.index(tuple_to_remove)
     except ValueError:
         pass
-    return groups
+    if index:
+        groups = [value for i, value in enumerate(groups) if i!= index]
+        all_index = [i for i, value in enumerate(groups) if i != index]
+    return groups, all_index
 
 
-def get_independent_groups(groups: List[tuple]):
+def get_independent_groups(groups:List):
     '''All x's apart from one place'''
-    number_of_attribute = len(groups[0])
+
+    number_of_attribute = len(groups[1])
     independent_groups = []
-    for group in groups:
+    all_index = []
+    for index, group in enumerate(groups):
+        if type(group) == np.ndarray:
+            group = group.tolist()
         if group.count('x') == number_of_attribute - 1:
             independent_groups.append(group)
-    return independent_groups
+            all_index.append(index)
+    return independent_groups, all_index
 
 
-
-def get_intersectional_groups(groups: List[tuple]):
+def get_intersectional_groups(groups: List):
     '''No x's in any place'''
+
     intersectional_groups = []
-    for group in groups:
+    all_index = []
+    for index, group in enumerate(groups):
+        if type(group) == np.ndarray:
+            group = group.tolist()
         if group.count('x') == 0:
             intersectional_groups.append(group)
-    return intersectional_groups
+            all_index.append(index)
+    return intersectional_groups, all_index
+
+def calculate_accuracy_classification(predictions, labels):
+    # top_predictions = predictions.argmax(1)
+    correct = (predictions == labels).sum()
+    accuracy = correct*1.0/ labels.shape[0]
+    return accuracy
 
 
-def get_accuracy_parity(predictions, labels):
-    pass
+def accuracy_parity(prediction, label, mask):
+    """Calculates accuracy over given mask"""
+    prediction = prediction[mask]
+    label = label[mask]
+    return  calculate_accuracy_classification(prediction, label)
+
+
+def accuracy_parity_over_groups(prediction, label, all_possible_groups_mask):
+    return [accuracy_parity(prediction, label, group_mask) for group_mask in all_possible_groups_mask]

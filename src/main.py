@@ -86,7 +86,6 @@ def runner(runner_arguments:RunnerArguments):
     model = get_model(model_name=runner_arguments.model, other_meta_data=other_meta_data, device=device)
     model = model.to(device)
 
-    print(type(model))
     # Create optimizer and loss function
     optimizer = make_opt(model, get_optimizer(runner_arguments.optimizer_name), lr=runner_arguments.lr)
     criterion = nn.CrossEntropyLoss(reduction='none')
