@@ -1,6 +1,6 @@
 import numpy as np
 from itertools import product
-from typing import List
+from typing import List, Optional
 from sklearn.metrics import confusion_matrix
 
 
@@ -92,7 +92,7 @@ def calculate_accuracy_classification(predictions, labels):
     accuracy = correct*1.0/ labels.shape[0]
     return accuracy
 
-def calculate_true_positive_rate(predictions, labels):
+def calculate_true_positive_rate(predictions, labels): # is it same as recall?
     tn, fp, fn, tp = confusion_matrix(y_true=labels, y_pred=predictions).ravel()
     return tp/(tp + fn)
 
@@ -117,3 +117,4 @@ def accuracy_parity_over_groups(prediction, label, all_possible_groups_mask):
 
 def true_positive_rate_over_groups(prediction, label, all_possible_groups_mask):
     return [true_positive_rate(prediction, label, group_mask) for group_mask in all_possible_groups_mask]
+

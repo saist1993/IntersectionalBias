@@ -5,6 +5,7 @@ import torch.nn as nn
 from utils import misc
 from tqdm.auto import tqdm
 from dataclasses import dataclass
+from metrics import calculate_epoch_metric
 from utils import fairness_function as fairness_functions
 from typing import NamedTuple, List, Dict, Callable
 
@@ -45,6 +46,7 @@ class FairnessMetricAnalytics:
     rms_min -> min ( \iterate \root \square (TPR_overall - TPR_current)) # Is same as abs_min so not included
 
     """
+    metric_over_whole_dataset: float
     maximum: float
     minimum: float
     average: float
@@ -74,6 +76,7 @@ class EpochMetricTracker():
 def generate_fairness_metric_analytics(results:list, metric_over_whole_dataset):
     difference_between_overall_and_current = [r-metric_over_whole_dataset for r in results]
     fairness_metric_analytics = FairnessMetricAnalytics(
+        metric_over_whole_dataset = metric_over_whole_dataset,
         maximum=max(results),
         minimum=min(results),
         average=np.mean(results),
@@ -161,14 +164,16 @@ def per_epoch_metric(epoch_output, epoch_input):
     all_s = np.vstack(all_s)
 
     # Calculate accuracy
-    accuracy = fairness_functions.calculate_accuracy_classification(predictions=all_prediction, labels=all_label)
+    # accuracy = fairness_functions.calculate_accuracy_classification(predictions=all_prediction, labels=all_label)
+    #
+    # # Calculate fairness
+    # accuracy_parity_fairness_metric_tracker, true_positive_rate_fairness_metric_tracker\
+    #     = calculate_fairness(prediction=all_prediction, label=all_label, aux=all_s)
+    # epoch_metric = EpochMetricTracker(accuracy=accuracy, accuracy_parity=accuracy_parity_fairness_metric_tracker,
+    #                                   true_positive_rate=true_positive_rate_fairness_metric_tracker)
 
-    # Calculate fairness
-    accuracy_parity_fairness_metric_tracker, true_positive_rate_fairness_metric_tracker\
-        = calculate_fairness(prediction=all_prediction, label=all_label, aux=all_s)
-    epoch_metric = EpochMetricTracker(accuracy=accuracy, accuracy_parity=accuracy_parity_fairness_metric_tracker,
-                                      true_positive_rate=true_positive_rate_fairness_metric_tracker)
-    return accuracy, epoch_metric
+    epoch_metric = calculate_epoch_metric.CalculateEpochMetric(all_prediction, all_label, all_s, None).run()
+    return epoch_metric
 
 
 def train(train_parameters: TrainParameters):
@@ -209,7 +214,7 @@ def train(train_parameters: TrainParameters):
         output['loss_batch'] = loss.item()
         track_output.append(output)
 
-    # Calculate all per-epoch metric
+    # Calculate all per-epoch metric by sending outputs and the inputs
     epoch_metric_tracker = train_parameters.per_epoch_metric(track_output,train_parameters.iterator)
     return epoch_metric_tracker
 
