@@ -221,7 +221,7 @@ def train(train_parameters: TrainParameters):
 
 def training_loop(training_loop_parameters: TrainingLoopParameters):
 
-    for epoch in range(training_loop_parameters.n_epochs):
+    for _ in range(training_loop_parameters.n_epochs):
 
         train_parameters = TrainParameters(
             model=training_loop_parameters.model,
