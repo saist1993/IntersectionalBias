@@ -5,9 +5,9 @@ from typing import Optional
 import numpy as np
 from sklearn.metrics import balanced_accuracy_score
 
-import fairness_utils
-from accuracy_parity import AccuracyParity
-from fairness_utils import FairnessMetricTracker
+from .accuracy_parity import AccuracyParity
+from .fairness_utils import FairnessMetricTracker
+from metrics import fairness_utils
 
 
 @dataclass

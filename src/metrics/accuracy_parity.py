@@ -2,7 +2,8 @@ from typing import List, Optional
 
 import numpy as np
 
-import fairness_utils
+
+from metrics import fairness_utils
 
 
 class AccuracyParity(fairness_utils.FairnessTemplateClass):
@@ -22,12 +23,6 @@ class AccuracyParity(fairness_utils.FairnessTemplateClass):
                 all_possible_groups_mask]
 
     def run(self):
-        # calculate the macro, micro, and weighted accuracy
-
-        # unbalanced_accuracy = fairness_utils.calculate_accuracy_classification(predictions=self.prediction,
-        #                                                                     labels=self.label)
-
-        # # removing all true mask, as this corresponds to overall_accuracy -> accuracy over the whole dataset
         per_group_accuracy = [fairness_utils.calculate_accuracy_classification(predictions=self.prediction[mask],
                                                                                labels=self.label[mask])
                               for mask in self.all_possible_groups_mask if not np.array_equal(mask, self.all_true_mask)]
@@ -35,7 +30,6 @@ class AccuracyParity(fairness_utils.FairnessTemplateClass):
         per_group_size = [len(mask) for mask in self.all_possible_groups_mask if
                           not np.array_equal(mask, self.all_true_mask)]
 
-        # balanced_accuracy = balanced_accuracy_score(self.label, self.prediction)
 
         weighted_accuracy = np.average(per_group_accuracy, weights=per_group_size)
         unweighted_accuracy = np.average(per_group_accuracy)  # check if this is same as overall accuracy!
