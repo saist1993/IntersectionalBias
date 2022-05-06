@@ -63,7 +63,11 @@ def per_epoch_metric(epoch_output, epoch_input):
     # epoch_metric = EpochMetricTracker(accuracy=accuracy, accuracy_parity=accuracy_parity_fairness_metric_tracker,
     #                                   true_positive_rate=true_positive_rate_fairness_metric_tracker)
 
-    epoch_metric = calculate_epoch_metric.CalculateEpochMetric(all_prediction, all_label, all_s, None).run()
+    other_meta_data = {
+        'fairness_mode': ['demographic_parity']
+    }
+
+    epoch_metric = calculate_epoch_metric.CalculateEpochMetric(all_prediction, all_label, all_s, other_meta_data).run()
     return epoch_metric
 
 
@@ -138,8 +142,8 @@ def training_loop(training_loop_parameters: TrainingLoopParameters):
             mode='evaluate')
 
         test_epoch_metric = train(test_parameters)
-        # print(f"train accuracy is {train_accuracy}")
-        # print(f"test accuracy is {test_accuracy}")
+        print(f"train epoch metric is {train_epoch_metric}")
+        print(f"test epoch metric is {test_epoch_metric}")
 
 
 

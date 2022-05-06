@@ -1,10 +1,11 @@
 # This is going to be a orchastrator for the fairness/ other metric
 from dataclasses import dataclass
-from typing import Optional
+from typing import Optional, Dict
 
 import numpy as np
 from sklearn.metrics import balanced_accuracy_score
 
+from .eps_fairness import EpsFairness, EPSFairnessMetric
 from .accuracy_parity import AccuracyParity
 from .true_postivie_rate import TruePositiveRateParity
 from .fairness_utils import FairnessMetricTracker
@@ -17,6 +18,7 @@ class EpochMetricTracker():
     balanced_accuracy: float
     accuracy_parity: FairnessMetricTracker
     tpr_parity: FairnessMetricTracker
+    eps_fairness: Dict[str, EPSFairnessMetric]
 
 
 class CalculateEpochMetric:
@@ -46,7 +48,12 @@ class CalculateEpochMetric:
                                                 self.all_possible_groups, self.all_possible_groups_mask,
                                                 self.other_meta_data).run()
 
+        eps_fairness_metric = EpsFairness(self.prediction, self.label, self.aux,
+                                                self.all_possible_groups, self.all_possible_groups_mask,
+                                                self.other_meta_data).run() # this is a dictionary of metric
+
         epoch_metric = EpochMetricTracker(accuracy=accuracy, balanced_accuracy=balanced_accuracy,
-                                          accuracy_parity=accuracy_parity_metric, tpr_parity=tpr_parity_metric)
+                                          accuracy_parity=accuracy_parity_metric, tpr_parity=tpr_parity_metric,
+                                          eps_fairness=eps_fairness_metric)
 
         return epoch_metric
