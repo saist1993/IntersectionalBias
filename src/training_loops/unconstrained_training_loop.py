@@ -29,6 +29,7 @@ class TrainingLoopParameters:
     criterion: Callable
     device: torch.device
     save_model_as: str
+    use_wandb: bool
     other_params: Dict
 
 
@@ -122,7 +123,7 @@ def training_loop(training_loop_parameters: TrainingLoopParameters):
             other_params=training_loop_parameters.other_params,
             per_epoch_metric=per_epoch_metric,
             mode='train')
-        train_accuracy = train(train_parameters)
+        train_epoch_metric = train(train_parameters)
 
 
 
@@ -136,9 +137,9 @@ def training_loop(training_loop_parameters: TrainingLoopParameters):
             per_epoch_metric=per_epoch_metric,
             mode='evaluate')
 
-        test_accuracy = train(test_parameters)
-        print(f"train accuracy is {train_accuracy}")
-        print(f"test accuracy is {test_accuracy}")
+        test_epoch_metric = train(test_parameters)
+        # print(f"train accuracy is {train_accuracy}")
+        # print(f"test accuracy is {test_accuracy}")
 
 
 

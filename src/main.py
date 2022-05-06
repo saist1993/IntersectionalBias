@@ -1,4 +1,5 @@
 import torch
+import wandb
 import config
 import random
 import logging
@@ -28,7 +29,7 @@ class RunnerArguments(NamedTuple):
     optimizer_name: str = 'adam'
     lr: float = 0.001
     use_lr_schedule: bool = False
-
+    use_wandb: bool = False
 
 def get_model(model_name:str, other_meta_data:Dict, device:torch.device):
     if model_name == 'simple_non_linear':
@@ -69,6 +70,13 @@ def runner(runner_arguments:RunnerArguments):
     # Setting up logging
     logger.info(f"arguemnts: {locals()}")
 
+    # Setting up wandb, if need be
+    if runner_arguments.use_wandb:
+        wandb.init(project="IntersectionalFairness", entity="magnet", config=locals())
+        run_id = wandb.run.id
+        logger.info(f"wandb run id is {run_id}")
+
+
     # Setting up seeds for reproducibility and resolving device (cpu/gpu).
     set_seed(runner_arguments.seed)
     device = resolve_device()
@@ -101,6 +109,7 @@ def runner(runner_arguments:RunnerArguments):
         criterion=criterion,
         device=device,
         save_model_as=runner_arguments.save_model_as,
+        use_wandb=runner_arguments.use_wandb,
         other_params={}
     )
     # Combine everything
@@ -108,17 +117,18 @@ def runner(runner_arguments:RunnerArguments):
 
 if __name__ == '__main__':
     runner_arguments = RunnerArguments(
-        seed = 42,
-        dataset_name = 'twitter_hate_speech',
-        batch_size = 64,
-        model = 'simple_non_linear',
-        epochs = 50,
-        adv_loss_scale = 0.0,
-        save_model_as = 'dummy',
-        method = 'unconstrained',
-        optimizer_name = 'adam',
-        lr = 0.001,
-        use_lr_schedule = False
+        seed=42,
+        dataset_name='twitter_hate_speech',
+        batch_size=64,
+        model='simple_non_linear',
+        epochs=50,
+        adv_loss_scale=0.0,
+        save_model_as='dummy',
+        method='unconstrained',
+        optimizer_name='adam',
+        lr=0.001,
+        use_lr_schedule=False,
+        use_wandb=False
     )
 
     runner(runner_arguments=runner_arguments)

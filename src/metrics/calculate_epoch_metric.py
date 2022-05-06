@@ -6,6 +6,7 @@ import numpy as np
 from sklearn.metrics import balanced_accuracy_score
 
 from .accuracy_parity import AccuracyParity
+from .true_postivie_rate import TruePositiveRateParity
 from .fairness_utils import FairnessMetricTracker
 from metrics import fairness_utils
 
@@ -15,6 +16,7 @@ class EpochMetricTracker():
     accuracy: float
     balanced_accuracy: float
     accuracy_parity: FairnessMetricTracker
+    tpr_parity: FairnessMetricTracker
 
 
 class CalculateEpochMetric:
@@ -40,7 +42,11 @@ class CalculateEpochMetric:
                                                 self.all_possible_groups, self.all_possible_groups_mask,
                                                 self.other_meta_data).run()
 
+        tpr_parity_metric = TruePositiveRateParity(self.prediction, self.label, self.aux,
+                                                self.all_possible_groups, self.all_possible_groups_mask,
+                                                self.other_meta_data).run()
+
         epoch_metric = EpochMetricTracker(accuracy=accuracy, balanced_accuracy=balanced_accuracy,
-                                          accuracy_parity=accuracy_parity_metric)
+                                          accuracy_parity=accuracy_parity_metric, tpr_parity=tpr_parity_metric)
 
         return epoch_metric
