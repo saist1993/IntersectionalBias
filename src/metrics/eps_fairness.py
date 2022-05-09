@@ -1,7 +1,10 @@
-import numpy as np
-from typing import List, Optional
-from metrics import fairness_utils
 from dataclasses import dataclass
+from typing import List, Optional
+
+import numpy as np
+
+from metrics import fairness_utils
+
 
 class EstimateProbability:
 
@@ -17,12 +20,12 @@ class EstimateProbability:
             labels are not useful in this case, as we don't rely on the underlying data stastics!
         '''
         new_preds = preds[mask]
-        new_labels = preds[mask] # this gives us all s
+        new_labels = preds[mask]  # this gives us all s
 
         # find number of instances with label = 1
-        number_of_instance_with_s_and_y_1 = np.count_nonzero(new_preds==1)
+        number_of_instance_with_s_and_y_1 = np.count_nonzero(new_preds == 1)
 
-        return number_of_instance_with_s_and_y_1/len(new_preds)*1.0
+        return number_of_instance_with_s_and_y_1 / len(new_preds) * 1.0
 
     def smoothed_empirical_estimate_demographic_parity(self, preds, labels, masks):
         '''
@@ -34,7 +37,7 @@ class EstimateProbability:
         all_probs = []
         for mask in masks:
             new_preds = preds[mask]
-            new_labels = preds[mask]  # this gives us all s
+            new_labels = labels[mask]  # this gives us all s
 
             # find number of instances with label = 1
             number_of_instance_with_s_and_y_1 = np.count_nonzero(new_preds == 1)
@@ -44,7 +47,7 @@ class EstimateProbability:
 
         max_prob = max(all_probs)
         min_prob = min(all_probs)
-        return np.log(max_prob/min_prob)
+        return np.log(max_prob / min_prob)
 
     def simple_bayesian_estimate_demographic_parity(self, preds, labels, masks):
 
@@ -54,12 +57,12 @@ class EstimateProbability:
             all_probs = []
             for mask in masks:
                 new_preds = preds[mask]
-                new_labels = preds[mask]  # this gives us all s
+                new_labels = labels[mask]  # this gives us all s
 
                 # find number of instances with preds = 1
                 n_1_s = np.count_nonzero(new_preds == 1)
                 n_s = len(new_preds)
-                prob = np.random.beta(n_1_s + (1/3.0), n_s + (1/3.0)- n_1_s, size=1)
+                prob = np.random.beta(n_1_s + (1 / 3.0), n_s + (1 / 3.0) - n_1_s, size=1)
                 all_probs.append(prob)
 
             max_prob = max(all_probs)
@@ -68,9 +71,9 @@ class EstimateProbability:
             all_eps.append(eps)
         return np.mean(all_eps)
 
-
-    def smoothed_empirical_estimate_tpr_parity(self, preds, labels, masks):
+    def smoothed_empirical_estimate_rate_parity(self, preds, labels, masks, use_tpr=True):
         '''
+            - if use_tpr is False, then return fpr
             mask gives us access to specific attribute - s.
             empirical_estimate = number_of_instance_with_s_and_preds_1_and_label_1 + alpha /
              number_of_instance_with_s_and_lable_1 + alpha + beta
@@ -80,25 +83,30 @@ class EstimateProbability:
         all_probs = []
         for mask in masks:
             new_preds = preds[mask]
-            new_labels = preds[mask]  # this gives us all s
+            new_labels = labels[mask]  # this gives us all s
 
             # find the number of instances with pred=1, and S=s and label=1 - @TODO: Test this!
-            new_mask = (new_preds == 1) & (new_labels == 1)
-            number_of_instance_with_s_and_y_1_and_pred_1 = np.count_nonzero(new_mask == 1)
+            if use_tpr:
+                new_mask = (new_preds == 1) & (new_labels == 1)
+                numerator = np.count_nonzero(new_mask == 1)
+                new_mask = new_labels == 1
+                denominator = np.count_nonzero(new_mask)
+            else:
+                new_mask = (new_preds == 1) & (new_labels == 0)
+                numerator = np.count_nonzero(new_mask == 1)
+                new_mask = new_labels == 0
+                denominator = np.count_nonzero(new_mask)
 
             # find the number of instance with S=s and label=1
-            new_mask = new_labels == 1
-            number_of_instance_with_s_and_y_1 = np.count_nonzero(new_mask)
 
-            prob = (number_of_instance_with_s_and_y_1_and_pred_1 + self.alpha) / (len(number_of_instance_with_s_and_y_1)
-                                                                                  * 1.0 + self.alpha + self.beta)
+            prob = (numerator + self.alpha) / (denominator * 1.0 + self.alpha + self.beta)
             all_probs.append(prob)
 
         max_prob = max(all_probs)
         min_prob = min(all_probs)
-        return np.log(max_prob/min_prob)
+        return np.log(max_prob / min_prob)
 
-    def simple_bayesian_estimate_tpr_parity(self, preds, labels, masks):
+    def simple_bayesian_estimate_rate_parity(self, preds, labels, masks, use_tpr=True):
 
         all_eps = []
         number_of_simulation = range(1000)
@@ -106,19 +114,23 @@ class EstimateProbability:
             all_probs = []
             for mask in masks:
                 new_preds = preds[mask]
-                new_labels = preds[mask]  # this gives us all s
+                new_labels = labels[mask]  # this gives us all s
 
                 # find number of instances with label = 1 and pred = 1
-                new_mask = (new_preds == 1) & (new_labels == 1)
-                n_1_s_y_1 = np.count_nonzero(new_mask == 1)
+                if use_tpr:
+                    new_mask = (new_preds == 1) & (new_labels == 1)
+                    numerator = np.count_nonzero(new_mask == 1)
 
-                new_mask = new_labels == 1
-                n_s_y_1 = np.count_nonzero(new_mask)
+                    new_mask = new_labels == 1
+                    denominator = np.count_nonzero(new_mask)
+                else:
+                    new_mask = (new_preds == 1) & (new_labels == 0)
+                    numerator = np.count_nonzero(new_mask == 1)
 
+                    new_mask = new_labels == 0
+                    denominator = np.count_nonzero(new_mask)
 
-
-
-                prob = np.random.beta(n_1_s_y_1 + (1/3.0), n_s_y_1 + (1/3.0)- n_1_s_y_1, size=1)
+                prob = np.random.beta(numerator + (1 / 3.0), denominator + (1 / 3.0) - numerator, size=1)
                 all_probs.append(prob)
 
             max_prob = max(all_probs)
@@ -130,13 +142,18 @@ class EstimateProbability:
 
 @dataclass
 class EPSFairnessMetric:
-    gerrymandering_dp_smoothed: float
-    independent_dp_smoothed: float
-    intersectional_dp_smoothed: float
-    gerrymandering_dp_simple_bayesian: float
-    independent_dp_simple_bayesian: float
-    intersectional_dp_simple_bayesian: float
+    gerrymandering_smoothed: float
+    independent_smoothed: float
+    intersectional_smoothed: float
+    gerrymandering_simple_bayesian: float
+    independent_simple_bayesian: float
+    intersectional_simple_bayesian: float
 
+
+# class EPSFairnessMetricMeta:
+#     demographic_parity: EPSFairnessMetric
+#     equal_opportunity: EPSFairnessMetric
+#     equal_odds: EPSFairnessMetric
 
 class EpsFairness(fairness_utils.FairnessTemplateClass):
 
@@ -145,7 +162,7 @@ class EpsFairness(fairness_utils.FairnessTemplateClass):
         super().__init__(prediction, label, aux,
                          all_possible_groups, all_possible_groups_mask, other_meta_data)
 
-        self.fairness_mode = other_meta_data['fairness_mode']   # It is a list
+        self.fairness_mode = other_meta_data['fairness_mode']  # It is a list
 
         self.es = EstimateProbability()
 
@@ -161,6 +178,8 @@ class EpsFairness(fairness_utils.FairnessTemplateClass):
             eps = self.es.smoothed_empirical_estimate_demographic_parity(self.prediction, self.label, group_masks)
         elif robust_estimation_method == 'simple_bayesian_estimate':
             eps = self.es.simple_bayesian_estimate_demographic_parity(self.prediction, self.label, group_masks)
+        else:
+            raise NotImplementedError
         return eps
 
     def tpr_parity(self, group_masks, robust_estimation_method='smoothed_empirical_estimate'):
@@ -172,7 +191,47 @@ class EpsFairness(fairness_utils.FairnessTemplateClass):
         :return:
         """
 
+        if robust_estimation_method == 'smoothed_empirical_estimate':
+            eps = self.es.smoothed_empirical_estimate_rate_parity(self.prediction, self.label, group_masks,
+                                                                  use_tpr=True)
+        elif robust_estimation_method == 'simple_bayesian_estimate':
+            eps = self.es.simple_bayesian_estimate_rate_parity(self.prediction, self.label, group_masks, use_tpr=True)
+        else:
+            raise NotImplementedError
+        return eps
 
+    def fpr_parity(self, group_masks, robust_estimation_method='smoothed_empirical_estimate'):
+        """
+        - This measure is also called equal opportunity with y=1 being the default!
+        - We need to estimate p(y_hat=1/y=1,S=s) for all s
+        :param group_masks:
+        :param robust_estimation_method:
+        :return:
+        """
+
+        if robust_estimation_method == 'smoothed_empirical_estimate':
+            eps = self.es.smoothed_empirical_estimate_rate_parity(self.prediction, self.label, group_masks,
+                                                                  use_tpr=False)
+        elif robust_estimation_method == 'simple_bayesian_estimate':
+            eps = self.es.simple_bayesian_estimate_rate_parity(self.prediction, self.label, group_masks, use_tpr=False)
+        else:
+            raise NotImplementedError
+        return eps
+
+    def equal_odds(self, group_masks, robust_estimation_method='smoothed_empirical_estimate'):
+        if robust_estimation_method == 'smoothed_empirical_estimate':
+            eps_fpr = self.es.smoothed_empirical_estimate_rate_parity(self.prediction, self.label, group_masks,
+                                                                      use_tpr=False)
+            eps_tpr = self.es.smoothed_empirical_estimate_rate_parity(self.prediction, self.label, group_masks,
+                                                                      use_tpr=True)
+        elif robust_estimation_method == 'simple_bayesian_estimate':
+            eps_fpr = self.es.simple_bayesian_estimate_rate_parity(self.prediction, self.label, group_masks,
+                                                                   use_tpr=False)
+            eps_tpr = self.es.simple_bayesian_estimate_rate_parity(self.prediction, self.label, group_masks,
+                                                                   use_tpr=True)
+        else:
+            raise NotImplementedError
+        return max(eps_fpr, eps_tpr)
 
     def run(self):
         """
@@ -180,44 +239,56 @@ class EpsFairness(fairness_utils.FairnessTemplateClass):
         :return:
         """
 
-        def get_analytics_demographic_parity(type_of_group, robust_estimation_method):
+        def get_analytics(type_of_group, robust_estimation_method, fairness_mode='demographic_parity'):
             _, group_index = fairness_utils.get_groups(self.all_possible_groups, type_of_group)
-            return self.demographic_parity(np.asarray(self.all_possible_groups_mask)[group_index],
-                                           robust_estimation_method)
-
+            if fairness_mode == 'demographic_parity':
+                return self.demographic_parity(np.asarray(self.all_possible_groups_mask)[group_index],
+                                               robust_estimation_method)
+            elif fairness_mode == 'equal_opportunity':
+                return self.tpr_parity(np.asarray(self.all_possible_groups_mask)[group_index],
+                                       robust_estimation_method)
+            elif fairness_mode == 'equal_odds':
+                return self.equal_odds(np.asarray(self.all_possible_groups_mask)[group_index],
+                                       robust_estimation_method)
+            else:
+                raise NotImplementedError
 
         fairness_metrics = {}
 
         for fairness_mode in self.fairness_mode:
-            if fairness_mode == 'demographic_parity':
+            """
+            Just intersectional works as eps of intersectional will always be greater or equal to 
+            gerrymandering group and independent group
+            """
+            # fairness_mode_gerrymandering_smoothed = get_analytics('gerrymandering',
+            #                                                            'smoothed_empirical_estimate',
+            #                                                            fairness_mode)
+            fairness_mode_intersectional_smoothed = get_analytics('intersectional',
+                                                                       'smoothed_empirical_estimate',
+                                                                       fairness_mode)
+            # fairness_mode_independent_smoothed = get_analytics('independent',
+            #                                                         'smoothed_empirical_estimate',
+            #                                                         fairness_mode)
 
-                demographic_parity_gerrymandering_smoothed = get_analytics_demographic_parity('gerrymandering',
-                                                                                     'smoothed_empirical_estimate')
-                demographic_parity_intersectional_smoothed = get_analytics_demographic_parity('intersectional',
-                                                                                     'smoothed_empirical_estimate')
-                demographic_parity_independent_smoothed = get_analytics_demographic_parity('independent',
-                                                                                  'smoothed_empirical_estimate')
+            # fairness_mode_gerrymandering_simple_bayesian = get_analytics('gerrymandering',
+            #                                                                   'simple_bayesian_estimate',
+            #                                                                   fairness_mode)
+            fairness_mode_intersectional_simple_bayesian = get_analytics('intersectional',
+                                                                              'simple_bayesian_estimate',
+                                                                              fairness_mode)
+            # fairness_mode_independent_simple_bayesian = get_analytics('independent',
+            #                                                                'simple_bayesian_estimate',
+            #                                                                fairness_mode)
 
-                demographic_parity_gerrymandering_simple_bayesian = get_analytics_demographic_parity('gerrymandering',
-                                                                                     'simple_bayesian_estimate')
-                demographic_parity_intersectional_simple_bayesian = get_analytics_demographic_parity('intersectional',
-                                                                                     'simple_bayesian_estimate')
-                demographic_parity_independent_simple_bayesian = get_analytics_demographic_parity('independent',
-                                                                                  'simple_bayesian_estimate')
+            fairness_metric_tracker = EPSFairnessMetric(
+                gerrymandering_smoothed=0.0,
+                independent_smoothed=0.0,
+                intersectional_smoothed=fairness_mode_intersectional_smoothed,
+                gerrymandering_simple_bayesian=0.0,
+                independent_simple_bayesian=0.0,
+                intersectional_simple_bayesian=fairness_mode_intersectional_simple_bayesian
+            )
 
-                fairness_metric_tracker = EPSFairnessMetric(
-                                                            gerrymandering_dp_smoothed=demographic_parity_gerrymandering_smoothed,
-                                                            independent_dp_smoothed=demographic_parity_independent_smoothed,
-                                                            intersectional_dp_smoothed=demographic_parity_intersectional_smoothed,
-                                                            gerrymandering_dp_simple_bayesian=demographic_parity_gerrymandering_simple_bayesian,
-                                                            independent_dp_simple_bayesian=demographic_parity_independent_simple_bayesian,
-                                                            intersectional_dp_simple_bayesian=demographic_parity_intersectional_simple_bayesian
-                                                            )
-
-                fairness_metrics['demographic_parity'] = fairness_metric_tracker
-
-            else:
-                raise NotImplementedError
+            fairness_metrics[fairness_mode] = fairness_metric_tracker
 
         return fairness_metrics
-

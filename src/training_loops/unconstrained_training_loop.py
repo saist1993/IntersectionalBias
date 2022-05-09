@@ -64,7 +64,7 @@ def per_epoch_metric(epoch_output, epoch_input):
     #                                   true_positive_rate=true_positive_rate_fairness_metric_tracker)
 
     other_meta_data = {
-        'fairness_mode': ['demographic_parity']
+        'fairness_mode': ['demographic_parity', 'equal_opportunity', 'equal_odds']
     }
 
     epoch_metric = calculate_epoch_metric.CalculateEpochMetric(all_prediction, all_label, all_s, other_meta_data).run()
