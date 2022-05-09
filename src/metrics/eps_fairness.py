@@ -142,18 +142,9 @@ class EstimateProbability:
 
 @dataclass
 class EPSFairnessMetric:
-    gerrymandering_smoothed: float
-    independent_smoothed: float
     intersectional_smoothed: float
-    gerrymandering_simple_bayesian: float
-    independent_simple_bayesian: float
     intersectional_simple_bayesian: float
 
-
-# class EPSFairnessMetricMeta:
-#     demographic_parity: EPSFairnessMetric
-#     equal_opportunity: EPSFairnessMetric
-#     equal_odds: EPSFairnessMetric
 
 class EpsFairness(fairness_utils.FairnessTemplateClass):
 
@@ -260,32 +251,17 @@ class EpsFairness(fairness_utils.FairnessTemplateClass):
             Just intersectional works as eps of intersectional will always be greater or equal to 
             gerrymandering group and independent group
             """
-            # fairness_mode_gerrymandering_smoothed = get_analytics('gerrymandering',
-            #                                                            'smoothed_empirical_estimate',
-            #                                                            fairness_mode)
+
             fairness_mode_intersectional_smoothed = get_analytics('intersectional',
                                                                        'smoothed_empirical_estimate',
                                                                        fairness_mode)
-            # fairness_mode_independent_smoothed = get_analytics('independent',
-            #                                                         'smoothed_empirical_estimate',
-            #                                                         fairness_mode)
-
-            # fairness_mode_gerrymandering_simple_bayesian = get_analytics('gerrymandering',
-            #                                                                   'simple_bayesian_estimate',
-            #                                                                   fairness_mode)
             fairness_mode_intersectional_simple_bayesian = get_analytics('intersectional',
                                                                               'simple_bayesian_estimate',
                                                                               fairness_mode)
-            # fairness_mode_independent_simple_bayesian = get_analytics('independent',
-            #                                                                'simple_bayesian_estimate',
-            #                                                                fairness_mode)
+
 
             fairness_metric_tracker = EPSFairnessMetric(
-                gerrymandering_smoothed=0.0,
-                independent_smoothed=0.0,
                 intersectional_smoothed=fairness_mode_intersectional_smoothed,
-                gerrymandering_simple_bayesian=0.0,
-                independent_simple_bayesian=0.0,
                 intersectional_simple_bayesian=fairness_mode_intersectional_simple_bayesian
             )
 
