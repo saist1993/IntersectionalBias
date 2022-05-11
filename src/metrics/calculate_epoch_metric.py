@@ -52,8 +52,12 @@ class CalculateEpochMetric:
                                                 self.all_possible_groups, self.all_possible_groups_mask,
                                                 self.other_meta_data).run() # this is a dictionary of metric
 
+        # epoch_metric = EpochMetricTracker(accuracy=accuracy, balanced_accuracy=balanced_accuracy,
+        #                                   accuracy_parity=accuracy_parity_metric, tpr_parity=tpr_parity_metric,
+        #                                   eps_fairness=eps_fairness_metric)
+
         epoch_metric = EpochMetricTracker(accuracy=accuracy, balanced_accuracy=balanced_accuracy,
-                                          accuracy_parity=accuracy_parity_metric, tpr_parity=tpr_parity_metric,
-                                          eps_fairness=eps_fairness_metric)
+                                         accuracy_parity=None, tpr_parity=None,
+                                         eps_fairness=eps_fairness_metric)
 
         return epoch_metric

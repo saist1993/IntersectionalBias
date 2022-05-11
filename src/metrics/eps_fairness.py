@@ -1,8 +1,9 @@
+from copy import deepcopy
 from dataclasses import dataclass
 from typing import List, Optional
 
 import numpy as np
-from copy import deepcopy
+
 from metrics import fairness_utils
 
 
@@ -11,6 +12,7 @@ class EstimateProbability:
     def __init__(self):
         self.alpha = 0.01
         self.beta = 0.01
+        self.number_of_bootstrap_dataset = 1000
 
     def empirical_estimate_demographic_parity(self, preds, labels, mask):
         '''
@@ -27,6 +29,17 @@ class EstimateProbability:
 
         return number_of_instance_with_s_and_y_1 / len(new_preds) * 1.0
 
+    def calculate_smoothed_empirical_estimate_demographic_parity(self, preds, labels, mask):
+        new_preds = preds[mask]
+        new_labels = labels[mask]  # this gives us all s
+
+        # find number of instances with label = 1
+        number_of_instance_with_s_and_y_1 = np.count_nonzero(new_preds == 1)
+
+        prob = (number_of_instance_with_s_and_y_1 + self.alpha) / (len(new_preds) * 1.0 + self.alpha + self.beta)
+
+        return prob
+
     def smoothed_empirical_estimate_demographic_parity(self, preds, labels, masks):
         '''
             mask gives us access to specific attribute - s.
@@ -36,13 +49,7 @@ class EstimateProbability:
         '''
         all_probs = []
         for mask in masks:
-            new_preds = preds[mask]
-            new_labels = labels[mask]  # this gives us all s
-
-            # find number of instances with label = 1
-            number_of_instance_with_s_and_y_1 = np.count_nonzero(new_preds == 1)
-
-            prob = (number_of_instance_with_s_and_y_1 + self.alpha) / (len(new_preds) * 1.0 + self.alpha + self.beta)
+            prob = self.calculate_smoothed_empirical_estimate_demographic_parity(preds, labels, mask)
             all_probs.append(prob)
 
         max_prob = max(all_probs)
@@ -139,13 +146,39 @@ class EstimateProbability:
             all_eps.append(eps)
         return np.mean(all_eps)
 
+    def bootstrap_estimate_demographic_parity(self, preds, labels, masks):
+        """ Similar to bagging. Performed via smoothing"""
+        all_eps = []
+        for _ in range(self.number_of_bootstrap_dataset):
+            index_select = np.random.choice(len(preds), len(preds), replace=True)
+
+            eps = self.smoothed_empirical_estimate_demographic_parity(preds[index_select], labels[index_select],
+                                                                      [m[index_select] for m in masks])
+            all_eps.append(eps)
+        # np.percentile(all_eps, [97.5])
+        return np.mean(all_eps)
+
+    def bootstrap_estimate_rate_parity(self, preds, labels, masks, use_tpr=True):
+        """ Similar to bagging. Performed via smoothing"""
+        all_eps = []
+        for _ in range(self.number_of_bootstrap_dataset):
+            index_select = np.random.choice(len(preds), len(preds), replace=True)
+
+            eps = self.smoothed_empirical_estimate_rate_parity(preds[index_select], labels[index_select],
+                                                               [m[index_select] for m in masks], use_tpr=use_tpr)
+            all_eps.append(eps)
+
+        return np.mean(all_eps)
+
 
 @dataclass
 class EPSFairnessMetric:
     intersectional_smoothed: float
     intersectional_simple_bayesian: float
-    intersectional_smoothed_bias_amplification: float = None
-    intersectional_simple_bayesian_bias_amplification: float = None
+    intersectional_bootstrap: float
+    intersectional_smoothed_bias_amplification: float = 0.0
+    intersectional_simple_bayesian_bias_amplification: float = 0.0
+    intersectional_bootstrap_bias_amplification:float = 0.0
 
 
 class EpsFairness(fairness_utils.FairnessTemplateClass):
@@ -171,6 +204,8 @@ class EpsFairness(fairness_utils.FairnessTemplateClass):
             eps = self.es.smoothed_empirical_estimate_demographic_parity(self.prediction, self.label, group_masks)
         elif robust_estimation_method == 'simple_bayesian_estimate':
             eps = self.es.simple_bayesian_estimate_demographic_parity(self.prediction, self.label, group_masks)
+        elif robust_estimation_method == 'bootstrap_empirical_estimate':
+            eps = self.es.bootstrap_estimate_demographic_parity(self.prediction, self.label, group_masks)
         else:
             raise NotImplementedError
         return eps
@@ -189,6 +224,10 @@ class EpsFairness(fairness_utils.FairnessTemplateClass):
                                                                   use_tpr=True)
         elif robust_estimation_method == 'simple_bayesian_estimate':
             eps = self.es.simple_bayesian_estimate_rate_parity(self.prediction, self.label, group_masks, use_tpr=True)
+
+        elif robust_estimation_method == 'bootstrap_empirical_estimate':
+            eps = self.es.bootstrap_estimate_rate_parity(self.prediction, self.label, group_masks, use_tpr=True)
+
         else:
             raise NotImplementedError
         return eps
@@ -207,6 +246,10 @@ class EpsFairness(fairness_utils.FairnessTemplateClass):
                                                                   use_tpr=False)
         elif robust_estimation_method == 'simple_bayesian_estimate':
             eps = self.es.simple_bayesian_estimate_rate_parity(self.prediction, self.label, group_masks, use_tpr=False)
+
+        elif robust_estimation_method == 'bootstrap_empirical_estimate':
+            eps = self.es.bootstrap_estimate_rate_parity(self.prediction, self.label, group_masks, use_tpr=False)
+
         else:
             raise NotImplementedError
         return eps
@@ -222,6 +265,10 @@ class EpsFairness(fairness_utils.FairnessTemplateClass):
                                                                    use_tpr=False)
             eps_tpr = self.es.simple_bayesian_estimate_rate_parity(self.prediction, self.label, group_masks,
                                                                    use_tpr=True)
+        elif robust_estimation_method == 'bootstrap_empirical_estimate':
+            eps_fpr = self.es.bootstrap_estimate_rate_parity(self.prediction, self.label, group_masks, use_tpr=False)
+            eps_tpr = self.es.bootstrap_estimate_rate_parity(self.prediction, self.label, group_masks, use_tpr=True)
+
         else:
             raise NotImplementedError
         return max(eps_fpr, eps_tpr)
@@ -232,7 +279,8 @@ class EpsFairness(fairness_utils.FairnessTemplateClass):
         :return:
         """
 
-        def get_analytics(type_of_group, robust_estimation_method, fairness_mode='demographic_parity', bias_amplification_mode=False):
+        def get_analytics(type_of_group, robust_estimation_method, fairness_mode='demographic_parity',
+                          bias_amplification_mode=False):
 
             if bias_amplification_mode:
                 self.original_prediction = deepcopy(self.prediction)
@@ -241,13 +289,13 @@ class EpsFairness(fairness_utils.FairnessTemplateClass):
             _, group_index = fairness_utils.get_groups(self.all_possible_groups, type_of_group)
             if fairness_mode == 'demographic_parity':
                 output = self.demographic_parity(np.asarray(self.all_possible_groups_mask)[group_index],
-                                               robust_estimation_method)
+                                                 robust_estimation_method)
             elif fairness_mode == 'equal_opportunity':
                 output = self.tpr_parity(np.asarray(self.all_possible_groups_mask)[group_index],
-                                       robust_estimation_method)
+                                         robust_estimation_method)
             elif fairness_mode == 'equal_odds':
                 output = self.equal_odds(np.asarray(self.all_possible_groups_mask)[group_index],
-                                       robust_estimation_method)
+                                         robust_estimation_method)
             else:
                 raise NotImplementedError
 
@@ -255,7 +303,6 @@ class EpsFairness(fairness_utils.FairnessTemplateClass):
                 self.prediction = self.original_prediction
 
             return output
-
 
         fairness_metrics = {}
 
@@ -266,36 +313,49 @@ class EpsFairness(fairness_utils.FairnessTemplateClass):
             """
 
             fairness_mode_intersectional_smoothed = get_analytics('intersectional',
-                                                                       'smoothed_empirical_estimate',
-                                                                       fairness_mode)
+                                                                  'smoothed_empirical_estimate',
+                                                                  fairness_mode)
             fairness_mode_intersectional_simple_bayesian = get_analytics('intersectional',
-                                                                              'simple_bayesian_estimate',
-                                                                              fairness_mode)
+                                                                         'simple_bayesian_estimate',
+                                                                         fairness_mode)
+            fairness_mode_intersectional_bootstrap = get_analytics('intersectional',
+                                                                   'bootstrap_empirical_estimate',
+                                                                   fairness_mode)
 
             if fairness_mode == 'demographic_parity':
                 """We also calculate the bias amplification ratio"""
                 fairness_mode_intersectional_smoothed_bias_amplification = get_analytics('intersectional',
-                                                                      'smoothed_empirical_estimate',
-                                                                      fairness_mode,
-                                                                      True)
+                                                                                         'smoothed_empirical_estimate',
+                                                                                         fairness_mode,
+                                                                                         True)
                 fairness_mode_intersectional_simple_bayesian_bias_amplification = get_analytics('intersectional',
-                                                                             'simple_bayesian_estimate',
-                                                                             fairness_mode,
-                                                                            True)
+                                                                                                'simple_bayesian_estimate',
+                                                                                                fairness_mode,
+                                                                                                True)
+
+                fairness_mode_intersectional_bootstrap_bias_amplification = get_analytics('intersectional',
+                                                                       'bootstrap_empirical_estimate',
+                                                                       fairness_mode,
+                                                                       True)
 
                 intersectional_smoothed_bias_amplification = fairness_mode_intersectional_smoothed - fairness_mode_intersectional_smoothed_bias_amplification
 
                 intersectional_simple_bayesian_bias_amplification = fairness_mode_intersectional_simple_bayesian - fairness_mode_intersectional_simple_bayesian_bias_amplification
 
+                intersectional_bootstrap_bias_amplification = fairness_mode_intersectional_bootstrap - fairness_mode_intersectional_bootstrap_bias_amplification
+
             else:
                 intersectional_smoothed_bias_amplification = 0
                 intersectional_simple_bayesian_bias_amplification = 0
+                intersectional_bootstrap_bias_amplification = 0
 
             fairness_metric_tracker = EPSFairnessMetric(
                 intersectional_smoothed=fairness_mode_intersectional_smoothed,
                 intersectional_simple_bayesian=fairness_mode_intersectional_simple_bayesian,
+                intersectional_bootstrap=fairness_mode_intersectional_bootstrap,
                 intersectional_smoothed_bias_amplification=intersectional_smoothed_bias_amplification,
-                intersectional_simple_bayesian_bias_amplification=intersectional_simple_bayesian_bias_amplification
+                intersectional_simple_bayesian_bias_amplification=intersectional_simple_bayesian_bias_amplification,
+                intersectional_bootstrap_bias_amplification=intersectional_bootstrap_bias_amplification,
             )
 
             fairness_metrics[fairness_mode] = fairness_metric_tracker
