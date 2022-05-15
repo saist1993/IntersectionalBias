@@ -14,6 +14,13 @@ class EstimateProbability:
         self.beta = 0.01
         self.number_of_bootstrap_dataset = 1000
 
+    @staticmethod
+    def get_confidence_interval(eps, percentile=95.0):
+        try:
+            return [np.percentile(eps, [100.0 - percentile])[0], np.percentile(eps, [percentile])[0] ]
+        except:
+            print("here")
+
     def empirical_estimate_demographic_parity(self, preds, labels, mask):
         '''
             mask gives us access to specific attribute - s.
@@ -54,7 +61,7 @@ class EstimateProbability:
 
         max_prob = max(all_probs)
         min_prob = min(all_probs)
-        return np.log(max_prob / min_prob)
+        return [np.log(max_prob / min_prob), [0.0, 0.0]]
 
     def simple_bayesian_estimate_demographic_parity(self, preds, labels, masks):
 
@@ -76,7 +83,8 @@ class EstimateProbability:
             min_prob = min(all_probs)
             eps = np.log(max_prob / min_prob)
             all_eps.append(eps)
-        return np.mean(all_eps)
+
+        return [np.mean(all_eps), self.get_confidence_interval(all_eps)]
 
     def smoothed_empirical_estimate_rate_parity(self, preds, labels, masks, use_tpr=True):
         '''
@@ -111,7 +119,7 @@ class EstimateProbability:
 
         max_prob = max(all_probs)
         min_prob = min(all_probs)
-        return np.log(max_prob / min_prob)
+        return [np.log(max_prob / min_prob), [0.0, 0.0]]
 
     def simple_bayesian_estimate_rate_parity(self, preds, labels, masks, use_tpr=True):
 
@@ -144,7 +152,7 @@ class EstimateProbability:
             min_prob = min(all_probs)
             eps = np.log(max_prob / min_prob)
             all_eps.append(eps)
-        return np.mean(all_eps)
+        return [np.mean(all_eps), self.get_confidence_interval(all_eps)]
 
     def bootstrap_estimate_demographic_parity(self, preds, labels, masks):
         """ Similar to bagging. Performed via smoothing"""
@@ -152,11 +160,11 @@ class EstimateProbability:
         for _ in range(self.number_of_bootstrap_dataset):
             index_select = np.random.choice(len(preds), len(preds), replace=True)
 
-            eps = self.smoothed_empirical_estimate_demographic_parity(preds[index_select], labels[index_select],
+            eps, _ = self.smoothed_empirical_estimate_demographic_parity(preds[index_select], labels[index_select],
                                                                       [m[index_select] for m in masks])
             all_eps.append(eps)
         # np.percentile(all_eps, [97.5])
-        return np.mean(all_eps)
+        return [np.mean(all_eps), self.get_confidence_interval(all_eps)]
 
     def bootstrap_estimate_rate_parity(self, preds, labels, masks, use_tpr=True):
         """ Similar to bagging. Performed via smoothing"""
@@ -164,18 +172,18 @@ class EstimateProbability:
         for _ in range(self.number_of_bootstrap_dataset):
             index_select = np.random.choice(len(preds), len(preds), replace=True)
 
-            eps = self.smoothed_empirical_estimate_rate_parity(preds[index_select], labels[index_select],
+            eps, _ = self.smoothed_empirical_estimate_rate_parity(preds[index_select], labels[index_select],
                                                                [m[index_select] for m in masks], use_tpr=use_tpr)
             all_eps.append(eps)
 
-        return np.mean(all_eps)
+        return [np.mean(all_eps), self.get_confidence_interval(all_eps)]
 
 
 @dataclass
 class EPSFairnessMetric:
-    intersectional_smoothed: float
-    intersectional_simple_bayesian: float
-    intersectional_bootstrap: float
+    intersectional_smoothed: List
+    intersectional_simple_bayesian: List
+    intersectional_bootstrap: List
     intersectional_smoothed_bias_amplification: float = 0.0
     intersectional_simple_bayesian_bias_amplification: float = 0.0
     intersectional_bootstrap_bias_amplification:float = 0.0
@@ -271,7 +279,9 @@ class EpsFairness(fairness_utils.FairnessTemplateClass):
 
         else:
             raise NotImplementedError
-        return max(eps_fpr, eps_tpr)
+
+        index = np.argmax([eps_fpr[0], eps_tpr[0]])
+        return [eps_fpr, eps_tpr][index]
 
     def run(self):
         """
@@ -338,11 +348,14 @@ class EpsFairness(fairness_utils.FairnessTemplateClass):
                                                                        fairness_mode,
                                                                        True)
 
-                intersectional_smoothed_bias_amplification = fairness_mode_intersectional_smoothed - fairness_mode_intersectional_smoothed_bias_amplification
+                intersectional_smoothed_bias_amplification = fairness_mode_intersectional_smoothed[0] -\
+                                                             fairness_mode_intersectional_smoothed_bias_amplification[0]
 
-                intersectional_simple_bayesian_bias_amplification = fairness_mode_intersectional_simple_bayesian - fairness_mode_intersectional_simple_bayesian_bias_amplification
+                intersectional_simple_bayesian_bias_amplification = fairness_mode_intersectional_simple_bayesian[0] - \
+                                                                    fairness_mode_intersectional_simple_bayesian_bias_amplification[0]
 
-                intersectional_bootstrap_bias_amplification = fairness_mode_intersectional_bootstrap - fairness_mode_intersectional_bootstrap_bias_amplification
+                intersectional_bootstrap_bias_amplification = fairness_mode_intersectional_bootstrap[0] - \
+                                                              fairness_mode_intersectional_bootstrap_bias_amplification[0]
 
             else:
                 intersectional_smoothed_bias_amplification = 0

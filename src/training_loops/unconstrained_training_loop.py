@@ -1,12 +1,18 @@
-import math
-import torch
-import numpy as np
-import torch.nn as nn
-from utils import misc
-from tqdm.auto import tqdm
 from dataclasses import dataclass
-from metrics import calculate_epoch_metric
 from typing import Dict, Callable
+
+import numpy as np
+import torch
+import torch.nn as nn
+import wandb
+from tqdm.auto import tqdm
+
+from metrics import calculate_epoch_metric
+from utils import misc
+
+
+# configuring matplot lib
+
 
 @dataclass
 class TrainParameters:
@@ -22,7 +28,7 @@ class TrainParameters:
 
 @dataclass
 class TrainingLoopParameters:
-    n_epochs:int
+    n_epochs: int
     model: nn.Module
     iterators: Dict
     optimizer: torch.optim
@@ -31,7 +37,6 @@ class TrainingLoopParameters:
     save_model_as: str
     use_wandb: bool
     other_params: Dict
-
 
 
 def per_epoch_metric(epoch_output, epoch_input):
@@ -68,12 +73,12 @@ def per_epoch_metric(epoch_output, epoch_input):
     }
 
     epoch_metric = calculate_epoch_metric.CalculateEpochMetric(all_prediction, all_label, all_s, other_meta_data).run()
-    return epoch_metric
+    return epoch_metric, np.mean(all_loss)
 
 
 def train(train_parameters: TrainParameters):
     """Trains the model for one epoch"""
-    model, optimizer, device, criterion, mode =\
+    model, optimizer, device, criterion, mode = \
         train_parameters.model, train_parameters.optimizer, train_parameters.device, train_parameters.criterion, train_parameters.mode
 
     if mode == 'train':
@@ -93,7 +98,7 @@ def train(train_parameters: TrainParameters):
         if mode == 'train':
             optimizer.zero_grad()
             output = model(items)
-            loss = torch.mean(criterion(output['prediction'], items['labels'])) # As reduction is None.
+            loss = torch.mean(criterion(output['prediction'], items['labels']))  # As reduction is None.
             loss.backward()
             optimizer.step()
         elif mode == 'evaluate':
@@ -103,21 +108,34 @@ def train(train_parameters: TrainParameters):
         else:
             raise misc.CustomError("only supports train and evaluate")
 
-
-
         # Save all batch stuff for further analysis
         output['loss_batch'] = loss.item()
         track_output.append(output)
 
     # Calculate all per-epoch metric by sending outputs and the inputs
-    epoch_metric_tracker = train_parameters.per_epoch_metric(track_output,train_parameters.iterator)
-    return epoch_metric_tracker
+    epoch_metric_tracker, loss = train_parameters.per_epoch_metric(track_output, train_parameters.iterator)
+    return epoch_metric_tracker, loss
+
+
+def log_and_plot_data(epoch_metric, loss, train=True):
+    if train:
+        suffix = "train_"
+    else:
+        suffix = "test_"
+
+    wandb.log({suffix + "accuracy": epoch_metric.accuracy,
+               suffix + "balanced_accuracy": epoch_metric.balanced_accuracy,
+               suffix + "loss": loss})
+
+    # generate the matplotlib graph!
 
 
 def training_loop(training_loop_parameters: TrainingLoopParameters):
+    output = {}
+    all_train_eps_metrics = []
+    all_test_eps_metrics = []
 
     for _ in range(training_loop_parameters.n_epochs):
-
         train_parameters = TrainParameters(
             model=training_loop_parameters.model,
             iterator=training_loop_parameters.iterators[0]['train_iterator'],
@@ -127,9 +145,9 @@ def training_loop(training_loop_parameters: TrainingLoopParameters):
             other_params=training_loop_parameters.other_params,
             per_epoch_metric=per_epoch_metric,
             mode='train')
-        train_epoch_metric = train(train_parameters)
-
-
+        train_epoch_metric, loss = train(train_parameters)
+        log_and_plot_data(epoch_metric=train_epoch_metric, loss=loss, train=True)
+        all_train_eps_metrics.append(train_epoch_metric.eps_fairness)
 
         test_parameters = TrainParameters(
             model=training_loop_parameters.model,
@@ -141,9 +159,14 @@ def training_loop(training_loop_parameters: TrainingLoopParameters):
             per_epoch_metric=per_epoch_metric,
             mode='evaluate')
 
-        test_epoch_metric = train(test_parameters)
+        test_epoch_metric, loss = train(test_parameters)
+        log_and_plot_data(epoch_metric=train_epoch_metric, loss=loss, train=False)
+        all_test_eps_metrics.append(test_epoch_metric.eps_fairness)
+
         print(f"train epoch metric is {train_epoch_metric}")
         print(f"test epoch metric is {test_epoch_metric}")
 
+    output['all_train_eps_metric'] = all_train_eps_metrics
+    output['all_test_eps_metric'] = all_test_eps_metrics
 
-
+    return output

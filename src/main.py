@@ -8,6 +8,7 @@ import torch.nn as nn
 from functools import partial
 from models import simple_model
 from typing import NamedTuple, Dict
+from utils import plot_and_visualize
 from dataset_iterators import generate_data_iterators
 from training_loops import unconstrained_training_loop
 from utils.misc import resolve_device, set_seed, make_opt, CustomError
@@ -113,22 +114,25 @@ def runner(runner_arguments:RunnerArguments):
         other_params={}
     )
     # Combine everything
-    unconstrained_training_loop.training_loop(training_loop_params)
+    output = unconstrained_training_loop.training_loop(training_loop_params)
+
+    plot_and_visualize.plot_eps_fairness_metric(output['all_train_eps_metric'], "Train ", runner_arguments.use_wandb)
+    plot_and_visualize.plot_eps_fairness_metric(output['all_test_eps_metric'], "Test ", runner_arguments.use_wandb)
 
 if __name__ == '__main__':
     runner_arguments = RunnerArguments(
         seed=42,
         dataset_name='twitter_hate_speech',
-        batch_size=64,
+        batch_size=512,
         model='simple_non_linear',
-        epochs=5,
+        epochs=100,
         adv_loss_scale=0.0,
         save_model_as='dummy',
         method='unconstrained',
         optimizer_name='adam',
         lr=0.001,
         use_lr_schedule=False,
-        use_wandb=False
+        use_wandb=True
     )
 
     runner(runner_arguments=runner_arguments)
