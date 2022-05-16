@@ -1,6 +1,6 @@
 import torch
 import numpy as np
-from typing import NamedTuple
+from typing import NamedTuple, List
 from sklearn.preprocessing import StandardScaler
 from utils.iterator import TextClassificationDataset, sequential_transforms
 
@@ -22,11 +22,14 @@ class IteratorData(NamedTuple):
 class CreateIterators:
     """ A general purpose iterators. Takes numpy matrix for train, dev, and test matrix and creates iterator."""
 
-    @staticmethod
-    def collate(batch):
+    def __init__(self):
+        self.s_to_flattened_s = {}
+
+    def collate(self, batch):
         labels, encoded_input, aux = zip(*batch)
 
         labels = torch.LongTensor(labels)
+        flatten_aux = torch.LongTensor(self.get_flatten_s(aux))
         aux = torch.LongTensor(aux)
         lengths = torch.LongTensor([len(x) for x in encoded_input])
         encoded_input = torch.FloatTensor(encoded_input)
@@ -35,7 +38,8 @@ class CreateIterators:
             'labels': labels,
             'input': encoded_input,
             'lengths': lengths,
-            'aux': aux
+            'aux': aux,
+            'flatten_aux': flatten_aux
         }
 
         return input_data
@@ -53,10 +57,22 @@ class CreateIterators:
 
         return TextClassificationDataset(final_data, vocab, transforms)
 
+
+    def flatten_s(self, s:List[List]):
+        for f in s:
+            keys = self.s_to_flattened_s.keys()
+            if str(f) not in keys:
+                self.s_to_flattened_s[str(f)] = len(keys)
+
+
+    def get_flatten_s(self, s:List[List]):
+        return [self.s_to_flattened_s[str(i)] for i in s]
+
+
     def get_iterators(self, iterator_data:IteratorData):
         train_X, train_y, train_s, dev_X, \
         dev_y, dev_s, test_X, test_y, test_s,batch_size,do_standard_scalar_transformation= iterator_data
-
+        self.flatten_s(train_s)
         if do_standard_scalar_transformation:
             scaler = StandardScaler().fit(train_X)
             train_X = scaler.transform(train_X)
@@ -65,6 +81,8 @@ class CreateIterators:
 
         vocab = {'<pad>': 1}  # no need of vocab in these dataset. It is there for code compatibility purposes.
 
+
+        # need to add flatten here! And that too in the process itself!
         train_data = self.process_data(train_X, train_y, train_s, vocab=vocab)
         dev_data = self.process_data(dev_X, dev_y, dev_s, vocab=vocab)
         test_data = self.process_data(test_X, test_y, test_s, vocab=vocab)
@@ -95,4 +113,4 @@ class CreateIterators:
             'test_iterator': test_iterator,
         }
 
-        return iterator_set, vocab
+        return iterator_set, vocab, self.s_to_flattened_s

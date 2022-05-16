@@ -6,7 +6,7 @@ import logging
 import numpy as np
 import torch.nn as nn
 from functools import partial
-from models import simple_model
+from models import simple_model, adversarial
 from typing import NamedTuple, Dict
 from utils import plot_and_visualize
 from dataset_iterators import generate_data_iterators
@@ -32,8 +32,10 @@ class RunnerArguments(NamedTuple):
     use_lr_schedule: bool = False
     use_wandb: bool = False
 
-def get_model(model_name:str, other_meta_data:Dict, device:torch.device):
+def get_model(method:str, model_name:str, other_meta_data:Dict, device:torch.device):
+    number_of_aux_label_per_attribute = other_meta_data['number_of_aux_label_per_attribute']
     if model_name == 'simple_non_linear':
+
         model_arch = {
             'encoder': {
                 'input_dim': other_meta_data['input_dim'],
@@ -45,7 +47,18 @@ def get_model(model_name:str, other_meta_data:Dict, device:torch.device):
             'model_arch': model_arch,
             'device': device
         }
-        model = simple_model.SimpleNonLinear(model_params)
+
+        if method == 'unconstrained':
+            model = simple_model.SimpleNonLinear(model_params)
+        elif method == 'adversarial_single':
+            total_adv_dim = len(other_meta_data['s_flatten_lookup'])
+            model_params['model_arch']['adv'] = {'output_dim': [total_adv_dim]}
+            model = adversarial.SimpleNonLinear(model_params)
+        elif method == 'adversarial_group':
+            model_params['model_arch']['adv'] = {'output_dim': number_of_aux_label_per_attribute}
+            model = adversarial.SimpleNonLinear(model_params)
+        elif method == 'adversarial_intersectional':
+            pass
     else:
         raise NotImplementedError
 
@@ -66,7 +79,17 @@ def get_optimizer(optimizer_name:str):
 
 
 def runner(runner_arguments:RunnerArguments):
-    """Orchestrates the whole run with given hyper-params"""
+    """
+     Orchestrates the whole run with given hyper-params
+
+     - Assume we have 2 classes and 2 attributes (A1, A2). A1 has two sensitive attribute, while A2 has three sensitive
+     attribute
+
+     method - unconstrained - as the name suggest does not impose any fairness constraints.
+     method - adversarial_single - use one adversary - adv_dim - 6 classes
+     method - adversarial_group - 2 adversary with one adversary having adv_dim as 2 and other as 3
+     method - adversarial_intersectional - 6 adversarial with each adversarial predicting the presence of group!
+     """
 
     # Setting up logging
     logger.info(f"arguemnts: {locals()}")
@@ -82,17 +105,18 @@ def runner(runner_arguments:RunnerArguments):
     set_seed(runner_arguments.seed)
     device = resolve_device()
 
+
     # Create iterator
     iterator_params = {
         'batch_size': runner_arguments.batch_size,
         'lm_encoder_type': 'bert-base-uncased',
         'lm_encoding_to_use': 'use_cls',
-        'return_numpy_array': False
+        'return_numpy_array': False,
     }
     iterators, other_meta_data = generate_data_iterators(dataset_name=runner_arguments.dataset_name, **iterator_params)
 
     # Create model
-    model = get_model(model_name=runner_arguments.model, other_meta_data=other_meta_data, device=device)
+    model = get_model(method=runner_arguments.method, model_name=runner_arguments.model, other_meta_data=other_meta_data, device=device)
     model = model.to(device)
 
     # Create optimizer and loss function
@@ -111,7 +135,7 @@ def runner(runner_arguments:RunnerArguments):
         device=device,
         save_model_as=runner_arguments.save_model_as,
         use_wandb=runner_arguments.use_wandb,
-        other_params={}
+        other_params={'adversarial_method': runner_arguments.method}
     )
     # Combine everything
     output = unconstrained_training_loop.training_loop(training_loop_params)
@@ -128,7 +152,7 @@ if __name__ == '__main__':
         epochs=100,
         adv_loss_scale=0.0,
         save_model_as='dummy',
-        method='unconstrained',
+        method='adversarial_single',
         optimizer_name='adam',
         lr=0.001,
         use_lr_schedule=False,

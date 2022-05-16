@@ -192,7 +192,7 @@ class DatasetTwitterHateSpeech:
             batch_size=self.batch_size,
             do_standard_scalar_transformation=True
         )
-        iterator_set, vocab = create_iterator.get_iterators(iterator_data)
+        iterator_set, vocab, s_flatten_lookup = create_iterator.get_iterators(iterator_data)
 
         iterators = [iterator_set]  # If it was k-fold. One could append k iterators here.
 
@@ -205,6 +205,7 @@ class DatasetTwitterHateSpeech:
         other_meta_data['number_of_main_task_label'] = len(np.unique(train_y))
         other_meta_data['number_of_aux_label_per_attribute'] = [len(np.unique(train_s[:,i])) for i in range(train_s.shape[1])]
         other_meta_data['input_dim'] = train_X.shape[1]
+        other_meta_data['s_flatten_lookup'] = s_flatten_lookup
         if self.return_numpy_array:
             raw_data = {
                 'train_X': train_X,

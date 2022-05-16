@@ -117,6 +117,61 @@ def train(train_parameters: TrainParameters):
     return epoch_metric_tracker, loss
 
 
+
+
+
+
+def train_adversarial(train_parameters: TrainParameters):
+    """Trains the model for one epoch"""
+    model, optimizer, device, criterion, mode = train_parameters.model, train_parameters.optimizer, train_parameters.device, train_parameters.criterion, train_parameters.mode
+
+    adversarial_method = train_parameters.other_params['adversarial_method']
+
+    if mode == 'train':
+        model.train()
+    elif mode == 'evaluate':
+        model.eval()
+    else:
+        raise misc.CustomError("only supports train and evaluate")
+    track_output = []
+
+    for items in tqdm(train_parameters.iterator):
+
+        # Change the device of all the tensors!
+        for key in items.keys():
+            items[key] = items[key].to(device)
+
+        if mode == 'train':
+            optimizer.zero_grad()
+            output = model(items)
+            loss = torch.mean(criterion(output['prediction'], items['labels']))  # As reduction is None.
+            if adversarial_method == 'adversarial_single':
+                loss_aux = torch.mean(criterion(output['adv_outputs'][0], items['aux_flatten']))
+                loss = loss + 0.5*loss_aux  # make this parameterized!
+            loss.backward()
+            optimizer.step()
+        elif mode == 'evaluate':
+            with torch.no_grad():
+                output = model(items)
+                loss = torch.mean(criterion(output['prediction'], items['labels']))  # As reduction is None.
+                if adversarial_method == 'adversarial_single':
+                    loss_aux = torch.mean(criterion(output['adv_outputs'][0], items['aux_flatten']))
+                    loss = loss + 0.5 * loss_aux  # make this parameterized!
+        else:
+            raise misc.CustomError("only supports train and evaluate")
+
+        # Save all batch stuff for further analysis
+        output['loss_batch'] = loss.item()
+        track_output.append(output)
+
+    # Calculate all per-epoch metric by sending outputs and the inputs
+    epoch_metric_tracker, loss = train_parameters.per_epoch_metric(track_output, train_parameters.iterator)
+    return epoch_metric_tracker, loss
+
+
+
+
+
 def log_and_plot_data(epoch_metric, loss, train=True):
     if train:
         suffix = "train_"
