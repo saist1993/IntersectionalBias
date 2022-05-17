@@ -35,29 +35,36 @@ class CalculateEpochMetric:
                                          self.all_possible_groups]
 
     def run(self):
+
+
         accuracy = fairness_utils.calculate_accuracy_classification(predictions=self.prediction,
                                                                     labels=self.label)
 
         balanced_accuracy = balanced_accuracy_score(self.label, self.prediction)
 
-        accuracy_parity_metric = AccuracyParity(self.prediction, self.label, self.aux,
-                                                self.all_possible_groups, self.all_possible_groups_mask,
-                                                self.other_meta_data).run()
+        if self.other_meta_data['no_fairness']:
+            epoch_metric = EpochMetricTracker(accuracy=accuracy, balanced_accuracy=balanced_accuracy,
+                                              accuracy_parity=None, tpr_parity=None,
+                                              eps_fairness=None)
+            return epoch_metric
 
-        tpr_parity_metric = TruePositiveRateParity(self.prediction, self.label, self.aux,
-                                                self.all_possible_groups, self.all_possible_groups_mask,
-                                                self.other_meta_data).run()
+        # accuracy_parity_metric = AccuracyParity(self.prediction, self.label, self.aux,
+        #                                         self.all_possible_groups, self.all_possible_groups_mask,
+        #                                         self.other_meta_data).run()
+
+        accuracy_parity_metric = None
+
+        # tpr_parity_metric = TruePositiveRateParity(self.prediction, self.label, self.aux,
+        #                                         self.all_possible_groups, self.all_possible_groups_mask,
+        #                                         self.other_meta_data).run()
+        tpr_parity_metric = None
 
         eps_fairness_metric = EpsFairness(self.prediction, self.label, self.aux,
                                                 self.all_possible_groups, self.all_possible_groups_mask,
                                                 self.other_meta_data).run() # this is a dictionary of metric
 
-        # epoch_metric = EpochMetricTracker(accuracy=accuracy, balanced_accuracy=balanced_accuracy,
-        #                                   accuracy_parity=accuracy_parity_metric, tpr_parity=tpr_parity_metric,
-        #                                   eps_fairness=eps_fairness_metric)
-
         epoch_metric = EpochMetricTracker(accuracy=accuracy, balanced_accuracy=balanced_accuracy,
-                                         accuracy_parity=None, tpr_parity=None,
+                                         accuracy_parity=accuracy_parity_metric, tpr_parity=tpr_parity_metric,
                                          eps_fairness=eps_fairness_metric)
 
         return epoch_metric

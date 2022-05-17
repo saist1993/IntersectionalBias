@@ -10,6 +10,7 @@ from models import simple_model, adversarial
 from typing import NamedTuple, Dict
 from utils import plot_and_visualize
 from dataset_iterators import generate_data_iterators
+from training_loops import adversarial_training_loop
 from training_loops import unconstrained_training_loop
 from utils.misc import resolve_device, set_seed, make_opt, CustomError
 
@@ -135,10 +136,16 @@ def runner(runner_arguments:RunnerArguments):
         device=device,
         save_model_as=runner_arguments.save_model_as,
         use_wandb=runner_arguments.use_wandb,
-        other_params={'adversarial_method': runner_arguments.method}
+        other_params={'method': runner_arguments.method}
     )
     # Combine everything
-    output = unconstrained_training_loop.training_loop(training_loop_params)
+
+    if runner_arguments.method == 'unconstrained':
+        output = unconstrained_training_loop.training_loop(training_loop_params)
+    elif runner_arguments.method in ['adversarial_group', 'adversarial_single']:
+        output = adversarial_training_loop.training_loop(training_loop_params)
+    else:
+        raise NotImplementedError
 
     plot_and_visualize.plot_eps_fairness_metric(output['all_train_eps_metric'], "Train ", runner_arguments.use_wandb)
     plot_and_visualize.plot_eps_fairness_metric(output['all_test_eps_metric'], "Test ", runner_arguments.use_wandb)
@@ -152,7 +159,7 @@ if __name__ == '__main__':
         epochs=100,
         adv_loss_scale=0.0,
         save_model_as='dummy',
-        method='adversarial_single',
+        method='adversarial_single', # unconstrained, adversarial_single
         optimizer_name='adam',
         lr=0.001,
         use_lr_schedule=False,

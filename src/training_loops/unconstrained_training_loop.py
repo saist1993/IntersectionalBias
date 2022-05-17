@@ -69,7 +69,8 @@ def per_epoch_metric(epoch_output, epoch_input):
     #                                   true_positive_rate=true_positive_rate_fairness_metric_tracker)
 
     other_meta_data = {
-        'fairness_mode': ['demographic_parity', 'equal_opportunity', 'equal_odds']
+        'fairness_mode': ['demographic_parity', 'equal_opportunity', 'equal_odds'],
+        'no_fairness': False
     }
 
     epoch_metric = calculate_epoch_metric.CalculateEpochMetric(all_prediction, all_label, all_s, other_meta_data).run()
@@ -121,53 +122,6 @@ def train(train_parameters: TrainParameters):
 
 
 
-def train_adversarial(train_parameters: TrainParameters):
-    """Trains the model for one epoch"""
-    model, optimizer, device, criterion, mode = train_parameters.model, train_parameters.optimizer, train_parameters.device, train_parameters.criterion, train_parameters.mode
-
-    adversarial_method = train_parameters.other_params['adversarial_method']
-
-    if mode == 'train':
-        model.train()
-    elif mode == 'evaluate':
-        model.eval()
-    else:
-        raise misc.CustomError("only supports train and evaluate")
-    track_output = []
-
-    for items in tqdm(train_parameters.iterator):
-
-        # Change the device of all the tensors!
-        for key in items.keys():
-            items[key] = items[key].to(device)
-
-        if mode == 'train':
-            optimizer.zero_grad()
-            output = model(items)
-            loss = torch.mean(criterion(output['prediction'], items['labels']))  # As reduction is None.
-            if adversarial_method == 'adversarial_single':
-                loss_aux = torch.mean(criterion(output['adv_outputs'][0], items['aux_flatten']))
-                loss = loss + 0.5*loss_aux  # make this parameterized!
-            loss.backward()
-            optimizer.step()
-        elif mode == 'evaluate':
-            with torch.no_grad():
-                output = model(items)
-                loss = torch.mean(criterion(output['prediction'], items['labels']))  # As reduction is None.
-                if adversarial_method == 'adversarial_single':
-                    loss_aux = torch.mean(criterion(output['adv_outputs'][0], items['aux_flatten']))
-                    loss = loss + 0.5 * loss_aux  # make this parameterized!
-        else:
-            raise misc.CustomError("only supports train and evaluate")
-
-        # Save all batch stuff for further analysis
-        output['loss_batch'] = loss.item()
-        track_output.append(output)
-
-    # Calculate all per-epoch metric by sending outputs and the inputs
-    epoch_metric_tracker, loss = train_parameters.per_epoch_metric(track_output, train_parameters.iterator)
-    return epoch_metric_tracker, loss
-
 
 
 
@@ -200,8 +154,10 @@ def training_loop(training_loop_parameters: TrainingLoopParameters):
             other_params=training_loop_parameters.other_params,
             per_epoch_metric=per_epoch_metric,
             mode='train')
+
         train_epoch_metric, loss = train(train_parameters)
-        log_and_plot_data(epoch_metric=train_epoch_metric, loss=loss, train=True)
+        if training_loop_parameters.use_wandb:
+            log_and_plot_data(epoch_metric=train_epoch_metric, loss=loss, train=True)
         all_train_eps_metrics.append(train_epoch_metric.eps_fairness)
 
         test_parameters = TrainParameters(
@@ -215,7 +171,8 @@ def training_loop(training_loop_parameters: TrainingLoopParameters):
             mode='evaluate')
 
         test_epoch_metric, loss = train(test_parameters)
-        log_and_plot_data(epoch_metric=train_epoch_metric, loss=loss, train=False)
+        if training_loop_parameters.use_wandb:
+            log_and_plot_data(epoch_metric=test_epoch_metric, loss=loss, train=False)
         all_test_eps_metrics.append(test_epoch_metric.eps_fairness)
 
         print(f"train epoch metric is {train_epoch_metric}")

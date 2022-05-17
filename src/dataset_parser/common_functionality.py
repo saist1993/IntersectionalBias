@@ -29,7 +29,7 @@ class CreateIterators:
         labels, encoded_input, aux = zip(*batch)
 
         labels = torch.LongTensor(labels)
-        flatten_aux = torch.LongTensor(self.get_flatten_s(aux))
+        aux_flattened = torch.LongTensor(self.get_flatten_s(aux))
         aux = torch.LongTensor(aux)
         lengths = torch.LongTensor([len(x) for x in encoded_input])
         encoded_input = torch.FloatTensor(encoded_input)
@@ -39,7 +39,7 @@ class CreateIterators:
             'input': encoded_input,
             'lengths': lengths,
             'aux': aux,
-            'flatten_aux': flatten_aux
+            'aux_flattened': aux_flattened
         }
 
         return input_data
