@@ -3,6 +3,7 @@ import wandb
 import config
 import random
 import logging
+import argparse
 import numpy as np
 import torch.nn as nn
 from functools import partial
@@ -25,13 +26,13 @@ class RunnerArguments(NamedTuple):
     batch_size: int
     model: str
     epochs: int = 20
-    adv_loss_scale: float = 0.0
     save_model_as: str = 'dummy'
     method: str = 'unconstrained'
     optimizer_name: str = 'adam'
     lr: float = 0.001
     use_lr_schedule: bool = False
     use_wandb: bool = False
+    adversarial_lambda: float = 0.5
 
 def get_model(method:str, model_name:str, other_meta_data:Dict, device:torch.device):
     number_of_aux_label_per_attribute = other_meta_data['number_of_aux_label_per_attribute']
@@ -136,7 +137,8 @@ def runner(runner_arguments:RunnerArguments):
         device=device,
         save_model_as=runner_arguments.save_model_as,
         use_wandb=runner_arguments.use_wandb,
-        other_params={'method': runner_arguments.method}
+        other_params={'method': runner_arguments.method,
+                      'adversarial_lambda': runner_arguments.adversarial_lambda}
     )
     # Combine everything
 
@@ -147,24 +149,38 @@ def runner(runner_arguments:RunnerArguments):
     else:
         raise NotImplementedError
 
-    plot_and_visualize.plot_eps_fairness_metric(output['all_train_eps_metric'], "Train ", runner_arguments.use_wandb)
-    plot_and_visualize.plot_eps_fairness_metric(output['all_test_eps_metric'], "Test ", runner_arguments.use_wandb)
+
+    return output
 
 if __name__ == '__main__':
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--adversarial_lambda', '-adversarial_lambda', help="the lambda in the adv loss equation", type=float,
+                        default=0.5)
+    parser.add_argument('--method', '-method', help="unconstrained/adversarial_single/adversarial_group", type=str,
+                        default='unconstrained')
+
+    torch.set_num_threads(2)
+    torch.set_num_interop_threads(2)
+    args = parser.parse_args()
+
+
     runner_arguments = RunnerArguments(
         seed=42,
         dataset_name='twitter_hate_speech',
         batch_size=512,
         model='simple_non_linear',
         epochs=100,
-        adv_loss_scale=0.0,
         save_model_as='dummy',
-        method='adversarial_single', # unconstrained, adversarial_single
+        method=args.method, # unconstrained, adversarial_single
         optimizer_name='adam',
         lr=0.001,
         use_lr_schedule=False,
-        use_wandb=True
+        use_wandb=False,
+        adversarial_lambda=args.adversarial_lambda
     )
 
-    runner(runner_arguments=runner_arguments)
+    output = runner(runner_arguments=runner_arguments)
+
+    plot_and_visualize.plot_eps_fairness_metric(output['all_train_eps_metric'], "Train ", runner_arguments.use_wandb)
+    plot_and_visualize.plot_eps_fairness_metric(output['all_test_eps_metric'], "Test ", runner_arguments.use_wandb)
 

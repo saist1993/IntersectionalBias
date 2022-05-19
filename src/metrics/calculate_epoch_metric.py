@@ -30,9 +30,17 @@ class CalculateEpochMetric:
         self.other_meta_data = other_meta_data
 
         # Find all possible groups, as all types of groups (gerrymandering, intersectional) are its subset.
-        self.all_possible_groups = fairness_utils.create_all_possible_groups(number_of_attributes=aux.shape[1])
-        self.all_possible_groups_mask = [fairness_utils.create_mask(data=aux, condition=group) for group in
-                                         self.all_possible_groups]
+        # self.all_possible_groups = fairness_utils.create_all_possible_groups(number_of_attributes=aux.shape[1])
+
+        try:
+            self.all_possible_groups = self.other_meta_data['all_possible_groups']
+            self.all_possible_groups_mask = self.other_meta_data['all_possible_groups_mask']
+        except KeyError:
+            self.all_possible_groups = \
+                fairness_utils.create_all_possible_groups \
+                    (attributes=[list(np.unique(self.aux[:, i])) for i in range(aux.shape[1])])
+            self.all_possible_groups_mask = [fairness_utils.create_mask(data=aux, condition=group) for group in
+                                             self.all_possible_groups]
 
     def run(self):
 

@@ -70,7 +70,7 @@ def per_epoch_metric(epoch_output, epoch_input):
 
     other_meta_data = {
         'fairness_mode': ['demographic_parity', 'equal_opportunity', 'equal_odds'],
-        'no_fairness': False
+        'no_fairness': True
     }
 
     epoch_metric = calculate_epoch_metric.CalculateEpochMetric(all_prediction, all_label, all_s, other_meta_data).run()
@@ -180,5 +180,6 @@ def training_loop(training_loop_parameters: TrainingLoopParameters):
 
     output['all_train_eps_metric'] = all_train_eps_metrics
     output['all_test_eps_metric'] = all_test_eps_metrics
+    output['trained_model_last_epoch'] = training_loop_parameters.model
 
     return output

@@ -5,44 +5,71 @@ from typing import List, Optional
 import numpy as np
 
 
+# def create_mask(data, condition):
+#     """
+#     :param data: np.array
+#     :param condition: a row of that numpy array
+#     :return:
+#     """
+#     # Step1: Find all occurances of x.
+#     dont_care_indices = [i for i, x in enumerate(condition) if str(x).lower() == "x"]
+#
+#     # Step2: replace all occurances of x with 0. Here 0 is just arbitary as we don't care about these indices
+#     # However, it is necessary as creating mask requires only 0,1.
+#     updated_condition = []
+#     for index, c in enumerate(condition):
+#         if index in dont_care_indices:
+#             updated_condition.append(0)
+#         else:
+#             updated_condition.append(c)
+#
+#     # Step3: Create the mask
+#     _mask = data == updated_condition
+#
+#     # Step3: Iterate over the column of the mask and ignore all those columns which had x initially.
+#     mask = []
+#     for index, i in enumerate(range(data.shape[1])):
+#         if index not in dont_care_indices:
+#             mask.append(_mask[:, i])
+#
+#     # Step4: if the mask is empty, it mean all columns are ignore. In that case, create a dummy mask with all True
+#     if not mask:
+#         mask = [np.full(data.shape[0], True, dtype=bool)]
+#     # Step4: reduce the mask.
+#     mask = np.logical_and.reduce(mask)
+#
+#     new_mask = create_mask_V2(data, condition)
+#
+#     if not np.array_equal(mask, new_mask):
+#         print("Heheh")
+#     return mask
+
+
 def create_mask(data, condition):
-    """
-    :param data: np.array
-    :param condition: a row of that numpy array
-    :return:
-    """
-    # Step1: Find all occurances of x.
-    dont_care_indices = [i for i, x in enumerate(condition) if str(x).lower() == "x"]
 
-    # Step2: replace all occurances of x with 0. Here 0 is just arbitary as we don't care about these indices
-    # However, it is necessary as creating mask requires only 0,1.
-    updated_condition = []
-    for index, c in enumerate(condition):
-        if index in dont_care_indices:
-            updated_condition.append(0)
+    keep_indices = []
+
+    for index, i in enumerate(condition):
+        if i != 'x':
+            keep_indices.append(i == data[:, index])
         else:
-            updated_condition.append(c)
+            keep_indices.append(np.ones_like(data[:,0], dtype='bool'))
+    
+    mask = np.ones_like(data[:,0], dtype='bool')
 
-    # Step3: Create the mask
-    _mask = data == updated_condition
+    # mask = [np.logical_and(mask, i) for i in keep_indices]
 
-    # Step3: Iterate over the column of the mask and ignore all those columns which had x initially.
-    mask = []
-    for index, i in enumerate(range(data.shape[1])):
-        if index not in dont_care_indices:
-            mask.append(_mask[:, i])
-
-    # Step4: if the mask is empty, it mean all columns are ignore. In that case, create a dummy mask with all True
-    if not mask:
-        mask = [np.full(data.shape[0], True, dtype=bool)]
-    # Step4: reduce the mask.
-    mask = np.logical_and.reduce(mask)
+    for i in keep_indices:
+        mask = np.logical_and(mask, i)
     return mask
 
+# def create_all_possible_groups(number_of_attributes: int):
+#     return [i for i in product([0, 1, 'x'], repeat=number_of_attributes)]
 
-def create_all_possible_groups(number_of_attributes: int):
-    return [i for i in product([0, 1, 'x'], repeat=number_of_attributes)]
 
+def create_all_possible_groups(attributes: List[list]):
+    attributes = [attribute + ['x'] for attribute in attributes]
+    return list(product(*attributes))
 
 def get_gerrymandering_groups(groups: List):
     tuple_to_remove = tuple(['x' for _ in range(len(groups[0]))])

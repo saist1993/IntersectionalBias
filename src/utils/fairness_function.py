@@ -40,6 +40,9 @@ def create_mask(data, condition):
 
 
 def create_all_possible_groups(number_of_attributes: int):
+    # This is only valid for binary attributes
+    raise Warning("This function is only valid for attributes with binary value. "
+                  "This might work for non binary attribute, but check")
     return [i for i in product([0, 1, 'x'], repeat=number_of_attributes)]
 
 

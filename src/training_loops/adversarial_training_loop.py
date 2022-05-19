@@ -70,7 +70,7 @@ def per_epoch_metric(epoch_output, epoch_input):
 
     other_meta_data = {
         'fairness_mode': ['demographic_parity', 'equal_opportunity', 'equal_odds'],
-        'no_fairness': False
+        'no_fairness': True
     }
 
     epoch_metric = calculate_epoch_metric.CalculateEpochMetric(all_prediction, all_label, all_s, other_meta_data).run()
@@ -84,6 +84,8 @@ def train(train_parameters: TrainParameters):
     model, optimizer, device, criterion, mode = train_parameters.model, train_parameters.optimizer, train_parameters.device, train_parameters.criterion, train_parameters.mode
 
     adversarial_method = train_parameters.other_params['method']
+    adversarial_lambda = train_parameters.other_params['adversarial_lambda']
+
 
     if mode == 'train':
         model.train()
@@ -105,12 +107,12 @@ def train(train_parameters: TrainParameters):
             loss = torch.mean(criterion(output['prediction'], items['labels']))  # As reduction is None.
             if adversarial_method == 'adversarial_single':
                 loss_aux = torch.mean(criterion(output['adv_outputs'][0], items['aux_flattened']))
-                loss = loss + 0.5*loss_aux  # make this parameterized!
+                loss = loss + adversarial_lambda*loss_aux  # make this parameterized!
             elif adversarial_method == 'adversarial_group':
                 loss_aux = torch.mean(
                     torch.tensor([torch.mean(criterion(output['adv_outputs'][i], items['aux'][:,i])) for i in
                      range(len(output['adv_outputs']))]))
-                loss = loss + 0.5 * loss_aux
+                loss = loss + adversarial_lambda * loss_aux
             loss.backward()
             optimizer.step()
         elif mode == 'evaluate':
@@ -119,12 +121,12 @@ def train(train_parameters: TrainParameters):
                 loss = torch.mean(criterion(output['prediction'], items['labels']))  # As reduction is None.
                 if adversarial_method == 'adversarial_single':
                     loss_aux = torch.mean(criterion(output['adv_outputs'][0], items['aux_flattened']))
-                    loss = loss + 0.5 * loss_aux  # make this parameterized!
+                    loss = loss + adversarial_lambda * loss_aux  # make this parameterized!
                 elif adversarial_method == 'adversarial_group':
                     loss_aux = torch.mean(
                     torch.tensor([torch.mean(criterion(output['adv_outputs'][i], items['aux'][:,i])) for i in
                      range(len(output['adv_outputs']))]))
-                    loss = loss + 0.5 * loss_aux
+                    loss = loss + adversarial_lambda * loss_aux
         else:
             raise misc.CustomError("only supports train and evaluate")
 
@@ -191,5 +193,6 @@ def training_loop(training_loop_parameters: TrainingLoopParameters):
 
     output['all_train_eps_metric'] = all_train_eps_metrics
     output['all_test_eps_metric'] = all_test_eps_metrics
+    output['trained_model_last_epoch'] = training_loop_parameters.model
 
     return output
