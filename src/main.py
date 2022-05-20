@@ -33,6 +33,7 @@ class RunnerArguments(NamedTuple):
     use_lr_schedule: bool = False
     use_wandb: bool = False
     adversarial_lambda: float = 0.5
+    dataset_size: int = 10000
 
 def get_model(method:str, model_name:str, other_meta_data:Dict, device:torch.device):
     number_of_aux_label_per_attribute = other_meta_data['number_of_aux_label_per_attribute']
@@ -92,6 +93,16 @@ def runner(runner_arguments:RunnerArguments):
      method - adversarial_group - 2 adversary with one adversary having adv_dim as 2 and other as 3
      method - adversarial_intersectional - 6 adversarial with each adversarial predicting the presence of group!
      """
+    seed = 42
+    torch.manual_seed(seed)
+    torch.cuda.manual_seed(seed)
+    torch.cuda.manual_seed_all(seed)
+    random.seed(seed)
+    np.random.seed(seed)
+    torch.backends.cudnn.deterministic = True
+    torch.backends.cudnn.benchmark = False
+
+
 
     # Setting up logging
     logger.info(f"arguemnts: {locals()}")
@@ -113,7 +124,8 @@ def runner(runner_arguments:RunnerArguments):
         'batch_size': runner_arguments.batch_size,
         'lm_encoder_type': 'bert-base-uncased',
         'lm_encoding_to_use': 'use_cls',
-        'return_numpy_array': False,
+        'return_numpy_array': True,
+        'dataset_size': 1000
     }
     iterators, other_meta_data = generate_data_iterators(dataset_name=runner_arguments.dataset_name, **iterator_params)
 
@@ -149,6 +161,7 @@ def runner(runner_arguments:RunnerArguments):
     else:
         raise NotImplementedError
 
+    output['raw_data'] = other_meta_data['raw_data']
 
     return output
 
@@ -166,7 +179,7 @@ if __name__ == '__main__':
 
     runner_arguments = RunnerArguments(
         seed=42,
-        dataset_name='twitter_hate_speech',
+        dataset_name='gaussian_toy', # twitter_hate_speech
         batch_size=512,
         model='simple_non_linear',
         epochs=100,
@@ -176,7 +189,8 @@ if __name__ == '__main__':
         lr=0.001,
         use_lr_schedule=False,
         use_wandb=False,
-        adversarial_lambda=args.adversarial_lambda
+        adversarial_lambda=args.adversarial_lambda,
+        dataset_size=10000
     )
 
     output = runner(runner_arguments=runner_arguments)
