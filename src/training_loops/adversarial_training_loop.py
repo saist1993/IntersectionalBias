@@ -70,7 +70,7 @@ def per_epoch_metric(epoch_output, epoch_input):
 
     other_meta_data = {
         'fairness_mode': ['demographic_parity', 'equal_opportunity', 'equal_odds'],
-        'no_fairness': True
+        'no_fairness': False
     }
 
     epoch_metric = calculate_epoch_metric.CalculateEpochMetric(all_prediction, all_label, all_s, other_meta_data).run()

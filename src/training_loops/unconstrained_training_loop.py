@@ -70,7 +70,7 @@ def per_epoch_metric(epoch_output, epoch_input):
 
     other_meta_data = {
         'fairness_mode': ['demographic_parity', 'equal_opportunity', 'equal_odds'],
-        'no_fairness': True
+        'no_fairness': False
     }
 
     epoch_metric = calculate_epoch_metric.CalculateEpochMetric(all_prediction, all_label, all_s, other_meta_data).run()
@@ -143,6 +143,7 @@ def training_loop(training_loop_parameters: TrainingLoopParameters):
     output = {}
     all_train_eps_metrics = []
     all_test_eps_metrics = []
+    best_test_accuracy = 0.0
 
     for _ in range(training_loop_parameters.n_epochs):
         train_parameters = TrainParameters(
@@ -178,8 +179,17 @@ def training_loop(training_loop_parameters: TrainingLoopParameters):
         print(f"train epoch metric is {train_epoch_metric}")
         print(f"test epoch metric is {test_epoch_metric}")
 
+        if best_test_accuracy < test_epoch_metric.accuracy:
+            best_test_accuracy = test_epoch_metric.accuracy
+            if training_loop_parameters.save_model_as:
+                print("model saved")
+                torch.save(training_loop_parameters.model.state_dict(), training_loop_parameters.save_model_as + ".pt")
+
+
     output['all_train_eps_metric'] = all_train_eps_metrics
     output['all_test_eps_metric'] = all_test_eps_metrics
     output['trained_model_last_epoch'] = training_loop_parameters.model
+
+
 
     return output
