@@ -6,10 +6,11 @@ import logging
 import argparse
 import numpy as np
 import torch.nn as nn
+from pathlib import Path
 from functools import partial
-from models import simple_model, adversarial
-from typing import NamedTuple, Dict
 from utils import plot_and_visualize
+from models import simple_model, adversarial
+from typing import NamedTuple, Dict, Optional
 from dataset_iterators import generate_data_iterators
 from training_loops import adversarial_training_loop
 from training_loops import unconstrained_training_loop
@@ -26,7 +27,7 @@ class RunnerArguments(NamedTuple):
     batch_size: int
     model: str
     epochs: int = 20
-    save_model_as: str = 'dummy'
+    save_model_as: str = None
     method: str = 'unconstrained'
     optimizer_name: str = 'adam'
     lr: float = 0.001
@@ -34,9 +35,14 @@ class RunnerArguments(NamedTuple):
     use_wandb: bool = False
     adversarial_lambda: float = 0.5
     dataset_size: int = 10000
+    attribute_id: Optional[int] = None
 
 def get_model(method:str, model_name:str, other_meta_data:Dict, device:torch.device):
     number_of_aux_label_per_attribute = other_meta_data['number_of_aux_label_per_attribute']
+    attribute_id = other_meta_data['attribute_id']
+    if attribute_id is not None:
+        number_of_aux_label_per_attribute = [number_of_aux_label_per_attribute[attribute_id]]
+
     if model_name == 'simple_non_linear':
 
         model_arch = {
@@ -81,6 +87,8 @@ def get_optimizer(optimizer_name:str):
     return opt_fn
 
 
+
+
 def runner(runner_arguments:RunnerArguments):
     """
      Orchestrates the whole run with given hyper-params
@@ -93,16 +101,6 @@ def runner(runner_arguments:RunnerArguments):
      method - adversarial_group - 2 adversary with one adversary having adv_dim as 2 and other as 3
      method - adversarial_intersectional - 6 adversarial with each adversarial predicting the presence of group!
      """
-    seed = 42
-    torch.manual_seed(seed)
-    torch.cuda.manual_seed(seed)
-    torch.cuda.manual_seed_all(seed)
-    random.seed(seed)
-    np.random.seed(seed)
-    torch.backends.cudnn.deterministic = True
-    torch.backends.cudnn.benchmark = False
-
-
 
     # Setting up logging
     logger.info(f"arguemnts: {locals()}")
@@ -129,9 +127,12 @@ def runner(runner_arguments:RunnerArguments):
     }
     iterators, other_meta_data = generate_data_iterators(dataset_name=runner_arguments.dataset_name, **iterator_params)
 
+    other_meta_data['attribute_id'] = runner_arguments.attribute_id
+
     # Create model
     model = get_model(method=runner_arguments.method, model_name=runner_arguments.model, other_meta_data=other_meta_data, device=device)
     model = model.to(device)
+
 
     # Create optimizer and loss function
     optimizer = make_opt(model, get_optimizer(runner_arguments.optimizer_name), lr=runner_arguments.lr)
@@ -150,7 +151,8 @@ def runner(runner_arguments:RunnerArguments):
         save_model_as=runner_arguments.save_model_as,
         use_wandb=runner_arguments.use_wandb,
         other_params={'method': runner_arguments.method,
-                      'adversarial_lambda': runner_arguments.adversarial_lambda}
+                      'adversarial_lambda': runner_arguments.adversarial_lambda,
+                      'attribute_id': runner_arguments.attribute_id}
     )
     # Combine everything
 
@@ -170,7 +172,9 @@ if __name__ == '__main__':
     parser.add_argument('--adversarial_lambda', '-adversarial_lambda', help="the lambda in the adv loss equation", type=float,
                         default=0.5)
     parser.add_argument('--method', '-method', help="unconstrained/adversarial_single/adversarial_group", type=str,
-                        default='unconstrained')
+                        default='adversarial_group')
+    parser.add_argument('--save_model_as', '-save_model_as', help="unconstrained/adversarial_single/adversarial_group", type=str,
+                        default=None)
 
     torch.set_num_threads(2)
     torch.set_num_interop_threads(2)
@@ -179,18 +183,19 @@ if __name__ == '__main__':
 
     runner_arguments = RunnerArguments(
         seed=42,
-        dataset_name='gaussian_toy', # twitter_hate_speech
-        batch_size=512,
+        dataset_name='twitter_hate_speech', # twitter_hate_speech
+        batch_size=1024,
         model='simple_non_linear',
         epochs=100,
-        save_model_as='dummy',
+        save_model_as=args.save_model_as,
         method=args.method, # unconstrained, adversarial_single
         optimizer_name='adam',
         lr=0.001,
         use_lr_schedule=False,
-        use_wandb=False,
+        use_wandb=True,
         adversarial_lambda=args.adversarial_lambda,
-        dataset_size=10000
+        dataset_size=10000,
+        attribute_id=None # which attribute to care about!
     )
 
     output = runner(runner_arguments=runner_arguments)

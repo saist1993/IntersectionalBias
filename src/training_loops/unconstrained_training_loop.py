@@ -1,10 +1,10 @@
 from dataclasses import dataclass
-from typing import Dict, Callable
+from typing import Dict, Callable, Optional
 
-import numpy as np
 import torch
-import torch.nn as nn
 import wandb
+import numpy as np
+import torch.nn as nn
 from tqdm.auto import tqdm
 
 from metrics import calculate_epoch_metric
@@ -34,9 +34,9 @@ class TrainingLoopParameters:
     optimizer: torch.optim
     criterion: Callable
     device: torch.device
-    save_model_as: str
     use_wandb: bool
     other_params: Dict
+    save_model_as: Optional[str]
 
 
 def per_epoch_metric(epoch_output, epoch_input):

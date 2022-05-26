@@ -85,6 +85,7 @@ def train(train_parameters: TrainParameters):
 
     adversarial_method = train_parameters.other_params['method']
     adversarial_lambda = train_parameters.other_params['adversarial_lambda']
+    attribute_id = train_parameters.other_params['attribute_id']
 
 
     if mode == 'train':
@@ -109,9 +110,12 @@ def train(train_parameters: TrainParameters):
                 loss_aux = torch.mean(criterion(output['adv_outputs'][0], items['aux_flattened']))
                 loss = loss + adversarial_lambda*loss_aux  # make this parameterized!
             elif adversarial_method == 'adversarial_group':
-                loss_aux = torch.mean(
-                    torch.tensor([torch.mean(criterion(output['adv_outputs'][i], items['aux'][:,i])) for i in
-                     range(len(output['adv_outputs']))]))
+                if attribute_id is not None:
+                    loss_aux = torch.mean(criterion(output['adv_outputs'][0], items['aux'][:,attribute_id]))
+                else:
+                    loss_aux = torch.mean(
+                        torch.tensor([torch.mean(criterion(output['adv_outputs'][i], items['aux'][:,i])) for i in
+                         range(len(output['adv_outputs']))]))
                 loss = loss + adversarial_lambda * loss_aux
             loss.backward()
             optimizer.step()
@@ -123,9 +127,12 @@ def train(train_parameters: TrainParameters):
                     loss_aux = torch.mean(criterion(output['adv_outputs'][0], items['aux_flattened']))
                     loss = loss + adversarial_lambda * loss_aux  # make this parameterized!
                 elif adversarial_method == 'adversarial_group':
-                    loss_aux = torch.mean(
-                    torch.tensor([torch.mean(criterion(output['adv_outputs'][i], items['aux'][:,i])) for i in
-                     range(len(output['adv_outputs']))]))
+                    if attribute_id is not None:
+                        loss_aux = torch.mean(criterion(output['adv_outputs'][0], items['aux'][:, attribute_id]))
+                    else:
+                        loss_aux = torch.mean(
+                        torch.tensor([torch.mean(criterion(output['adv_outputs'][i], items['aux'][:,i])) for i in
+                         range(len(output['adv_outputs']))]))
                     loss = loss + adversarial_lambda * loss_aux
         else:
             raise misc.CustomError("only supports train and evaluate")
@@ -157,6 +164,7 @@ def training_loop(training_loop_parameters: TrainingLoopParameters):
     all_train_eps_metrics = []
     all_test_eps_metrics = []
 
+    best_test_accuracy = 0.0
     for _ in range(training_loop_parameters.n_epochs):
         train_parameters = TrainParameters(
             model=training_loop_parameters.model,
@@ -190,9 +198,16 @@ def training_loop(training_loop_parameters: TrainingLoopParameters):
 
         print(f"train epoch metric is {train_epoch_metric}")
         print(f"test epoch metric is {test_epoch_metric}")
+        if best_test_accuracy < test_epoch_metric.accuracy:
+            best_test_accuracy = test_epoch_metric.accuracy
+            if training_loop_parameters.save_model_as:
+                print("model saved")
+                torch.save(training_loop_parameters.model.state_dict(), training_loop_parameters.save_model_as + ".pt")
+
 
     output['all_train_eps_metric'] = all_train_eps_metrics
     output['all_test_eps_metric'] = all_test_eps_metrics
     output['trained_model_last_epoch'] = training_loop_parameters.model
+
 
     return output
