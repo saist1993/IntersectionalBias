@@ -70,7 +70,7 @@ def per_epoch_metric(epoch_output, epoch_input):
 
     other_meta_data = {
         'fairness_mode': ['demographic_parity', 'equal_opportunity', 'equal_odds'],
-        'no_fairness': False
+        'no_fairness': True
     }
 
     epoch_metric = calculate_epoch_metric.CalculateEpochMetric(all_prediction, all_label, all_s, other_meta_data).run()
@@ -112,11 +112,16 @@ def train(train_parameters: TrainParameters):
             elif adversarial_method == 'adversarial_group':
                 if attribute_id is not None:
                     loss_aux = torch.mean(criterion(output['adv_outputs'][0], items['aux'][:,attribute_id]))
+                    loss = loss + adversarial_lambda * loss_aux
                 else:
-                    loss_aux = torch.mean(
-                        torch.tensor([torch.mean(criterion(output['adv_outputs'][i], items['aux'][:,i])) for i in
-                         range(len(output['adv_outputs']))]))
-                loss = loss + adversarial_lambda * loss_aux
+                    for i in range(len(output['adv_outputs'])):
+                        loss_interm = torch.mean(criterion(output['adv_outputs'][i], items['aux'][:,i]))
+                        loss = loss + adversarial_lambda * loss_interm
+
+                    # loss_aux = torch.mean(
+                    #     torch.tensor([torch.mean(criterion(output['adv_outputs'][i], items['aux'][:,i])) for i in
+                    #      range(len(output['adv_outputs']))], requires_grad=True))
+                # loss = loss + adversarial_lambda * loss_aux
             loss.backward()
             optimizer.step()
         elif mode == 'evaluate':

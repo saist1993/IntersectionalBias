@@ -170,9 +170,9 @@ def runner(runner_arguments:RunnerArguments):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--adversarial_lambda', '-adversarial_lambda', help="the lambda in the adv loss equation", type=float,
-                        default=0.5)
+                        default=0.0)
     parser.add_argument('--method', '-method', help="unconstrained/adversarial_single/adversarial_group", type=str,
-                        default='adversarial_group')
+                        default='adversarial_single')
     parser.add_argument('--save_model_as', '-save_model_as', help="unconstrained/adversarial_single/adversarial_group", type=str,
                         default=None)
 
@@ -187,7 +187,7 @@ if __name__ == '__main__':
         dataset_name='twitter_hate_speech', # twitter_hate_speech
         batch_size=1024,
         model='simple_non_linear',
-        epochs=100,
+        epochs=25,
         save_model_as=args.save_model_as,
         method=args.method, # unconstrained, adversarial_single
         optimizer_name='adam',
