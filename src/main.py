@@ -187,7 +187,7 @@ if __name__ == '__main__':
         dataset_name='twitter_hate_speech', # twitter_hate_speech
         batch_size=1024,
         model='simple_non_linear',
-        epochs=25,
+        epochs=120,
         save_model_as=args.save_model_as,
         method=args.method, # unconstrained, adversarial_single
         optimizer_name='adam',
