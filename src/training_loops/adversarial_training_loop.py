@@ -39,7 +39,7 @@ class TrainingLoopParameters:
     other_params: Dict
 
 
-def per_epoch_metric(epoch_output, epoch_input):
+def per_epoch_metric(epoch_output, epoch_input, attribute_id=None):
     """
     :param epoch_output: access all the batch output.
     :param epoch_input: Iterator to access the gold data and inputs
@@ -50,14 +50,40 @@ def per_epoch_metric(epoch_output, epoch_input):
     all_prediction = []
     all_loss = []
     all_s = []
+    all_adversarial_output = []
+    all_s_flatten = []
+
+    flag = True # if the output is of the form adversarial_single
+    if type(epoch_output[0]['adv_outputs']) is  list:
+        flag = False
+
+    # Now there are two variations of s
+    # These are batch_output['adv_outputs'] type is list or not a list
     for batch_output, batch_input in zip(epoch_output, epoch_input):
         all_prediction.append(batch_output['prediction'].detach().numpy())
         all_loss.append(batch_output['loss_batch'])
         all_label.append(batch_input['labels'].numpy())
         all_s.append(batch_input['aux'].numpy())
+        if attribute_id is not None:
+            all_s_flatten.append(batch_input['aux'][:,attribute_id].numpy())
+        else:
+            all_s_flatten.append(batch_input['aux_flattened'].numpy())
+        if flag:
+            all_adversarial_output.append(batch_output['adv_outputs'].detach().numpy())
+
+        # all_s_prediction(batch_output[''])
+
+    if not flag:
+        # this is a adversarial group
+        for j in range(len(epoch_output[0]['adv_outputs'])):
+            all_adversarial_output.append(torch.vstack([i['adv_outputs'][j] for i in epoch_output]).argmax(1).detach().numpy())
+    else:
+        all_adversarial_output = np.vstack(all_adversarial_output).argmax(1)
     all_prediction = np.vstack(all_prediction).argmax(1)
     all_label = np.hstack(all_label)
     all_s = np.vstack(all_s)
+    all_s_flatten = np.hstack(all_s_flatten)
+
 
     # Calculate accuracy
     # accuracy = fairness_functions.calculate_accuracy_classification(predictions=all_prediction, labels=all_label)
@@ -70,7 +96,9 @@ def per_epoch_metric(epoch_output, epoch_input):
 
     other_meta_data = {
         'fairness_mode': ['demographic_parity', 'equal_opportunity', 'equal_odds'],
-        'no_fairness': False
+        'no_fairness': True,
+        'adversarial_output': all_adversarial_output,
+        'aux_flattened': all_s_flatten
     }
 
     epoch_metric = calculate_epoch_metric.CalculateEpochMetric(all_prediction, all_label, all_s, other_meta_data).run()
@@ -109,10 +137,13 @@ def train(train_parameters: TrainParameters):
             if adversarial_method == 'adversarial_single':
                 loss_aux = torch.mean(criterion(output['adv_outputs'][0], items['aux_flattened']))
                 loss = loss + adversarial_lambda*loss_aux  # make this parameterized!
+                output['adv_outputs'] = output['adv_outputs'][0]    # makes it easier for further changes
             elif adversarial_method == 'adversarial_group':
                 if attribute_id is not None:
                     loss_aux = torch.mean(criterion(output['adv_outputs'][0], items['aux'][:,attribute_id]))
                     loss = loss + adversarial_lambda * loss_aux
+                    output['adv_outputs'] = output['adv_outputs'][0]
+
                 else:
                     for i in range(len(output['adv_outputs'])):
                         loss_interm = torch.mean(criterion(output['adv_outputs'][i], items['aux'][:,i]))
@@ -131,6 +162,7 @@ def train(train_parameters: TrainParameters):
                 if adversarial_method == 'adversarial_single':
                     loss_aux = torch.mean(criterion(output['adv_outputs'][0], items['aux_flattened']))
                     loss = loss + adversarial_lambda * loss_aux  # make this parameterized!
+                    output['adv_outputs'] = output['adv_outputs'][0]  # makes it easier for further changes
                 elif adversarial_method == 'adversarial_group':
                     if attribute_id is not None:
                         loss_aux = torch.mean(criterion(output['adv_outputs'][0], items['aux'][:, attribute_id]))
@@ -147,7 +179,7 @@ def train(train_parameters: TrainParameters):
         track_output.append(output)
 
     # Calculate all per-epoch metric by sending outputs and the inputs
-    epoch_metric_tracker, loss = train_parameters.per_epoch_metric(track_output, train_parameters.iterator)
+    epoch_metric_tracker, loss = train_parameters.per_epoch_metric(track_output, train_parameters.iterator, attribute_id)
     return epoch_metric_tracker, loss
 
 

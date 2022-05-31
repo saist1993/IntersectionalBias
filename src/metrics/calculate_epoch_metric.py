@@ -50,6 +50,19 @@ class CalculateEpochMetric:
 
         balanced_accuracy = balanced_accuracy_score(self.label, self.prediction)
 
+        if self.other_meta_data['adversarial_output'] is not None:
+            adv_output = self.other_meta_data['adversarial_output']
+            if type(adv_output) is not list:
+                adv_accuracy = fairness_utils.calculate_accuracy_classification(predictions=adv_output,
+                                                                            labels=self.other_meta_data['aux_flattened'])
+            else:
+                adv_accuracy = []
+                for index in range(len(adv_output)):
+                    adv_accuracy .append(fairness_utils.calculate_accuracy_classification(predictions=adv_output[index],
+                                                                                    labels=self.aux[:,index]))
+                adv_accuracy = np.mean(adv_accuracy)
+            print(f"ADV accuracy is ********{adv_accuracy}*******************")
+
         if self.other_meta_data['no_fairness']:
             epoch_metric = EpochMetricTracker(accuracy=accuracy, balanced_accuracy=balanced_accuracy,
                                               accuracy_parity=None, tpr_parity=None,

@@ -170,9 +170,9 @@ def runner(runner_arguments:RunnerArguments):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--adversarial_lambda', '-adversarial_lambda', help="the lambda in the adv loss equation", type=float,
-                        default=0.0)
+                        default=1.0)
     parser.add_argument('--method', '-method', help="unconstrained/adversarial_single/adversarial_group", type=str,
-                        default='adversarial_single')
+                        default='adversarial_group')
     parser.add_argument('--save_model_as', '-save_model_as', help="unconstrained/adversarial_single/adversarial_group", type=str,
                         default=None)
 
@@ -193,10 +193,10 @@ if __name__ == '__main__':
         optimizer_name='adam',
         lr=0.001,
         use_lr_schedule=False,
-        use_wandb=True,
+        use_wandb=False,
         adversarial_lambda=args.adversarial_lambda,
         dataset_size=10000,
-        attribute_id=None # which attribute to care about!
+        attribute_id=1  # which attribute to care about!
     )
 
     output = runner(runner_arguments=runner_arguments)
