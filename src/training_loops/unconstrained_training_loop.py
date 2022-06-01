@@ -7,9 +7,10 @@ import numpy as np
 import torch.nn as nn
 from tqdm.auto import tqdm
 
-from metrics import calculate_epoch_metric
+from metrics import calculate_epoch_metric, fairness_utils
 from utils import misc
 
+from itertools import combinations
 
 # configuring matplot lib
 
@@ -37,6 +38,24 @@ class TrainingLoopParameters:
     use_wandb: bool
     other_params: Dict
     save_model_as: Optional[str]
+
+
+def get_fairness_loss_equal_opportunity(loss, preds, aux, label, all_patterns):
+    losses = []
+    label_mask = label == 1
+    for pattern in all_patterns:
+        aux_mask = torch.einsum("ij->i", torch.eq(aux, pattern)) > aux.shape[1] - 1
+        final_mask = torch.logical_and(label_mask, aux_mask)
+        _loss = loss[final_mask]
+        if len(_loss) > 0:
+            losses.append(torch.mean(_loss))
+    final_loss = []
+    for l1, l2 in combinations(losses, 2):
+        final_loss.append(abs(l1-l2))
+    if len(losses) == 0:
+        return None
+
+    return torch.stack(losses).sum()
 
 
 def per_epoch_metric(epoch_output, epoch_input):
@@ -91,6 +110,16 @@ def train(train_parameters: TrainParameters):
         raise misc.CustomError("only supports train and evaluate")
     track_output = []
 
+    all_s = []
+    for items in train_parameters.iterator:
+        all_s.append(items['aux'].numpy())
+    all_s = np.vstack(all_s)
+    all_independent_group_patterns = fairness_utils.create_all_possible_groups \
+        (attributes=[list(np.unique(all_s[:, i])) for i in range(all_s.shape[1])])
+    all_independent_group_patterns = [torch.tensor(i) for i in all_independent_group_patterns if 'x' not in i]
+
+
+
     for items in tqdm(train_parameters.iterator):
 
         # Change the device of all the tensors!
@@ -100,7 +129,14 @@ def train(train_parameters: TrainParameters):
         if mode == 'train':
             optimizer.zero_grad()
             output = model(items)
-            loss = torch.mean(criterion(output['prediction'], items['labels']))  # As reduction is None.
+            loss = criterion(output['prediction'], items['labels'])
+            fairness_loss = \
+                get_fairness_loss_equal_opportunity \
+                    (loss, output['prediction'], items['aux'], items['labels'], all_independent_group_patterns)
+            if fairness_loss:
+                loss = torch.mean(loss) + fairness_loss
+            else:
+                loss = torch.mean(loss)
             loss.backward()
             optimizer.step()
         elif mode == 'evaluate':

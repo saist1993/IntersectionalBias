@@ -138,7 +138,7 @@ def train(train_parameters: TrainParameters):
                 loss_aux = torch.mean(criterion(output['adv_outputs'][0], items['aux_flattened']))
                 loss = loss + adversarial_lambda*loss_aux  # make this parameterized!
                 output['adv_outputs'] = output['adv_outputs'][0]    # makes it easier for further changes
-            elif adversarial_method == 'adversarial_group':
+            elif adversarial_method == 'adversarial_group' or adversarial_method == 'adversarial_moe':
                 if attribute_id is not None:
                     loss_aux = torch.mean(criterion(output['adv_outputs'][0], items['aux'][:,attribute_id]))
                     loss = loss + adversarial_lambda * loss_aux

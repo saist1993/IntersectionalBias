@@ -9,11 +9,12 @@ import torch.nn as nn
 from pathlib import Path
 from functools import partial
 from utils import plot_and_visualize
-from models import simple_model, adversarial
+from models import simple_model, adversarial, adversarial_moe
 from typing import NamedTuple, Dict, Optional
 from dataset_iterators import generate_data_iterators
 from training_loops import adversarial_training_loop
 from training_loops import unconstrained_training_loop
+from training_loops import adversarial_moe_training_loop
 from utils.misc import resolve_device, set_seed, make_opt, CustomError
 
 # Setting up logger
@@ -66,8 +67,9 @@ def get_model(method:str, model_name:str, other_meta_data:Dict, device:torch.dev
         elif method == 'adversarial_group':
             model_params['model_arch']['adv'] = {'output_dim': number_of_aux_label_per_attribute}
             model = adversarial.SimpleNonLinear(model_params)
-        elif method == 'adversarial_intersectional':
-            pass
+        elif method == 'adversarial_moe':
+            model_params['model_arch']['adv'] = {'output_dim': number_of_aux_label_per_attribute}
+            model = adversarial_moe.SimpleNonLinear(model_params)
     else:
         raise NotImplementedError
 
@@ -160,6 +162,8 @@ def runner(runner_arguments:RunnerArguments):
         output = unconstrained_training_loop.training_loop(training_loop_params)
     elif runner_arguments.method in ['adversarial_group', 'adversarial_single']:
         output = adversarial_training_loop.training_loop(training_loop_params)
+    elif runner_arguments.method in ['adversarial_moe']:
+        output = adversarial_moe_training_loop.training_loop(training_loop_params)
     else:
         raise NotImplementedError
 
@@ -170,11 +174,11 @@ def runner(runner_arguments:RunnerArguments):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--adversarial_lambda', '-adversarial_lambda', help="the lambda in the adv loss equation", type=float,
-                        default=1.0)
+                        default=0.5)
     parser.add_argument('--method', '-method', help="unconstrained/adversarial_single/adversarial_group", type=str,
-                        default='adversarial_group')
+                        default='unconstrained')
     parser.add_argument('--save_model_as', '-save_model_as', help="unconstrained/adversarial_single/adversarial_group", type=str,
-                        default=None)
+                        default='unconstrained_fairness_loss')
 
     torch.set_num_threads(2)
     torch.set_num_interop_threads(2)
@@ -187,7 +191,7 @@ if __name__ == '__main__':
         dataset_name='twitter_hate_speech', # twitter_hate_speech
         batch_size=1024,
         model='simple_non_linear',
-        epochs=120,
+        epochs=50,
         save_model_as=args.save_model_as,
         method=args.method, # unconstrained, adversarial_single
         optimizer_name='adam',
@@ -196,7 +200,7 @@ if __name__ == '__main__':
         use_wandb=False,
         adversarial_lambda=args.adversarial_lambda,
         dataset_size=10000,
-        attribute_id=1  # which attribute to care about!
+        attribute_id=None  # which attribute to care about!
     )
 
     output = runner(runner_arguments=runner_arguments)
