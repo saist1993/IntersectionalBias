@@ -1,6 +1,7 @@
 import os
 import torch
 import wandb
+import logging
 import numpy as np
 from pathlib import Path
 from dataclasses import dataclass
@@ -8,6 +9,7 @@ from itertools import combinations
 from metrics import calculate_epoch_metric
 from typing import Dict, Callable, Optional
 
+logger = logging.getLogger(__name__)
 
 @dataclass
 class TrainParameters:
@@ -81,7 +83,7 @@ def per_epoch_metric(epoch_output, epoch_input, attribute_id=None):
         else:
             all_s_flatten.append(batch_input['aux_flattened'].numpy())
         if flag:
-            all_adversarial_output.append(batch_output['adv_outputs'].detach().numpy())
+            all_adversarial_output.append(batch_output['adv_outputs'].detach().numpy()) # This line might break!
 
         # all_s_prediction(batch_output[''])
 
@@ -146,6 +148,13 @@ def find_best_model(output, fairness_measure = 'equal_opportunity', relexation_t
     return best_fairness_index
 
 
+def log_epoch_metric(start_message, epoch_metric, epoch_number, loss):
+    epoch_metric['loss'] = loss
+    epoch_metric['epoch_number'] = epoch_number
+    logger.info(f"{start_message} epoch metric: {epoch_metric}")
+
+
+
 def training_loop_common(training_loop_parameters: TrainingLoopParameters, train_function):
     output = {}
     all_train_eps_metrics = []
@@ -155,13 +164,13 @@ def training_loop_common(training_loop_parameters: TrainingLoopParameters, train
     best_eopp = 1.0
 
 
-    temp_save_model_dir = Path('temp_saved_models')
-    os.makedirs(temp_save_model_dir, exist_ok=True)
+
 
 
     for ep in range(training_loop_parameters.n_epochs):
 
         # Train split
+        logging.info("start of epoch block")
         train_parameters = TrainParameters(
             model=training_loop_parameters.model,
             iterator=training_loop_parameters.iterators[0]['train_iterator'],
@@ -173,6 +182,7 @@ def training_loop_common(training_loop_parameters: TrainingLoopParameters, train
             mode='train')
 
         train_epoch_metric, loss = train_function(train_parameters)
+        log_epoch_metric(start_message='train', epoch_metric=train_epoch_metric, epoch_number=ep, loss=loss)
 
 
         if training_loop_parameters.use_wandb:
@@ -191,6 +201,7 @@ def training_loop_common(training_loop_parameters: TrainingLoopParameters, train
             mode='evaluate')
 
         valid_epoch_metric, loss = train_function(valid_parameters)
+        log_epoch_metric(start_message='valid', epoch_metric=valid_epoch_metric, epoch_number=ep, loss=loss)
 
         if training_loop_parameters.use_wandb:
             log_and_plot_data(epoch_metric=valid_epoch_metric, loss=loss, train=True)
@@ -211,29 +222,17 @@ def training_loop_common(training_loop_parameters: TrainingLoopParameters, train
         test_epoch_metric, loss = train_function(test_parameters)
         if training_loop_parameters.use_wandb:
             log_and_plot_data(epoch_metric=test_epoch_metric, loss=loss, train=False)
+        log_epoch_metric(start_message='test',  epoch_metric=test_epoch_metric, epoch_number=ep, loss=loss)
         all_test_eps_metrics.append(test_epoch_metric)
 
-        print(f"train epoch metric is {train_epoch_metric}")
-        print(f"test epoch metric is {test_epoch_metric}")
-        print(f"valid epoch metric is {valid_epoch_metric}")
+        logging.info("end of epoch block")
 
-        # equal_opp = test_epoch_metric.eps_fairness['equal_opportunity'].intersectional_bootstrap[0]
-        # if test_epoch_metric.accuracy > 0.81:
-        #     if equal_opp < best_eopp:
-        #         best_eopp = equal_opp
-        #         if training_loop_parameters.save_model_as:
-        #             print("model saved")
-        #             torch.save(training_loop_parameters.model.state_dict(), training_loop_parameters.save_model_as + ".pt")
-
-        # torch.save(training_loop_parameters.model, temp_save_model_dir/Path(str(ep) + ".pt"))
 
 
     output['all_train_eps_metric'] = all_train_eps_metrics
     output['all_test_eps_metric'] = all_test_eps_metrics
     output['all_valid_eps_metric'] = all_valid_eps_metrics
-    output['temp_save_model_dir'] = temp_save_model_dir
     index = find_best_model(output)
     output['best_model_index'] = index
-    # output['model'] = torch.load(temp_save_model_dir/Path(str(index) + ".pt"))
 
     return output

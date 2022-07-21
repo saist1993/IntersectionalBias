@@ -239,6 +239,3 @@ if __name__ == '__main__':
 
     output = runner(runner_arguments=runner_arguments)
 
-    # plot_and_visualize.plot_eps_fairness_metric(output['all_train_eps_metric'], "Train ", runner_arguments.use_wandb)
-    # plot_and_visualize.plot_eps_fairness_metric(output['all_test_eps_metric'], "Test ", runner_arguments.use_wandb)
-
