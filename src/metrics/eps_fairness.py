@@ -322,15 +322,21 @@ class EpsFairness(fairness_utils.FairnessTemplateClass):
             gerrymandering group and independent group
             """
 
-            fairness_mode_intersectional_smoothed = get_analytics('intersectional',
-                                                                  'smoothed_empirical_estimate',
-                                                                  fairness_mode)
-            fairness_mode_intersectional_simple_bayesian = get_analytics('intersectional',
-                                                                         'simple_bayesian_estimate',
-                                                                         fairness_mode)
+            # fairness_mode_intersectional_smoothed = get_analytics('intersectional',
+            #                                                       'smoothed_empirical_estimate',
+            #                                                       fairness_mode)
+            # fairness_mode_intersectional_simple_bayesian = get_analytics('intersectional',
+            #                                                              'simple_bayesian_estimate',
+            #                                                              fairness_mode)
+
+            fairness_mode_intersectional_smoothed = 0.0
+            fairness_mode_intersectional_simple_bayesian = 0.0
             fairness_mode_intersectional_bootstrap = get_analytics('intersectional',
                                                                    'bootstrap_empirical_estimate',
                                                                    fairness_mode)
+
+
+
 
             if fairness_mode == 'demographic_parity':
                 """We also calculate the bias amplification ratio"""

@@ -99,8 +99,9 @@ def per_epoch_metric(epoch_output, epoch_input, attribute_id=None):
     #                                   true_positive_rate=true_positive_rate_fairness_metric_tracker)
 
     other_meta_data = {
-        'fairness_mode': ['demographic_parity', 'equal_opportunity', 'equal_odds'],
-        'no_fairness': True,
+        # 'fairness_mode': ['demographic_parity', 'equal_opportunity', 'equal_odds'],
+        'fairness_mode': ['equal_opportunity'],
+        'no_fairness': False,
         'adversarial_output': all_adversarial_output,
         'aux_flattened': all_s_flatten
     }
@@ -167,7 +168,7 @@ def train(train_parameters: TrainParameters):
                 get_fairness_loss_equal_opportunity\
                     (loss, output['prediction'], items['aux'], items['labels'], all_independent_group_patterns)
             if fairness_loss:
-                loss = torch.mean(loss) + fairness_loss
+                loss = torch.mean(loss) + 0.05*fairness_loss
             else:
                  loss = torch.mean(loss)
 
@@ -222,7 +223,7 @@ def training_loop(training_loop_parameters: TrainingLoopParameters):
     output = {}
     all_train_eps_metrics = []
     all_test_eps_metrics = []
-
+    best_eopp = 1.0
 
 
 
@@ -262,11 +263,20 @@ def training_loop(training_loop_parameters: TrainingLoopParameters):
 
         print(f"train epoch metric is {train_epoch_metric}")
         print(f"test epoch metric is {test_epoch_metric}")
-        if best_test_accuracy < test_epoch_metric.accuracy:
-            best_test_accuracy = test_epoch_metric.accuracy
-            if training_loop_parameters.save_model_as:
-                print("model saved")
-                torch.save(training_loop_parameters.model.state_dict(), training_loop_parameters.save_model_as + ".pt")
+
+        equal_opp = test_epoch_metric.eps_fairness['equal_opportunity'].intersectional_bootstrap[0]
+        # if best_test_accuracy < test_epoch_metric.accuracy:
+        #     best_test_accuracy = test_epoch_metric.accuracy
+        #     if training_loop_parameters.save_model_as:
+        #         print("model saved")
+        #         torch.save(training_loop_parameters.model.state_dict(), training_loop_parameters.save_model_as + ".pt")
+
+        if test_epoch_metric.accuracy > 0.81:
+            if equal_opp < best_eopp:
+                best_eopp = equal_opp
+                if training_loop_parameters.save_model_as:
+                    print("model saved")
+                    torch.save(training_loop_parameters.model.state_dict(), training_loop_parameters.save_model_as + ".pt")
 
 
     output['all_train_eps_metric'] = all_train_eps_metrics

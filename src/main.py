@@ -37,6 +37,7 @@ class RunnerArguments(NamedTuple):
     adversarial_lambda: float = 0.5
     dataset_size: int = 10000
     attribute_id: Optional[int] = None
+    fairness_lambda: float = 0.0
 
 def get_model(method:str, model_name:str, other_meta_data:Dict, device:torch.device):
     number_of_aux_label_per_attribute = other_meta_data['number_of_aux_label_per_attribute']
@@ -107,6 +108,7 @@ def runner(runner_arguments:RunnerArguments):
     # Setting up logging
     logger.info(f"arguemnts: {locals()}")
 
+
     # Setting up wandb, if need be
     if runner_arguments.use_wandb:
         wandb.init(project="IntersectionalFairness", entity="magnet", config=locals())
@@ -172,27 +174,39 @@ def runner(runner_arguments:RunnerArguments):
     return output
 
 if __name__ == '__main__':
+    # setting up parser and parsing the arguments.
     parser = argparse.ArgumentParser()
     parser.add_argument('--adversarial_lambda', '-adversarial_lambda', help="the lambda in the adv loss equation", type=float,
                         default=0.5)
+    parser.add_argument('--fairness_lambda', '-fairness_lambda', help="the lambda in the fairness loss equation", type=float,
+                        default=0.0)
     parser.add_argument('--method', '-method', help="unconstrained/adversarial_single/adversarial_group", type=str,
-                        default='unconstrained')
+                        default='adversarial_moe')
     parser.add_argument('--save_model_as', '-save_model_as', help="unconstrained/adversarial_single/adversarial_group", type=str,
-                        default='unconstrained_fairness_loss')
+                        default='adversarial_moe_0.05_0.5')
+    parser.add_argument('--dataset_name', '-dataset_name', help="twitter_hate_speech/adult_multi_group",
+                        type=str,
+                        default='adult_multi_group')
+
+
 
     torch.set_num_threads(2)
     torch.set_num_interop_threads(2)
     args = parser.parse_args()
 
+    if args.save_model_as:
+        save_model_as = args.save_model_as + args.dataset_name
+    else:
+        save_model_as = None
 
 
     runner_arguments = RunnerArguments(
         seed=42,
-        dataset_name='twitter_hate_speech', # twitter_hate_speech
+        dataset_name=args.dataset_name, # twitter_hate_speech
         batch_size=1024,
         model='simple_non_linear',
-        epochs=50,
-        save_model_as=args.save_model_as,
+        epochs=150,
+        save_model_as=save_model_as,
         method=args.method, # unconstrained, adversarial_single
         optimizer_name='adam',
         lr=0.001,

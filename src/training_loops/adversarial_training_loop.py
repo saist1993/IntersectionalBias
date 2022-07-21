@@ -1,13 +1,13 @@
 from dataclasses import dataclass
 from typing import Dict, Callable
-
+from .adversarial_moe_training_loop import  get_fairness_loss_equal_opportunity
 import numpy as np
 import torch
 import torch.nn as nn
 import wandb
 from tqdm.auto import tqdm
 
-from metrics import calculate_epoch_metric
+from metrics import calculate_epoch_metric, fairness_utils
 from utils import misc
 
 
@@ -95,8 +95,8 @@ def per_epoch_metric(epoch_output, epoch_input, attribute_id=None):
     #                                   true_positive_rate=true_positive_rate_fairness_metric_tracker)
 
     other_meta_data = {
-        'fairness_mode': ['demographic_parity', 'equal_opportunity', 'equal_odds'],
-        'no_fairness': True,
+        'fairness_mode': ['equal_opportunity'],
+        'no_fairness': False,
         'adversarial_output': all_adversarial_output,
         'aux_flattened': all_s_flatten
     }
@@ -114,6 +114,14 @@ def train(train_parameters: TrainParameters):
     adversarial_method = train_parameters.other_params['method']
     adversarial_lambda = train_parameters.other_params['adversarial_lambda']
     attribute_id = train_parameters.other_params['attribute_id']
+
+    all_s = []
+    for items in train_parameters.iterator:
+        all_s.append(items['aux'].numpy())
+    all_s = np.vstack(all_s)
+    all_independent_group_patterns = fairness_utils.create_all_possible_groups \
+        (attributes=[list(np.unique(all_s[:, i])) for i in range(all_s.shape[1])])
+    all_independent_group_patterns = [torch.tensor(i) for i in all_independent_group_patterns if 'x' not in i]
 
 
     if mode == 'train':
@@ -133,12 +141,20 @@ def train(train_parameters: TrainParameters):
         if mode == 'train':
             optimizer.zero_grad()
             output = model(items)
-            loss = torch.mean(criterion(output['prediction'], items['labels']))  # As reduction is None.
+            loss = criterion(output['prediction'], items['labels'])  # As reduction is None.
             if adversarial_method == 'adversarial_single':
                 loss_aux = torch.mean(criterion(output['adv_outputs'][0], items['aux_flattened']))
                 loss = loss + adversarial_lambda*loss_aux  # make this parameterized!
                 output['adv_outputs'] = output['adv_outputs'][0]    # makes it easier for further changes
             elif adversarial_method == 'adversarial_group' or adversarial_method == 'adversarial_moe':
+                fairness_loss = \
+                    get_fairness_loss_equal_opportunity \
+                        (loss, output['prediction'], items['aux'], items['labels'], all_independent_group_patterns)
+                if fairness_loss:
+                    loss = torch.mean(loss)
+                else:
+                    loss = torch.mean(loss)
+
                 if attribute_id is not None:
                     loss_aux = torch.mean(criterion(output['adv_outputs'][0], items['aux'][:,attribute_id]))
                     loss = loss + adversarial_lambda * loss_aux
@@ -200,6 +216,7 @@ def training_loop(training_loop_parameters: TrainingLoopParameters):
     output = {}
     all_train_eps_metrics = []
     all_test_eps_metrics = []
+    best_eopp = 1.0
 
     best_test_accuracy = 0.0
     for _ in range(training_loop_parameters.n_epochs):
@@ -235,11 +252,18 @@ def training_loop(training_loop_parameters: TrainingLoopParameters):
 
         print(f"train epoch metric is {train_epoch_metric}")
         print(f"test epoch metric is {test_epoch_metric}")
-        if best_test_accuracy < test_epoch_metric.accuracy:
-            best_test_accuracy = test_epoch_metric.accuracy
-            if training_loop_parameters.save_model_as:
-                print("model saved")
-                torch.save(training_loop_parameters.model.state_dict(), training_loop_parameters.save_model_as + ".pt")
+        # if best_test_accuracy < test_epoch_metric.accuracy:
+        #     best_test_accuracy = test_epoch_metric.accuracy
+        #     if training_loop_parameters.save_model_as:
+        #         print("model saved")
+        #         torch.save(training_loop_parameters.model.state_dict(), training_loop_parameters.save_model_as + ".pt")
+        equal_opp = test_epoch_metric.eps_fairness['equal_opportunity'].intersectional_bootstrap[0]
+        if test_epoch_metric.accuracy > 0.79:
+            if equal_opp < best_eopp:
+                best_eopp = equal_opp
+                if training_loop_parameters.save_model_as:
+                    print("model saved")
+                    torch.save(training_loop_parameters.model.state_dict(), training_loop_parameters.save_model_as + ".pt")
 
 
     output['all_train_eps_metric'] = all_train_eps_metrics

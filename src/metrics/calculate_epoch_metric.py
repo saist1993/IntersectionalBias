@@ -67,6 +67,8 @@ class CalculateEpochMetric:
             epoch_metric = EpochMetricTracker(accuracy=accuracy, balanced_accuracy=balanced_accuracy,
                                               accuracy_parity=None, tpr_parity=None,
                                               eps_fairness=None)
+
+            # Is it possible to calculate equal odds here?
             return epoch_metric
 
         # accuracy_parity_metric = AccuracyParity(self.prediction, self.label, self.aux,
