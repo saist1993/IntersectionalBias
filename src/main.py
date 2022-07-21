@@ -4,6 +4,7 @@ import config
 import random
 import logging
 import argparse
+import shortuuid
 import numpy as np
 import torch.nn as nn
 from pathlib import Path
@@ -18,7 +19,18 @@ from training_loops import adversarial_moe_training_loop
 from utils.misc import resolve_device, set_seed, make_opt, CustomError
 
 # Setting up logger
-logger = logging.getLogger(__name__)
+logFormatter = logging.Formatter("%(asctime)s [%(threadName)-12.12s] [%(levelname)-5.5s]  %(message)s")
+logger = logging.getLogger()
+
+
+
+consoleHandler = logging.StreamHandler()
+consoleHandler.setFormatter(logFormatter)
+logger.addHandler(consoleHandler)
+
+
+LOG_DIR = Path('../logs')
+SAVED_MODEL_PATH = Path('../saved_models/')
 
 
 class RunnerArguments(NamedTuple):
@@ -38,6 +50,8 @@ class RunnerArguments(NamedTuple):
     dataset_size: int = 10000
     attribute_id: Optional[int] = None
     fairness_lambda: float = 0.0
+    log_file_name: Optional[str] = None
+
 
 def get_model(method:str, model_name:str, other_meta_data:Dict, device:torch.device):
     number_of_aux_label_per_attribute = other_meta_data['number_of_aux_label_per_attribute']
@@ -90,8 +104,6 @@ def get_optimizer(optimizer_name:str):
     return opt_fn
 
 
-
-
 def runner(runner_arguments:RunnerArguments):
     """
      Orchestrates the whole run with given hyper-params
@@ -106,6 +118,15 @@ def runner(runner_arguments:RunnerArguments):
      """
 
     # Setting up logging
+    unique_id_for_run = shortuuid.uuid()
+    if not runner_arguments.log_file_name:
+        log_file_name = Path(str(unique_id_for_run))
+    else:
+        log_file_name = Path(args.log_file_name + "_" +  str(unique_id_for_run))
+    fileHandler = logging.FileHandler(LOG_DIR/log_file_name)
+    fileHandler.setFormatter(logFormatter)
+    logger.addHandler(fileHandler)
+
     logger.info(f"arguemnts: {locals()}")
 
 
@@ -187,17 +208,15 @@ if __name__ == '__main__':
     parser.add_argument('--dataset_name', '-dataset_name', help="twitter_hate_speech/adult_multi_group",
                         type=str,
                         default='adult_multi_group')
-
-
-
-    torch.set_num_threads(2)
-    torch.set_num_interop_threads(2)
     args = parser.parse_args()
-
     if args.save_model_as:
         save_model_as = args.save_model_as + args.dataset_name
     else:
         save_model_as = None
+
+
+    torch.set_num_threads(2)
+    torch.set_num_interop_threads(2)
 
 
     runner_arguments = RunnerArguments(
@@ -214,11 +233,12 @@ if __name__ == '__main__':
         use_wandb=False,
         adversarial_lambda=args.adversarial_lambda,
         dataset_size=10000,
-        attribute_id=None  # which attribute to care about!
+        attribute_id=None,  # which attribute to care about!
+        fairness_lambda=args.fairness_lambda
     )
 
     output = runner(runner_arguments=runner_arguments)
 
-    plot_and_visualize.plot_eps_fairness_metric(output['all_train_eps_metric'], "Train ", runner_arguments.use_wandb)
-    plot_and_visualize.plot_eps_fairness_metric(output['all_test_eps_metric'], "Test ", runner_arguments.use_wandb)
+    # plot_and_visualize.plot_eps_fairness_metric(output['all_train_eps_metric'], "Train ", runner_arguments.use_wandb)
+    # plot_and_visualize.plot_eps_fairness_metric(output['all_test_eps_metric'], "Test ", runner_arguments.use_wandb)
 

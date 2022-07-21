@@ -1,0 +1,239 @@
+import os
+import torch
+import wandb
+import numpy as np
+from pathlib import Path
+from dataclasses import dataclass
+from itertools import combinations
+from metrics import calculate_epoch_metric
+from typing import Dict, Callable, Optional
+
+
+@dataclass
+class TrainParameters:
+    model: torch.nn.Module
+    iterator: Dict
+    optimizer: torch.optim
+    criterion: Callable
+    device: torch.device
+    other_params: Dict
+    per_epoch_metric: Callable
+    mode: str
+
+
+@dataclass
+class TrainingLoopParameters:
+    n_epochs: int
+    model: torch.nn.Module
+    iterators: Dict
+    optimizer: torch.optim
+    criterion: Callable
+    device: torch.device
+    use_wandb: bool
+    other_params: Dict
+    save_model_as: Optional[str]
+
+
+def get_fairness_loss_equal_opportunity(loss, preds, aux, label, all_patterns):
+    losses = []
+    label_mask = label == 1
+    for pattern in all_patterns:
+        aux_mask = torch.einsum("ij->i", torch.eq(aux, pattern)) > aux.shape[1] - 1
+        final_mask = torch.logical_and(label_mask, aux_mask)
+        _loss = loss[final_mask]
+        if len(_loss) > 0:
+            losses.append(torch.mean(_loss))
+    final_loss = []
+    for l1, l2 in combinations(losses, 2):
+        final_loss.append(abs(l1-l2))
+    if len(losses) == 0:
+        return None
+    return torch.stack(losses).sum()
+
+
+def per_epoch_metric(epoch_output, epoch_input, attribute_id=None):
+    """
+    :param epoch_output: access all the batch output.
+    :param epoch_input: Iterator to access the gold data and inputs
+    :return:
+    """
+    # Step1: Flatten everything for easier analysis
+    all_label = []
+    all_prediction = []
+    all_loss = []
+    all_s = []
+    all_adversarial_output = []
+    all_s_flatten = []
+
+    flag = True # if the output is of the form adversarial_single
+    if type(epoch_output[0]['adv_outputs']) is  list:
+        flag = False
+
+    # Now there are two variations of s
+    # These are batch_output['adv_outputs'] type is list or not a list
+    for batch_output, batch_input in zip(epoch_output, epoch_input):
+        all_prediction.append(batch_output['prediction'].detach().numpy())
+        all_loss.append(batch_output['loss_batch'])
+        all_label.append(batch_input['labels'].numpy())
+        all_s.append(batch_input['aux'].numpy())
+        if attribute_id is not None:
+            all_s_flatten.append(batch_input['aux'][:,attribute_id].numpy())
+        else:
+            all_s_flatten.append(batch_input['aux_flattened'].numpy())
+        if flag:
+            all_adversarial_output.append(batch_output['adv_outputs'].detach().numpy())
+
+        # all_s_prediction(batch_output[''])
+
+    if not flag:
+        # this is a adversarial group
+        for j in range(len(epoch_output[0]['adv_outputs'])):
+            all_adversarial_output.append(torch.vstack([i['adv_outputs'][j] for i in epoch_output]).argmax(1).detach().numpy())
+    else:
+        all_adversarial_output = np.vstack(all_adversarial_output).argmax(1)
+    all_prediction = np.vstack(all_prediction).argmax(1)
+    all_label = np.hstack(all_label)
+    all_s = np.vstack(all_s)
+    all_s_flatten = np.hstack(all_s_flatten)
+
+
+    # Calculate accuracy
+    # accuracy = fairness_functions.calculate_accuracy_classification(predictions=all_prediction, labels=all_label)
+    #
+    # # Calculate fairness
+    # accuracy_parity_fairness_metric_tracker, true_positive_rate_fairness_metric_tracker\
+    #     = calculate_fairness(prediction=all_prediction, label=all_label, aux=all_s)
+    # epoch_metric = EpochMetricTracker(accuracy=accuracy, accuracy_parity=accuracy_parity_fairness_metric_tracker,
+    #                                   true_positive_rate=true_positive_rate_fairness_metric_tracker)
+
+    other_meta_data = {
+        # 'fairness_mode': ['demographic_parity', 'equal_opportunity', 'equal_odds'],
+        'fairness_mode': ['equal_opportunity'],
+        'no_fairness': False,
+        'adversarial_output': all_adversarial_output,
+        'aux_flattened': all_s_flatten
+    }
+
+    epoch_metric = calculate_epoch_metric.CalculateEpochMetric(all_prediction, all_label, all_s, other_meta_data).run()
+    # epoch_metric = None
+    return epoch_metric, np.mean(all_loss)
+
+
+def log_and_plot_data(epoch_metric, loss, train=True):
+    if train:
+        suffix = "train_"
+    else:
+        suffix = "test_"
+
+    wandb.log({suffix + "accuracy": epoch_metric.accuracy,
+               suffix + "balanced_accuracy": epoch_metric.balanced_accuracy,
+               suffix + "loss": loss})
+
+
+def find_best_model(output, fairness_measure = 'equal_opportunity', relexation_threshold=0.02):
+    best_fairness_measure = 100
+    best_fairness_index = 0
+    best_valid_accuracy = max([metric.accuracy for metric in output['all_valid_eps_metric']])
+    for index, validation_metric in enumerate(output['all_valid_eps_metric']):
+        if validation_metric.accuracy >= best_valid_accuracy - relexation_threshold:
+            if fairness_measure == 'equal_opportunity':
+                fairness_value = validation_metric.eps_fairness['equal_opportunity'].intersectional_bootstrap[0]
+                if fairness_value < best_fairness_measure:
+                    best_fairness_measure = fairness_value
+                    best_fairness_index = index
+            else:
+                raise NotImplementedError
+    return best_fairness_index
+
+
+def training_loop_common(training_loop_parameters: TrainingLoopParameters, train_function):
+    output = {}
+    all_train_eps_metrics = []
+    all_test_eps_metrics = []
+    all_valid_eps_metrics = []
+    best_test_accuracy = 0.0
+    best_eopp = 1.0
+
+
+    temp_save_model_dir = Path('temp_saved_models')
+    os.makedirs(temp_save_model_dir, exist_ok=True)
+
+
+    for ep in range(training_loop_parameters.n_epochs):
+
+        # Train split
+        train_parameters = TrainParameters(
+            model=training_loop_parameters.model,
+            iterator=training_loop_parameters.iterators[0]['train_iterator'],
+            optimizer=training_loop_parameters.optimizer,
+            criterion=training_loop_parameters.criterion,
+            device=training_loop_parameters.device,
+            other_params=training_loop_parameters.other_params,
+            per_epoch_metric=per_epoch_metric,
+            mode='train')
+
+        train_epoch_metric, loss = train_function(train_parameters)
+
+
+        if training_loop_parameters.use_wandb:
+            log_and_plot_data(epoch_metric=train_epoch_metric, loss=loss, train=True)
+        all_train_eps_metrics.append(train_epoch_metric)
+
+        # Valid split
+        valid_parameters = TrainParameters(
+            model=training_loop_parameters.model,
+            iterator=training_loop_parameters.iterators[0]['valid_iterator'],
+            optimizer=training_loop_parameters.optimizer,
+            criterion=training_loop_parameters.criterion,
+            device=training_loop_parameters.device,
+            other_params=training_loop_parameters.other_params,
+            per_epoch_metric=per_epoch_metric,
+            mode='evaluate')
+
+        valid_epoch_metric, loss = train_function(valid_parameters)
+
+        if training_loop_parameters.use_wandb:
+            log_and_plot_data(epoch_metric=valid_epoch_metric, loss=loss, train=True)
+        all_valid_eps_metrics.append(train_epoch_metric)
+
+
+        # test split
+        test_parameters = TrainParameters(
+            model=training_loop_parameters.model,
+            iterator=training_loop_parameters.iterators[0]['test_iterator'],
+            optimizer=training_loop_parameters.optimizer,
+            criterion=training_loop_parameters.criterion,
+            device=training_loop_parameters.device,
+            other_params=training_loop_parameters.other_params,
+            per_epoch_metric=per_epoch_metric,
+            mode='evaluate')
+
+        test_epoch_metric, loss = train_function(test_parameters)
+        if training_loop_parameters.use_wandb:
+            log_and_plot_data(epoch_metric=test_epoch_metric, loss=loss, train=False)
+        all_test_eps_metrics.append(test_epoch_metric)
+
+        print(f"train epoch metric is {train_epoch_metric}")
+        print(f"test epoch metric is {test_epoch_metric}")
+        print(f"valid epoch metric is {valid_epoch_metric}")
+
+        # equal_opp = test_epoch_metric.eps_fairness['equal_opportunity'].intersectional_bootstrap[0]
+        # if test_epoch_metric.accuracy > 0.81:
+        #     if equal_opp < best_eopp:
+        #         best_eopp = equal_opp
+        #         if training_loop_parameters.save_model_as:
+        #             print("model saved")
+        #             torch.save(training_loop_parameters.model.state_dict(), training_loop_parameters.save_model_as + ".pt")
+
+        # torch.save(training_loop_parameters.model, temp_save_model_dir/Path(str(ep) + ".pt"))
+
+
+    output['all_train_eps_metric'] = all_train_eps_metrics
+    output['all_test_eps_metric'] = all_test_eps_metrics
+    output['all_valid_eps_metric'] = all_valid_eps_metrics
+    output['temp_save_model_dir'] = temp_save_model_dir
+    index = find_best_model(output)
+    output['best_model_index'] = index
+    # output['model'] = torch.load(temp_save_model_dir/Path(str(index) + ".pt"))
+
+    return output

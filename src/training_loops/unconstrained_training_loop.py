@@ -6,98 +6,52 @@ import wandb
 import numpy as np
 import torch.nn as nn
 from tqdm.auto import tqdm
-
-from metrics import calculate_epoch_metric, fairness_utils
-from utils import misc
-
 from itertools import combinations
 
-# configuring matplot lib
+
+from metrics import calculate_epoch_metric, fairness_utils
+from .common_functionality import *
+from utils import misc
 
 
-@dataclass
-class TrainParameters:
-    model: nn.Module
-    iterator: Dict
-    optimizer: torch.optim
-    criterion: Callable
-    device: torch.device
-    other_params: Dict
-    per_epoch_metric: Callable
-    mode: str
-
-
-@dataclass
-class TrainingLoopParameters:
-    n_epochs: int
-    model: nn.Module
-    iterators: Dict
-    optimizer: torch.optim
-    criterion: Callable
-    device: torch.device
-    use_wandb: bool
-    other_params: Dict
-    save_model_as: Optional[str]
-
-
-def get_fairness_loss_equal_opportunity(loss, preds, aux, label, all_patterns):
-    losses = []
-    label_mask = label == 1
-    for pattern in all_patterns:
-        aux_mask = torch.einsum("ij->i", torch.eq(aux, pattern)) > aux.shape[1] - 1
-        final_mask = torch.logical_and(label_mask, aux_mask)
-        _loss = loss[final_mask]
-        if len(_loss) > 0:
-            losses.append(torch.mean(_loss))
-    final_loss = []
-    for l1, l2 in combinations(losses, 2):
-        final_loss.append(abs(l1-l2))
-        # final_loss.append(abs(l1)/abs(l2))
-        # final_loss.append(abs(l2) / abs(l1))
-    if len(losses) == 0:
-        return None
-
-    return torch.stack(losses).sum()
-
-
-def per_epoch_metric(epoch_output, epoch_input):
-    """
-    :param epoch_output: access all the batch output.
-    :param epoch_input: Iterator to access the gold data and inputs
-    :return:
-    """
-    # Step1: Flatten everything for easier analysis
-    all_label = []
-    all_prediction = []
-    all_loss = []
-    all_s = []
-    for batch_output, batch_input in zip(epoch_output, epoch_input):
-        all_prediction.append(batch_output['prediction'].detach().numpy())
-        all_loss.append(batch_output['loss_batch'])
-        all_label.append(batch_input['labels'].numpy())
-        all_s.append(batch_input['aux'].numpy())
-    all_prediction = np.vstack(all_prediction).argmax(1)
-    all_label = np.hstack(all_label)
-    all_s = np.vstack(all_s)
-
-    # Calculate accuracy
-    # accuracy = fairness_functions.calculate_accuracy_classification(predictions=all_prediction, labels=all_label)
-    #
-    # # Calculate fairness
-    # accuracy_parity_fairness_metric_tracker, true_positive_rate_fairness_metric_tracker\
-    #     = calculate_fairness(prediction=all_prediction, label=all_label, aux=all_s)
-    # epoch_metric = EpochMetricTracker(accuracy=accuracy, accuracy_parity=accuracy_parity_fairness_metric_tracker,
-    #                                   true_positive_rate=true_positive_rate_fairness_metric_tracker)
-
-    other_meta_data = {
-        # 'fairness_mode': ['demographic_parity', 'equal_opportunity', 'equal_odds'],
-        'fairness_mode': ['equal_opportunity'],
-        'no_fairness': False,
-        'adversarial_output': None
-    }
-
-    epoch_metric = calculate_epoch_metric.CalculateEpochMetric(all_prediction, all_label, all_s, other_meta_data).run()
-    return epoch_metric, np.mean(all_loss)
+# def per_epoch_metric(epoch_output, epoch_input):
+#     """
+#     :param epoch_output: access all the batch output.
+#     :param epoch_input: Iterator to access the gold data and inputs
+#     :return:
+#     """
+#     # Step1: Flatten everything for easier analysis
+#     all_label = []
+#     all_prediction = []
+#     all_loss = []
+#     all_s = []
+#     for batch_output, batch_input in zip(epoch_output, epoch_input):
+#         all_prediction.append(batch_output['prediction'].detach().numpy())
+#         all_loss.append(batch_output['loss_batch'])
+#         all_label.append(batch_input['labels'].numpy())
+#         all_s.append(batch_input['aux'].numpy())
+#     all_prediction = np.vstack(all_prediction).argmax(1)
+#     all_label = np.hstack(all_label)
+#     all_s = np.vstack(all_s)
+#
+#     # Calculate accuracy
+#     # accuracy = fairness_functions.calculate_accuracy_classification(predictions=all_prediction, labels=all_label)
+#     #
+#     # # Calculate fairness
+#     # accuracy_parity_fairness_metric_tracker, true_positive_rate_fairness_metric_tracker\
+#     #     = calculate_fairness(prediction=all_prediction, label=all_label, aux=all_s)
+#     # epoch_metric = EpochMetricTracker(accuracy=accuracy, accuracy_parity=accuracy_parity_fairness_metric_tracker,
+#     #                                   true_positive_rate=true_positive_rate_fairness_metric_tracker)
+#
+#     other_meta_data = {
+#         # 'fairness_mode': ['demographic_parity', 'equal_opportunity', 'equal_odds'],
+#         'fairness_mode': ['equal_opportunity'],
+#         'no_fairness': False,
+#         'adversarial_output': None
+#     }
+#
+#     epoch_metric = calculate_epoch_metric.CalculateEpochMetric(all_prediction, all_label, all_s, other_meta_data).run()
+#     return epoch_metric, np.mean(all_loss)
 
 
 def train(train_parameters: TrainParameters):
@@ -158,87 +112,6 @@ def train(train_parameters: TrainParameters):
     return epoch_metric_tracker, loss
 
 
-
-
-
-
-
-
-
-
-def log_and_plot_data(epoch_metric, loss, train=True):
-    if train:
-        suffix = "train_"
-    else:
-        suffix = "test_"
-
-    wandb.log({suffix + "accuracy": epoch_metric.accuracy,
-               suffix + "balanced_accuracy": epoch_metric.balanced_accuracy,
-               suffix + "loss": loss})
-
-    # generate the matplotlib graph!
-
-
 def training_loop(training_loop_parameters: TrainingLoopParameters):
-    output = {}
-    all_train_eps_metrics = []
-    all_test_eps_metrics = []
-    best_test_accuracy = 0.0
-    best_eopp = 1.0
-
-
-    for _ in range(training_loop_parameters.n_epochs):
-        train_parameters = TrainParameters(
-            model=training_loop_parameters.model,
-            iterator=training_loop_parameters.iterators[0]['train_iterator'],
-            optimizer=training_loop_parameters.optimizer,
-            criterion=training_loop_parameters.criterion,
-            device=training_loop_parameters.device,
-            other_params=training_loop_parameters.other_params,
-            per_epoch_metric=per_epoch_metric,
-            mode='train')
-
-        train_epoch_metric, loss = train(train_parameters)
-        if training_loop_parameters.use_wandb:
-            log_and_plot_data(epoch_metric=train_epoch_metric, loss=loss, train=True)
-        all_train_eps_metrics.append(train_epoch_metric.eps_fairness)
-
-        test_parameters = TrainParameters(
-            model=training_loop_parameters.model,
-            iterator=training_loop_parameters.iterators[0]['test_iterator'],
-            optimizer=training_loop_parameters.optimizer,
-            criterion=training_loop_parameters.criterion,
-            device=training_loop_parameters.device,
-            other_params=training_loop_parameters.other_params,
-            per_epoch_metric=per_epoch_metric,
-            mode='evaluate')
-
-        test_epoch_metric, loss = train(test_parameters)
-        if training_loop_parameters.use_wandb:
-            log_and_plot_data(epoch_metric=test_epoch_metric, loss=loss, train=False)
-        all_test_eps_metrics.append(test_epoch_metric.eps_fairness)
-
-        print(f"train epoch metric is {train_epoch_metric}")
-        print(f"test epoch metric is {test_epoch_metric}")
-
-        # if best_test_accuracy < test_epoch_metric.accuracy:
-        #     best_test_accuracy = test_epoch_metric.accuracy
-        #     if training_loop_parameters.save_model_as:
-        #         print("model saved")
-        #         torch.save(training_loop_parameters.model.state_dict(), training_loop_parameters.save_model_as + ".pt")
-        equal_opp = test_epoch_metric.eps_fairness['equal_opportunity'].intersectional_bootstrap[0]
-        if test_epoch_metric.accuracy > 0.81:
-            if equal_opp < best_eopp:
-                best_eopp = equal_opp
-                if training_loop_parameters.save_model_as:
-                    print("model saved")
-                    torch.save(training_loop_parameters.model.state_dict(), training_loop_parameters.save_model_as + ".pt")
-
-
-    output['all_train_eps_metric'] = all_train_eps_metrics
-    output['all_test_eps_metric'] = all_test_eps_metrics
-    output['trained_model_last_epoch'] = training_loop_parameters.model
-
-
-
+    output = training_loop_common(training_loop_parameters, train)
     return output

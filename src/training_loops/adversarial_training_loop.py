@@ -1,6 +1,3 @@
-from dataclasses import dataclass
-from typing import Dict, Callable
-from .adversarial_moe_training_loop import  get_fairness_loss_equal_opportunity
 import numpy as np
 import torch
 import torch.nn as nn
@@ -8,35 +5,9 @@ import wandb
 from tqdm.auto import tqdm
 
 from metrics import calculate_epoch_metric, fairness_utils
+from .common_functionality import *
 from utils import misc
 
-
-# configuring matplot lib
-
-
-@dataclass
-class TrainParameters:
-    model: nn.Module
-    iterator: Dict
-    optimizer: torch.optim
-    criterion: Callable
-    device: torch.device
-    other_params: Dict
-    per_epoch_metric: Callable
-    mode: str
-
-
-@dataclass
-class TrainingLoopParameters:
-    n_epochs: int
-    model: nn.Module
-    iterators: Dict
-    optimizer: torch.optim
-    criterion: Callable
-    device: torch.device
-    save_model_as: str
-    use_wandb: bool
-    other_params: Dict
 
 
 def per_epoch_metric(epoch_output, epoch_input, attribute_id=None):
@@ -209,66 +180,7 @@ def log_and_plot_data(epoch_metric, loss, train=True):
                suffix + "balanced_accuracy": epoch_metric.balanced_accuracy,
                suffix + "loss": loss})
 
-    # generate the matplotlib graph!
-
 
 def training_loop(training_loop_parameters: TrainingLoopParameters):
-    output = {}
-    all_train_eps_metrics = []
-    all_test_eps_metrics = []
-    best_eopp = 1.0
-
-    best_test_accuracy = 0.0
-    for _ in range(training_loop_parameters.n_epochs):
-        train_parameters = TrainParameters(
-            model=training_loop_parameters.model,
-            iterator=training_loop_parameters.iterators[0]['train_iterator'],
-            optimizer=training_loop_parameters.optimizer,
-            criterion=training_loop_parameters.criterion,
-            device=training_loop_parameters.device,
-            other_params=training_loop_parameters.other_params,
-            per_epoch_metric=per_epoch_metric,
-            mode='train')
-
-        train_epoch_metric, loss = train(train_parameters)
-        if training_loop_parameters.use_wandb:
-            log_and_plot_data(epoch_metric=train_epoch_metric, loss=loss, train=True)
-        all_train_eps_metrics.append(train_epoch_metric.eps_fairness)
-
-        test_parameters = TrainParameters(
-            model=training_loop_parameters.model,
-            iterator=training_loop_parameters.iterators[0]['test_iterator'],
-            optimizer=training_loop_parameters.optimizer,
-            criterion=training_loop_parameters.criterion,
-            device=training_loop_parameters.device,
-            other_params=training_loop_parameters.other_params,
-            per_epoch_metric=per_epoch_metric,
-            mode='evaluate')
-
-        test_epoch_metric, loss = train(test_parameters)
-        if training_loop_parameters.use_wandb:
-            log_and_plot_data(epoch_metric=test_epoch_metric, loss=loss, train=False)
-        all_test_eps_metrics.append(test_epoch_metric.eps_fairness)
-
-        print(f"train epoch metric is {train_epoch_metric}")
-        print(f"test epoch metric is {test_epoch_metric}")
-        # if best_test_accuracy < test_epoch_metric.accuracy:
-        #     best_test_accuracy = test_epoch_metric.accuracy
-        #     if training_loop_parameters.save_model_as:
-        #         print("model saved")
-        #         torch.save(training_loop_parameters.model.state_dict(), training_loop_parameters.save_model_as + ".pt")
-        equal_opp = test_epoch_metric.eps_fairness['equal_opportunity'].intersectional_bootstrap[0]
-        if test_epoch_metric.accuracy > 0.79:
-            if equal_opp < best_eopp:
-                best_eopp = equal_opp
-                if training_loop_parameters.save_model_as:
-                    print("model saved")
-                    torch.save(training_loop_parameters.model.state_dict(), training_loop_parameters.save_model_as + ".pt")
-
-
-    output['all_train_eps_metric'] = all_train_eps_metrics
-    output['all_test_eps_metric'] = all_test_eps_metrics
-    output['trained_model_last_epoch'] = training_loop_parameters.model
-
-
+    output = training_loop_common(training_loop_parameters, train)
     return output
