@@ -46,8 +46,8 @@ def train(train_parameters: TrainParameters):
             output = model(items)
             loss = criterion(output['prediction'], items['labels'])  # As reduction is None.
             fairness_loss = \
-                get_fairness_loss_equal_opportunity\
-                    (loss, output['prediction'], items['aux'], items['labels'], all_independent_group_patterns)
+                get_fairness_loss\
+                    (train_parameters.fairness_function, loss, output['prediction'], items['aux'], items['labels'], all_independent_group_patterns)
             if fairness_loss:
                 loss = torch.mean(loss) + 0.05*fairness_loss
             else:
@@ -83,7 +83,10 @@ def train(train_parameters: TrainParameters):
         track_output.append(output)
 
     # Calculate all per-epoch metric by sending outputs and the inputs
-    epoch_metric_tracker, loss = train_parameters.per_epoch_metric(track_output, train_parameters.iterator, attribute_id)
+    epoch_metric_tracker, loss = train_parameters.per_epoch_metric(track_output,
+                                                                   train_parameters.iterator,
+                                                                   train_parameters.fairness_function,
+                                                                   attribute_id)
     return epoch_metric_tracker, loss
 
 

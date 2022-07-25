@@ -19,6 +19,8 @@ class EpochMetricTracker():
     accuracy_parity: FairnessMetricTracker
     tpr_parity: FairnessMetricTracker
     eps_fairness: Dict[str, EPSFairnessMetric]
+    loss: Optional[float] = None
+    epoch_number: Optional[int] = None
 
 
 class CalculateEpochMetric:

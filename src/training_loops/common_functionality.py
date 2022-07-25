@@ -21,6 +21,7 @@ class TrainParameters:
     other_params: Dict
     per_epoch_metric: Callable
     mode: str
+    fairness_function:str
 
 
 @dataclass
@@ -34,26 +35,31 @@ class TrainingLoopParameters:
     use_wandb: bool
     other_params: Dict
     save_model_as: Optional[str]
+    fairness_function: str
 
 
-def get_fairness_loss_equal_opportunity(loss, preds, aux, label, all_patterns):
-    losses = []
-    label_mask = label == 1
-    for pattern in all_patterns:
-        aux_mask = torch.einsum("ij->i", torch.eq(aux, pattern)) > aux.shape[1] - 1
-        final_mask = torch.logical_and(label_mask, aux_mask)
-        _loss = loss[final_mask]
-        if len(_loss) > 0:
-            losses.append(torch.mean(_loss))
-    final_loss = []
-    for l1, l2 in combinations(losses, 2):
-        final_loss.append(abs(l1-l2))
-    if len(losses) == 0:
-        return None
-    return torch.stack(losses).sum()
+def get_fairness_loss(fairness_function, loss, preds, aux, label, all_patterns):
+
+    if fairness_function == 'equal_opportunity':
+        losses = []
+        label_mask = label == 1
+        for pattern in all_patterns:
+            aux_mask = torch.einsum("ij->i", torch.eq(aux, pattern)) > aux.shape[1] - 1
+            final_mask = torch.logical_and(label_mask, aux_mask)
+            _loss = loss[final_mask]
+            if len(_loss) > 0:
+                losses.append(torch.mean(_loss))
+        final_loss = []
+        for l1, l2 in combinations(losses, 2):
+            final_loss.append(abs(l1-l2))
+        if len(losses) == 0:
+            return None
+        return torch.stack(losses).sum()
+    else:
+        return NotImplementedError
 
 
-def per_epoch_metric(epoch_output, epoch_input, attribute_id=None):
+def per_epoch_metric(epoch_output, epoch_input, fairness_function, attribute_id=None):
     """
     :param epoch_output: access all the batch output.
     :param epoch_input: Iterator to access the gold data and inputs
@@ -68,7 +74,10 @@ def per_epoch_metric(epoch_output, epoch_input, attribute_id=None):
     all_s_flatten = []
 
     flag = True # if the output is of the form adversarial_single
-    if type(epoch_output[0]['adv_outputs']) is  list:
+    try:
+        if type(epoch_output[0]['adv_outputs']) is  list:
+            flag = False
+    except KeyError:
         flag = False
 
     # Now there are two variations of s
@@ -87,12 +96,15 @@ def per_epoch_metric(epoch_output, epoch_input, attribute_id=None):
 
         # all_s_prediction(batch_output[''])
 
-    if not flag:
-        # this is a adversarial group
-        for j in range(len(epoch_output[0]['adv_outputs'])):
-            all_adversarial_output.append(torch.vstack([i['adv_outputs'][j] for i in epoch_output]).argmax(1).detach().numpy())
-    else:
-        all_adversarial_output = np.vstack(all_adversarial_output).argmax(1)
+    try:
+        if not flag:
+            # this is a adversarial group
+            for j in range(len(epoch_output[0]['adv_outputs'])):
+                all_adversarial_output.append(torch.vstack([i['adv_outputs'][j] for i in epoch_output]).argmax(1).detach().numpy())
+        else:
+            all_adversarial_output = np.vstack(all_adversarial_output).argmax(1)
+    except KeyError:
+        all_adversarial_output = None
     all_prediction = np.vstack(all_prediction).argmax(1)
     all_label = np.hstack(all_label)
     all_s = np.vstack(all_s)
@@ -110,7 +122,7 @@ def per_epoch_metric(epoch_output, epoch_input, attribute_id=None):
 
     other_meta_data = {
         # 'fairness_mode': ['demographic_parity', 'equal_opportunity', 'equal_odds'],
-        'fairness_mode': ['equal_opportunity'],
+        'fairness_mode': [fairness_function],
         'no_fairness': False,
         'adversarial_output': all_adversarial_output,
         'aux_flattened': all_s_flatten
@@ -149,9 +161,9 @@ def find_best_model(output, fairness_measure = 'equal_opportunity', relexation_t
 
 
 def log_epoch_metric(start_message, epoch_metric, epoch_number, loss):
-    epoch_metric['loss'] = loss
-    epoch_metric['epoch_number'] = epoch_number
-    logger.info(f"{start_message} epoch metric: {epoch_metric}")
+    epoch_metric.loss = loss
+    epoch_metric.epoch_number = epoch_number
+    logging.info(f"{start_message} epoch metric: {epoch_metric}")
 
 
 
@@ -170,7 +182,7 @@ def training_loop_common(training_loop_parameters: TrainingLoopParameters, train
     for ep in range(training_loop_parameters.n_epochs):
 
         # Train split
-        logging.info("start of epoch block")
+        logging.info("start of epoch block  ")
         train_parameters = TrainParameters(
             model=training_loop_parameters.model,
             iterator=training_loop_parameters.iterators[0]['train_iterator'],
@@ -179,7 +191,8 @@ def training_loop_common(training_loop_parameters: TrainingLoopParameters, train
             device=training_loop_parameters.device,
             other_params=training_loop_parameters.other_params,
             per_epoch_metric=per_epoch_metric,
-            mode='train')
+            mode='train',
+            fairness_function=training_loop_parameters.fairness_function)
 
         train_epoch_metric, loss = train_function(train_parameters)
         log_epoch_metric(start_message='train', epoch_metric=train_epoch_metric, epoch_number=ep, loss=loss)
@@ -198,7 +211,8 @@ def training_loop_common(training_loop_parameters: TrainingLoopParameters, train
             device=training_loop_parameters.device,
             other_params=training_loop_parameters.other_params,
             per_epoch_metric=per_epoch_metric,
-            mode='evaluate')
+            mode='evaluate',
+            fairness_function=training_loop_parameters.fairness_function)
 
         valid_epoch_metric, loss = train_function(valid_parameters)
         log_epoch_metric(start_message='valid', epoch_metric=valid_epoch_metric, epoch_number=ep, loss=loss)
@@ -217,7 +231,8 @@ def training_loop_common(training_loop_parameters: TrainingLoopParameters, train
             device=training_loop_parameters.device,
             other_params=training_loop_parameters.other_params,
             per_epoch_metric=per_epoch_metric,
-            mode='evaluate')
+            mode='evaluate',
+            fairness_function=training_loop_parameters.fairness_function)
 
         test_epoch_metric, loss = train_function(test_parameters)
         if training_loop_parameters.use_wandb:
