@@ -118,11 +118,17 @@ def train(train_parameters: TrainParameters):
                 loss = loss + adversarial_lambda*loss_aux  # make this parameterized!
                 output['adv_outputs'] = output['adv_outputs'][0]    # makes it easier for further changes
             elif adversarial_method == 'adversarial_group' or adversarial_method == 'adversarial_moe':
-                fairness_loss = \
-                    get_fairness_loss \
-                        (train_parameters.fairness_function, loss, output['prediction'], items['aux'], items['labels'], all_independent_group_patterns)
-                if fairness_loss:
-                    loss = torch.mean(loss)
+
+                if train_parameters.other_params['fairness_lambda'] != 0.0:
+                    fairness_loss = \
+                        get_fairness_loss \
+                            (train_parameters.fairness_function, loss, output['prediction'], items['aux'],
+                             items['labels'],
+                             all_independent_group_patterns)
+                    if fairness_loss:
+                        loss = torch.mean(loss) + train_parameters.other_params['fairness_lambda'] * fairness_loss
+                    else:
+                        loss = torch.mean(loss)
                 else:
                     loss = torch.mean(loss)
 

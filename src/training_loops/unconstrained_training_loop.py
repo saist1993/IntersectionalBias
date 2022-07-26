@@ -47,11 +47,16 @@ def train(train_parameters: TrainParameters):
             optimizer.zero_grad()
             output = model(items)
             loss = criterion(output['prediction'], items['labels'])
-            fairness_loss = \
-                get_fairness_loss \
-                    (train_parameters.fairness_function, loss, output['prediction'], items['aux'], items['labels'], all_independent_group_patterns)
-            if fairness_loss:
-                loss = torch.mean(loss) + 0.05*fairness_loss
+
+            if train_parameters.other_params['fairness_lambda'] != 0.0:
+                fairness_loss = \
+                    get_fairness_loss \
+                        (train_parameters.fairness_function, loss, output['prediction'], items['aux'], items['labels'],
+                         all_independent_group_patterns)
+                if fairness_loss:
+                    loss = torch.mean(loss) + train_parameters.other_params['fairness_lambda'] * fairness_loss
+                else:
+                    loss = torch.mean(loss)
             else:
                 loss = torch.mean(loss)
             loss.backward()

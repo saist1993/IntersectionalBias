@@ -9,7 +9,7 @@ from itertools import combinations
 from metrics import calculate_epoch_metric
 from typing import Dict, Callable, Optional
 
-logger = logging.getLogger(__name__)
+
 
 @dataclass
 class TrainParameters:
@@ -36,7 +36,7 @@ class TrainingLoopParameters:
     other_params: Dict
     save_model_as: Optional[str]
     fairness_function: str
-
+    unique_id_for_run: str
 
 def get_fairness_loss(fairness_function, loss, preds, aux, label, all_patterns):
 
@@ -56,7 +56,7 @@ def get_fairness_loss(fairness_function, loss, preds, aux, label, all_patterns):
             return None
         return torch.stack(losses).sum()
     else:
-        return NotImplementedError
+        raise NotImplementedError
 
 
 def per_epoch_metric(epoch_output, epoch_input, fairness_function, attribute_id=None):
@@ -160,14 +160,17 @@ def find_best_model(output, fairness_measure = 'equal_opportunity', relexation_t
     return best_fairness_index
 
 
-def log_epoch_metric(start_message, epoch_metric, epoch_number, loss):
+def log_epoch_metric(logger, start_message, epoch_metric, epoch_number, loss):
     epoch_metric.loss = loss
     epoch_metric.epoch_number = epoch_number
-    logging.info(f"{start_message} epoch metric: {epoch_metric}")
+    logger.info(f"{start_message} epoch metric: {epoch_metric}")
 
 
 
 def training_loop_common(training_loop_parameters: TrainingLoopParameters, train_function):
+    logger = logging.getLogger(training_loop_parameters.unique_id_for_run)
+
+
     output = {}
     all_train_eps_metrics = []
     all_test_eps_metrics = []
@@ -182,7 +185,7 @@ def training_loop_common(training_loop_parameters: TrainingLoopParameters, train
     for ep in range(training_loop_parameters.n_epochs):
 
         # Train split
-        logging.info("start of epoch block  ")
+        logger.info("start of epoch block  ")
         train_parameters = TrainParameters(
             model=training_loop_parameters.model,
             iterator=training_loop_parameters.iterators[0]['train_iterator'],
@@ -195,7 +198,7 @@ def training_loop_common(training_loop_parameters: TrainingLoopParameters, train
             fairness_function=training_loop_parameters.fairness_function)
 
         train_epoch_metric, loss = train_function(train_parameters)
-        log_epoch_metric(start_message='train', epoch_metric=train_epoch_metric, epoch_number=ep, loss=loss)
+        log_epoch_metric(logger, start_message='train', epoch_metric=train_epoch_metric, epoch_number=ep, loss=loss)
 
 
         if training_loop_parameters.use_wandb:
@@ -215,7 +218,7 @@ def training_loop_common(training_loop_parameters: TrainingLoopParameters, train
             fairness_function=training_loop_parameters.fairness_function)
 
         valid_epoch_metric, loss = train_function(valid_parameters)
-        log_epoch_metric(start_message='valid', epoch_metric=valid_epoch_metric, epoch_number=ep, loss=loss)
+        log_epoch_metric(logger, start_message='valid', epoch_metric=valid_epoch_metric, epoch_number=ep, loss=loss)
 
         if training_loop_parameters.use_wandb:
             log_and_plot_data(epoch_metric=valid_epoch_metric, loss=loss, train=True)
@@ -237,10 +240,10 @@ def training_loop_common(training_loop_parameters: TrainingLoopParameters, train
         test_epoch_metric, loss = train_function(test_parameters)
         if training_loop_parameters.use_wandb:
             log_and_plot_data(epoch_metric=test_epoch_metric, loss=loss, train=False)
-        log_epoch_metric(start_message='test',  epoch_metric=test_epoch_metric, epoch_number=ep, loss=loss)
+        log_epoch_metric(logger, start_message='test',  epoch_metric=test_epoch_metric, epoch_number=ep, loss=loss)
         all_test_eps_metrics.append(test_epoch_metric)
 
-        logging.info("end of epoch block")
+        logger.info("end of epoch block")
 
 
 

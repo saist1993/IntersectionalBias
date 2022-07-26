@@ -10,12 +10,12 @@ import torch.nn as nn
 from pathlib import Path
 from functools import partial
 from utils import plot_and_visualize
-from models import simple_model, adversarial, adversarial_moe
 from typing import NamedTuple, Dict, Optional
-from dataset_iterators import generate_data_iterators
 from training_loops import adversarial_training_loop
+from dataset_iterators import generate_data_iterators
 from training_loops import unconstrained_training_loop
 from training_loops import adversarial_moe_training_loop
+from models import simple_model, adversarial, adversarial_moe
 from utils.misc import resolve_device, set_seed, make_opt, CustomError
 
 # Setting up logger
@@ -32,7 +32,7 @@ class RunnerArguments(NamedTuple):
     batch_size: int
     model: str
     epochs: int = 20
-    save_model_as: str = None
+    save_model_as: Optional[str] = None
     method: str = 'unconstrained'
     optimizer_name: str = 'adam'
     lr: float = 0.001
@@ -41,12 +41,12 @@ class RunnerArguments(NamedTuple):
     dataset_size: int = 10000
     attribute_id: Optional[int] = None
     fairness_lambda: float = 0.0
-    log_file_name: Optional[str] = None,
+    log_file_name: Optional[str] = None
     fairness_function: str = 'equal_opportunity'
 
 
-def get_logger(unique_id_for_run, log_file_name:Optional[str]):
-    logger = logging.getLogger()
+def get_logger(unique_id_for_run, log_file_name:Optional[str], runner_arguments):
+    logger = logging.getLogger(str(unique_id_for_run))
 
     logger.setLevel('INFO')
 
@@ -62,7 +62,7 @@ def get_logger(unique_id_for_run, log_file_name:Optional[str]):
     else:
         log_file_name = Path( str(unique_id_for_run) + ".log")
     log_file_name = Path(LOG_DIR) / Path(runner_arguments.dataset_name) /  Path(runner_arguments.method) /\
-                    Path(runner_arguments.model) / Path(str(runner_arguments.seed)) / log_file_name
+                    Path(runner_arguments.model) / Path(str(runner_arguments.seed)) / Path(str(runner_arguments.fairness_function))/ log_file_name
 
     log_file_name.parent.mkdir(exist_ok=True, parents=True)
 
@@ -135,6 +135,13 @@ def runner(runner_arguments:RunnerArguments):
      method - adversarial_intersectional - 6 adversarial with each adversarial predicting the presence of group!
      """
 
+    # sanity checks - method == unconstrained - fairness_loss = 0.0
+    if runner_arguments.method == 'unconstrained':
+        assert runner_arguments.fairness_lambda == 0.0
+    # sanity checks - method == unconstrained_with_fairness_loss - fairness_loss > 0.0
+    if runner_arguments.method == 'unconstrained_with_fairness_loss':
+        assert runner_arguments.fairness_lambda > 0.0
+
     # Setting up seeds for reproducibility and resolving device (cpu/gpu).
     set_seed(runner_arguments.seed)
     device = resolve_device()
@@ -144,8 +151,8 @@ def runner(runner_arguments:RunnerArguments):
 
 
     # Setting up logging
-    get_logger(unique_id_for_run, runner_arguments.log_file_name)
-    logger = logging.getLogger()
+    get_logger(unique_id_for_run, runner_arguments.log_file_name, runner_arguments)
+    logger = logging.getLogger(str(unique_id_for_run))
     logger.info(f"unique id is:{unique_id_for_run}")
 
     logger.info(f"arguemnts: {locals()}")
@@ -184,6 +191,7 @@ def runner(runner_arguments:RunnerArguments):
 
     # Training Loops
     training_loop_params = unconstrained_training_loop.TrainingLoopParameters(
+        unique_id_for_run = str(unique_id_for_run),
         n_epochs=runner_arguments.epochs,
         model=model,
         iterators=iterators,
@@ -194,12 +202,13 @@ def runner(runner_arguments:RunnerArguments):
         use_wandb=runner_arguments.use_wandb,
         other_params={'method': runner_arguments.method,
                       'adversarial_lambda': runner_arguments.adversarial_lambda,
-                      'attribute_id': runner_arguments.attribute_id},
+                      'attribute_id': runner_arguments.attribute_id,
+                      'fairness_lambda': runner_arguments.fairness_lambda},
         fairness_function=runner_arguments.fairness_function
     )
     # Combine everything
 
-    if runner_arguments.method == 'unconstrained':
+    if 'unconstrained' in runner_arguments.method :
         output = unconstrained_training_loop.training_loop(training_loop_params)
     elif runner_arguments.method in ['adversarial_group', 'adversarial_single']:
         output = adversarial_training_loop.training_loop(training_loop_params)
@@ -209,7 +218,7 @@ def runner(runner_arguments:RunnerArguments):
         raise NotImplementedError
 
     output['raw_data'] = other_meta_data['raw_data']
-
+    logging.shutdown()
     return output
 
 if __name__ == '__main__':
@@ -218,9 +227,9 @@ if __name__ == '__main__':
     parser.add_argument('--adversarial_lambda', '-adversarial_lambda', help="the lambda in the adv loss equation", type=float,
                         default=0.5)
     parser.add_argument('--fairness_lambda', '-fairness_lambda', help="the lambda in the fairness loss equation", type=float,
-                        default=0.0)
+                        default=1.0)
     parser.add_argument('--method', '-method', help="unconstrained/adversarial_single/adversarial_group", type=str,
-                        default='unconstrained')
+                        default='unconstrained_with_fairness_loss')
     parser.add_argument('--save_model_as', '-save_model_as', help="unconstrained/adversarial_single/adversarial_group", type=str,
                         default=None)
     parser.add_argument('--dataset_name', '-dataset_name', help="twitter_hate_speech/adult_multi_group",
@@ -230,6 +239,10 @@ if __name__ == '__main__':
     parser.add_argument('--log_file_name', '-log_file_name', help="the name of the log file",
                         type=str,
                         default='dummy')
+
+    parser.add_argument('--fairness_function', '-fairness_function', help="fairness function to concern with",
+                        type=str,
+                        default='equal_opportunity')
 
 
     args = parser.parse_args()
@@ -248,7 +261,7 @@ if __name__ == '__main__':
         dataset_name=args.dataset_name, # twitter_hate_speech
         batch_size=1024,
         model='simple_non_linear',
-        epochs=50,
+        epochs=10,
         save_model_as=save_model_as,
         method=args.method, # unconstrained, adversarial_single
         optimizer_name='adam',
@@ -258,7 +271,8 @@ if __name__ == '__main__':
         dataset_size=10000,
         attribute_id=None,  # which attribute to care about!
         fairness_lambda=args.fairness_lambda,
-        log_file_name=args.log_file_name
+        log_file_name=args.log_file_name,
+        fairness_function=args.fairness_function
     )
 
 
