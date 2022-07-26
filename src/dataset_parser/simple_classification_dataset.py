@@ -8,7 +8,7 @@ from random import seed, shuffle, sample
 from scipy.stats import multivariate_normal
 from scipy.stats import norm as univariate_normal
 from .common_functionality import CreateIterators, IteratorData, split_data
-from .simple_classification_dataset_helper import get_adult_multigroups_data
+from .simple_classification_dataset_helper import get_adult_multigroups_data, get_adult_data
 
 @dataclass
 class GaussianInfo:
@@ -25,8 +25,17 @@ class SimpleClassificationDataset:
         self.dataset_name = dataset_name
         self.return_numpy_array = params['return_numpy_array']
 
-        if self.dataset_name == 'adult_multi_group':
+        if 'adult_multi_group' in self.dataset_name:
             self.X, self.y, self.s = get_adult_multigroups_data()
+            if self.dataset_name == 'adult_multi_group_v1':
+                self.s = self.s[:, :1]
+            if self.dataset_name == 'adult_multi_group_v2':
+                    self.s = self.s[:, :2]
+        elif self.dataset_name == 'adult':
+            self.X, self.y, self.s = get_adult_data()
+
+        if len(self.s.shape) == 1:
+            self.s = self.s.reshape(-1, 1)
 
         self.train_split = 0.80
         self.valid_split = 0.25

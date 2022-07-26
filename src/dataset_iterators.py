@@ -11,7 +11,10 @@ def generate_data_iterators(dataset_name: str, **kwargs):
     elif dataset_name.lower() in 'gaussian_toy':
         dataset_creator = gaussian_dataset.GaussianDataset(dataset_name=dataset_name, **kwargs)
         iterators, other_meta_data = dataset_creator.run()
-    elif dataset_name.lower() in ['adult_multi_group']:
+    elif 'adult_multi_group' in dataset_name.lower() :
+        dataset_creator = simple_classification_dataset.SimpleClassificationDataset(dataset_name=dataset_name, **kwargs)
+        iterators, other_meta_data = dataset_creator.run()
+    elif dataset_name.lower() in ['adult']:
         dataset_creator = simple_classification_dataset.SimpleClassificationDataset(dataset_name=dataset_name, **kwargs)
         iterators, other_meta_data = dataset_creator.run()
     else:
