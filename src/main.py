@@ -91,7 +91,7 @@ def get_model(method:str, model_name:str, other_meta_data:Dict, device:torch.dev
             'device': device
         }
 
-        if method == 'unconstrained':
+        if method in ['unconstrained', 'unconstrained_with_fairness_loss']:
             model = simple_model.SimpleNonLinear(model_params)
         elif method == 'adversarial_single':
             total_adv_dim = len(other_meta_data['s_flatten_lookup'])
