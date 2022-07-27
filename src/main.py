@@ -144,7 +144,8 @@ def runner(runner_arguments:RunnerArguments):
 
     # Setting up seeds for reproducibility and resolving device (cpu/gpu).
     set_seed(runner_arguments.seed)
-    device = resolve_device()
+    # device = resolve_device()
+    device = torch.device('cpu')
 
     # setup unique id for the run
     unique_id_for_run = shortuuid.uuid()
