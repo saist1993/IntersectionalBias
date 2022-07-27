@@ -183,6 +183,16 @@ class DatasetTwitterHateSpeech:
         test_X, test_s, test_y = \
             self.test_encodings, self.get_private_attribute(self.test_df), self.get_label(self.test_df)
 
+        if self.dataset_name == 'twitter_hate_speech_v1':
+            train_s, valid_s, test_s = train_s[:, :1], valid_s[:, :1], test_s[:, :1]
+
+        if self.dataset_name == 'twitter_hate_speech_v2':
+            train_s, valid_s, test_s = train_s[:, :2], valid_s[:, :2], test_s[:, :2]
+
+        if self.dataset_name == 'twitter_hate_speech_v3':
+            train_s, valid_s, test_s = train_s[:, :3], valid_s[:, :3], test_s[:, :3]
+
+
         # Step3: Create iterators - This can be abstracted out to dataset iterators.
         create_iterator = CreateIterators()
         iterator_data = IteratorData(

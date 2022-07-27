@@ -117,7 +117,7 @@ def train(train_parameters: TrainParameters):
                 loss_aux = torch.mean(criterion(output['adv_outputs'][0], items['aux_flattened']))
                 loss = loss + adversarial_lambda*loss_aux  # make this parameterized!
                 output['adv_outputs'] = output['adv_outputs'][0]    # makes it easier for further changes
-            elif adversarial_method == 'adversarial_group' or adversarial_method == 'adversarial_moe':
+            elif adversarial_method in ['adversarial_group', 'adversarial_group_with_fairness_loss'] or adversarial_method == 'adversarial_moe':
 
                 if train_parameters.other_params['fairness_lambda'] != 0.0:
                     fairness_loss = \

@@ -4,7 +4,7 @@ from dataset_parser import twitter_hate_speech, gaussian_dataset, simple_classif
 
 
 def generate_data_iterators(dataset_name: str, **kwargs):
-    if dataset_name.lower() in 'twitter_hate_speech':
+    if 'twitter_hate_speech' in dataset_name.lower():
         kwargs['dataset_location'] = config.hate_speech_dataset_path[0]
         dataset_creator = twitter_hate_speech.DatasetTwitterHateSpeech(dataset_name=dataset_name, **kwargs)
         iterators, other_meta_data = dataset_creator.run()

@@ -97,7 +97,7 @@ def get_model(method:str, model_name:str, other_meta_data:Dict, device:torch.dev
             total_adv_dim = len(other_meta_data['s_flatten_lookup'])
             model_params['model_arch']['adv'] = {'output_dim': [total_adv_dim]}
             model = adversarial.SimpleNonLinear(model_params)
-        elif method == 'adversarial_group':
+        elif method in ['adversarial_group', 'adversarial_group_with_fairness_loss']:
             model_params['model_arch']['adv'] = {'output_dim': number_of_aux_label_per_attribute}
             model = adversarial.SimpleNonLinear(model_params)
         elif method == 'adversarial_moe':
@@ -136,10 +136,10 @@ def runner(runner_arguments:RunnerArguments):
      """
 
     # sanity checks - method == unconstrained - fairness_loss = 0.0
-    if runner_arguments.method == 'unconstrained':
+    if runner_arguments.method in ['unconstrained', 'adversarial_group']:
         assert runner_arguments.fairness_lambda == 0.0
     # sanity checks - method == unconstrained_with_fairness_loss - fairness_loss > 0.0
-    if runner_arguments.method == 'unconstrained_with_fairness_loss':
+    if runner_arguments.method in ['unconstrained_with_fairness_loss', 'adversarial_group_with_fairness_loss']:
         assert runner_arguments.fairness_lambda > 0.0
 
     # Setting up seeds for reproducibility and resolving device (cpu/gpu).
@@ -210,7 +210,7 @@ def runner(runner_arguments:RunnerArguments):
 
     if 'unconstrained' in runner_arguments.method :
         output = unconstrained_training_loop.training_loop(training_loop_params)
-    elif runner_arguments.method in ['adversarial_group', 'adversarial_single']:
+    elif runner_arguments.method in ['adversarial_group', 'adversarial_single', 'adversarial_group_with_fairness_loss']:
         output = adversarial_training_loop.training_loop(training_loop_params)
     elif runner_arguments.method in ['adversarial_moe']:
         output = adversarial_moe_training_loop.training_loop(training_loop_params)
@@ -225,16 +225,16 @@ if __name__ == '__main__':
     # setting up parser and parsing the arguments.
     parser = argparse.ArgumentParser()
     parser.add_argument('--adversarial_lambda', '-adversarial_lambda', help="the lambda in the adv loss equation", type=float,
-                        default=0.5)
+                        default=1.5)
     parser.add_argument('--fairness_lambda', '-fairness_lambda', help="the lambda in the fairness loss equation", type=float,
-                        default=1.0)
+                        default=0.0)
     parser.add_argument('--method', '-method', help="unconstrained/adversarial_single/adversarial_group", type=str,
-                        default='unconstrained_with_fairness_loss')
+                        default='adversarial_group')
     parser.add_argument('--save_model_as', '-save_model_as', help="unconstrained/adversarial_single/adversarial_group", type=str,
                         default=None)
     parser.add_argument('--dataset_name', '-dataset_name', help="twitter_hate_speech/adult_multi_group",
                         type=str,
-                        default='adult')
+                        default='twitter_hate_speech_v3')
 
     parser.add_argument('--log_file_name', '-log_file_name', help="the name of the log file",
                         type=str,
