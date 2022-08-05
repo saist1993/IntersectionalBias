@@ -45,6 +45,7 @@ class RunnerArguments(NamedTuple):
     fairness_function: str = 'equal_opportunity'
 
 
+
 def get_logger(unique_id_for_run, log_file_name:Optional[str], runner_arguments):
     logger = logging.getLogger(str(unique_id_for_run))
 
