@@ -11,6 +11,7 @@ from pathlib import Path
 from functools import partial
 from utils import plot_and_visualize
 from typing import NamedTuple, Dict, Optional
+from training_loops import titled_erm_training_loop
 from training_loops import adversarial_training_loop
 from dataset_iterators import generate_data_iterators
 from training_loops import unconstrained_training_loop
@@ -43,7 +44,7 @@ class RunnerArguments(NamedTuple):
     fairness_lambda: float = 0.0
     log_file_name: Optional[str] = None
     fairness_function: str = 'equal_opportunity'
-    titled_erm:float = 1
+    titled_t:float = 10
 
 
 def get_logger(unique_id_for_run, log_file_name:Optional[str], runner_arguments):
@@ -92,7 +93,7 @@ def get_model(method:str, model_name:str, other_meta_data:Dict, device:torch.dev
             'device': device
         }
 
-        if method in ['unconstrained', 'unconstrained_with_fairness_loss']:
+        if method in ['unconstrained', 'unconstrained_with_fairness_loss', 'tilted_erm']:
             model = simple_model.SimpleNonLinear(model_params)
         elif method == 'adversarial_single':
             total_adv_dim = len(other_meta_data['s_flatten_lookup'])
@@ -205,7 +206,10 @@ def runner(runner_arguments:RunnerArguments):
         other_params={'method': runner_arguments.method,
                       'adversarial_lambda': runner_arguments.adversarial_lambda,
                       'attribute_id': runner_arguments.attribute_id,
-                      'fairness_lambda': runner_arguments.fairness_lambda},
+                      'fairness_lambda': runner_arguments.fairness_lambda,
+                      'batch_size': runner_arguments.batch_size,
+                      'titled_t': runner_arguments.titled_t,
+                      'gamma': 2},
         fairness_function=runner_arguments.fairness_function
     )
     # Combine everything
@@ -216,6 +220,8 @@ def runner(runner_arguments:RunnerArguments):
         output = adversarial_training_loop.training_loop(training_loop_params)
     elif runner_arguments.method in ['adversarial_moe']:
         output = adversarial_moe_training_loop.training_loop(training_loop_params)
+    elif runner_arguments.method == 'tilted_erm':
+        output = titled_erm_training_loop.training_loop(training_loop_params)
     else:
         raise NotImplementedError
 
@@ -231,12 +237,12 @@ if __name__ == '__main__':
     parser.add_argument('--fairness_lambda', '-fairness_lambda', help="the lambda in the fairness loss equation", type=float,
                         default=0.5)
     parser.add_argument('--method', '-method', help="unconstrained/adversarial_single/adversarial_group", type=str,
-                        default='unconstrained_with_fairness_loss')
+                        default='tilted_erm')
     parser.add_argument('--save_model_as', '-save_model_as', help="unconstrained/adversarial_single/adversarial_group", type=str,
                         default=None)
     parser.add_argument('--dataset_name', '-dataset_name', help="twitter_hate_speech/adult_multi_group",
                         type=str,
-                        default='twitter_hate_speech_v3')
+                        default='adult_multi_group')
 
     parser.add_argument('--log_file_name', '-log_file_name', help="the name of the log file",
                         type=str,
@@ -245,6 +251,7 @@ if __name__ == '__main__':
     parser.add_argument('--fairness_function', '-fairness_function', help="fairness function to concern with",
                         type=str,
                         default='equal_opportunity')
+
 
 
     args = parser.parse_args()
@@ -261,9 +268,9 @@ if __name__ == '__main__':
     runner_arguments = RunnerArguments(
         seed=42,
         dataset_name=args.dataset_name, # twitter_hate_speech
-        batch_size=1024,
+        batch_size=64,
         model='simple_non_linear',
-        epochs=10,
+        epochs=50,
         save_model_as=save_model_as,
         method=args.method, # unconstrained, adversarial_single
         optimizer_name='adam',
