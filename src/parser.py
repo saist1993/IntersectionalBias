@@ -15,8 +15,8 @@ print(basic_parser.get_best_run(dataset_name='adult_multi_group', method='uncons
 
 
 def temp_table_generator():
-    methods = ['unconstrained', 'unconstrained_with_fairness_loss']
-    dataset_names = ['adult']
+    methods = ['unconstrained', 'unconstrained_with_fairness_loss', 'adversarial_group', 'adversarial_group_with_fairness_loss']
+    dataset_names = ['twitter_hate_speech_v1']
     models = ['simple_non_linear']
     seeds = [10,20,30,40,50]
     fairness_function = 'equal_opportunity'
@@ -24,8 +24,8 @@ def temp_table_generator():
 
     rows = []
     average_rows = []
-    rows.append(['method', 'accuracy', 'fairness', 'confidence_interval', 'seed'])
-    average_rows.append(['method', 'accuracy', 'fairness'])
+    rows.append(['method', 'balanced accuracy', 'fairness', 'confidence_interval', 'seed'])
+    average_rows.append(['method', 'balanced accuracy', 'fairness'])
 
     for dataset in dataset_names:
         for model in models:
@@ -39,7 +39,7 @@ def temp_table_generator():
                                               level_1_strategy_params=level_1_strategy_params,
                                               level_2_strategy='relaxation_threshold',
                                               level_2_strategy_params=level_2_strategy_params)
-                    accuracy = result.test_epoch_metric.accuracy
+                    accuracy = result.test_epoch_metric.balanced_accuracy
                     fairness = result.test_epoch_metric.eps_fairness[fairness_function].intersectional_bootstrap[0]
                     confidence_interval = result.test_epoch_metric.eps_fairness[fairness_function].intersectional_bootstrap[1]
                     confidence_interval[0], confidence_interval[1] = round(confidence_interval[0], k),\
