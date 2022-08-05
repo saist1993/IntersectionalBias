@@ -43,7 +43,7 @@ class RunnerArguments(NamedTuple):
     fairness_lambda: float = 0.0
     log_file_name: Optional[str] = None
     fairness_function: str = 'equal_opportunity'
-
+    titled_erm:float = 1
 
 
 def get_logger(unique_id_for_run, log_file_name:Optional[str], runner_arguments):
