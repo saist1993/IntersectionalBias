@@ -44,7 +44,7 @@ class RunnerArguments(NamedTuple):
     fairness_lambda: float = 0.0
     log_file_name: Optional[str] = None
     fairness_function: str = 'equal_opportunity'
-    titled_t:float = 10
+    titled_t:float = 5.0
 
 
 def get_logger(unique_id_for_run, log_file_name:Optional[str], runner_arguments):
@@ -209,7 +209,7 @@ def runner(runner_arguments:RunnerArguments):
                       'fairness_lambda': runner_arguments.fairness_lambda,
                       'batch_size': runner_arguments.batch_size,
                       'titled_t': runner_arguments.titled_t,
-                      'gamma': 2},
+                      'gamma': 0.2},
         fairness_function=runner_arguments.fairness_function
     )
     # Combine everything
@@ -235,7 +235,7 @@ if __name__ == '__main__':
     parser.add_argument('--adversarial_lambda', '-adversarial_lambda', help="the lambda in the adv loss equation", type=float,
                         default=1.5)
     parser.add_argument('--fairness_lambda', '-fairness_lambda', help="the lambda in the fairness loss equation", type=float,
-                        default=0.5)
+                        default=0.0)
     parser.add_argument('--method', '-method', help="unconstrained/adversarial_single/adversarial_group", type=str,
                         default='tilted_erm')
     parser.add_argument('--save_model_as', '-save_model_as', help="unconstrained/adversarial_single/adversarial_group", type=str,
@@ -266,11 +266,11 @@ if __name__ == '__main__':
 
 
     runner_arguments = RunnerArguments(
-        seed=42,
+        seed=10,
         dataset_name=args.dataset_name, # twitter_hate_speech
-        batch_size=64,
+        batch_size=512,
         model='simple_non_linear',
-        epochs=50,
+        epochs=200,
         save_model_as=save_model_as,
         method=args.method, # unconstrained, adversarial_single
         optimizer_name='adam',
