@@ -45,6 +45,8 @@ class RunnerArguments(NamedTuple):
     log_file_name: Optional[str] = None
     fairness_function: str = 'equal_opportunity'
     titled_t:float = 5.0
+    mixup_rg:float = 0.5
+
 
 
 def get_logger(unique_id_for_run, log_file_name:Optional[str], runner_arguments):
@@ -93,7 +95,8 @@ def get_model(method:str, model_name:str, other_meta_data:Dict, device:torch.dev
             'device': device
         }
 
-        if method in ['unconstrained', 'unconstrained_with_fairness_loss', 'tilted_erm']:
+        if method in ['unconstrained', 'unconstrained_with_fairness_loss',
+                      'only_titled_erm', 'only_mixup', 'tilted_erm_with_mixup']:
             model = simple_model.SimpleNonLinear(model_params)
         elif method == 'adversarial_single':
             total_adv_dim = len(other_meta_data['s_flatten_lookup'])
@@ -209,7 +212,8 @@ def runner(runner_arguments:RunnerArguments):
                       'fairness_lambda': runner_arguments.fairness_lambda,
                       'batch_size': runner_arguments.batch_size,
                       'titled_t': runner_arguments.titled_t,
-                      'gamma': 0.2},
+                      'gamma': 0.2,
+                      'mixup_rg': runner_arguments.mixup_rg},
         fairness_function=runner_arguments.fairness_function
     )
     # Combine everything
@@ -220,7 +224,7 @@ def runner(runner_arguments:RunnerArguments):
         output = adversarial_training_loop.training_loop(training_loop_params)
     elif runner_arguments.method in ['adversarial_moe']:
         output = adversarial_moe_training_loop.training_loop(training_loop_params)
-    elif runner_arguments.method == 'tilted_erm':
+    elif runner_arguments.method in ['only_titled_erm', 'only_mixup', 'tilted_erm_with_mixup']:
         output = titled_erm_training_loop.training_loop(training_loop_params)
     else:
         raise NotImplementedError
@@ -237,7 +241,7 @@ if __name__ == '__main__':
     parser.add_argument('--fairness_lambda', '-fairness_lambda', help="the lambda in the fairness loss equation", type=float,
                         default=0.0)
     parser.add_argument('--method', '-method', help="unconstrained/adversarial_single/adversarial_group", type=str,
-                        default='tilted_erm')
+                        default='tilted_erm_with_mixup')
     parser.add_argument('--save_model_as', '-save_model_as', help="unconstrained/adversarial_single/adversarial_group", type=str,
                         default=None)
     parser.add_argument('--dataset_name', '-dataset_name', help="twitter_hate_speech/adult_multi_group",
@@ -251,6 +255,14 @@ if __name__ == '__main__':
     parser.add_argument('--fairness_function', '-fairness_function', help="fairness function to concern with",
                         type=str,
                         default='equal_opportunity')
+
+    parser.add_argument('--titled_t', '-titled_t', help="fairness function to concern with",
+                        type=float,
+                        default=5.0)
+
+    parser.add_argument('--mixup_rg', '-mixup_rg', help="fairness function to concern with",
+                        type=float,
+                        default=0.5)
 
 
 
@@ -281,7 +293,9 @@ if __name__ == '__main__':
         attribute_id=None,  # which attribute to care about!
         fairness_lambda=args.fairness_lambda,
         log_file_name=args.log_file_name,
-        fairness_function=args.fairness_function
+        fairness_function=args.fairness_function,
+        titled_t=args.titled_t,
+        mixup_rg=args.mixup_rg
     )
 
 

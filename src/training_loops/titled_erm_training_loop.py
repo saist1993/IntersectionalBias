@@ -12,7 +12,7 @@ def train_only_mixup(train_tilted_params:TrainParameters):
     global_weight = train_tilted_params.other_params['global_weight']
     global_loss = train_tilted_params.other_params['global_loss']
     tilt_t = train_tilted_params.other_params['titled_t']
-    gamma = train_tilted_params.other_params['gamma']
+    mixup_rg = train_tilted_params.other_params['mixup_rg']
 
     model, optimizer, device, criterion = \
         train_tilted_params.model, train_tilted_params.optimizer, train_tilted_params.device, train_tilted_params.criterion
@@ -89,7 +89,7 @@ def train_only_mixup(train_tilted_params:TrainParameters):
         loss_reg = torch.abs(E_grad)
 
 
-        loss = loss + 0.5*loss_reg
+        loss = loss + mixup_rg*loss_reg
 
 
 
@@ -106,8 +106,7 @@ def train_only_mixup(train_tilted_params:TrainParameters):
                                                                    track_input,
                                                                    train_tilted_params.fairness_function)
 
-    print(global_weight)
-    # print(global_loss)
+
 
     return epoch_metric_tracker, loss, global_weight, global_loss
 
@@ -118,7 +117,8 @@ def train_with_mixup(train_tilted_params:TrainParameters):
     global_weight = train_tilted_params.other_params['global_weight']
     global_loss = train_tilted_params.other_params['global_loss']
     tilt_t = train_tilted_params.other_params['titled_t']
-    gamma = train_tilted_params.other_params['gamma']
+    mixup_rg = train_tilted_params.other_params['mixup_rg']
+
 
     model, optimizer, device, criterion = \
         train_tilted_params.model, train_tilted_params.optimizer, train_tilted_params.device, train_tilted_params.criterion
@@ -195,7 +195,7 @@ def train_with_mixup(train_tilted_params:TrainParameters):
         loss_reg = torch.abs(E_grad)
 
 
-        loss = loss + 0.75*loss_reg
+        loss = loss + mixup_rg*loss_reg
 
 
 
@@ -212,8 +212,7 @@ def train_with_mixup(train_tilted_params:TrainParameters):
                                                                    track_input,
                                                                    train_tilted_params.fairness_function)
 
-    print(global_weight)
-    # print(global_loss)
+
 
     return epoch_metric_tracker, loss, global_weight, global_loss
 
@@ -224,7 +223,6 @@ def train_only_tilted_erm(train_tilted_params:TrainParameters):
     global_weight = train_tilted_params.other_params['global_weight']
     global_loss = train_tilted_params.other_params['global_loss']
     tilt_t = train_tilted_params.other_params['titled_t']
-    gamma = train_tilted_params.other_params['gamma']
 
     model, optimizer, device, criterion = \
         train_tilted_params.model, train_tilted_params.optimizer, train_tilted_params.device, train_tilted_params.criterion
@@ -355,7 +353,7 @@ def training_loop(training_loop_parameters: TrainingLoopParameters):
     best_test_accuracy = 0.0
     best_eopp = 1.0
 
-    training_loop_type = training_loop_parameters.other_params['training_loop_type']
+    training_loop_type = training_loop_parameters.other_params['method']
     # Housekeeping because we cannot use a simple iter which is returned by the dataset_parser!
     _labels, _input, _lengths, _aux, _aux_flattened = [], [], [], [], []
     for items in (training_loop_parameters.iterators[0]['train_iterator']):
