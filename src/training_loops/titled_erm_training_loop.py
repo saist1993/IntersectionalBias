@@ -387,7 +387,7 @@ def training_loop(training_loop_parameters: TrainingLoopParameters):
 
     for ep in range(training_loop_parameters.n_epochs):
 
-
+        logger.info("start of epoch block  ")
 
         training_loop_parameters.other_params['number_of_iterations'] = int(size_of_training_dataset/training_loop_parameters.other_params['batch_size'])
         training_loop_parameters.other_params['global_weight'] = global_weight
