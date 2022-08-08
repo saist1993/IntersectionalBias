@@ -218,6 +218,102 @@ def train_with_mixup(train_tilted_params:TrainParameters):
 
 
 
+
+def train_tilted_erm_with_fairness_loss(train_tilted_params:TrainParameters):
+
+    global_weight = train_tilted_params.other_params['global_weight']
+    global_loss = train_tilted_params.other_params['global_loss']
+    tilt_t = train_tilted_params.other_params['titled_t']
+    mixup_rg = train_tilted_params.other_params['mixup_rg']
+
+
+    model, optimizer, device, criterion = \
+        train_tilted_params.model, train_tilted_params.optimizer, train_tilted_params.device, train_tilted_params.criterion
+    model.train()
+    track_output = []
+    track_input = []
+
+    for i in tqdm(range(train_tilted_params.other_params['number_of_iterations'])):
+        s_group_0, s_group_1 = np.random.choice(train_tilted_params.other_params['groups'], 2, p=global_weight, replace=False)
+        # s = F.gumbel_softmax(global_weight, tau=1/10, hard=True).nonzero()[0][0].item()
+
+        if train_tilted_params.fairness_function == 'equal_opportunity':
+            items_group_0 = sample_batch_sen_idx(train_tilted_params.other_params['all_input'],
+                                         train_tilted_params.other_params['all_label'],
+                                         train_tilted_params.other_params['all_aux'],
+                                         train_tilted_params.other_params['all_aux_flatten'],
+                                         train_tilted_params.other_params['batch_size'],
+                                         s_group_0)
+
+            items_group_1 = sample_batch_sen_idx(train_tilted_params.other_params['all_input'],
+                                                 train_tilted_params.other_params['all_label'],
+                                                 train_tilted_params.other_params['all_aux'],
+                                                 train_tilted_params.other_params['all_aux_flatten'],
+                                                 train_tilted_params.other_params['batch_size'],
+                                                 s_group_1)
+
+        else:
+            raise NotImplementedError
+
+        for key in items_group_0.keys():
+            items_group_0[key] = items_group_0[key].to(train_tilted_params.device)
+
+        for key in items_group_1.keys():
+            items_group_1[key] = items_group_1[key].to(train_tilted_params.device)
+
+        composite_items = {
+            'input': torch.vstack([items_group_0['input'], items_group_1['input']]),
+            'labels': torch.hstack([items_group_0['labels'], items_group_1['labels']]),
+            'aux': torch.vstack([items_group_0['aux'], items_group_1['aux']]),
+            'aux_flattened': torch.hstack([items_group_0['aux_flattened'], items_group_1['aux_flattened']])
+        }
+
+        optimizer.zero_grad()
+        output = model(composite_items)
+        loss = criterion(output['prediction'], composite_items['labels'])
+        loss_without_backward_group_0 = torch.mean(loss[:len(items_group_0['input'])])
+        loss_without_backward_group_1 = torch.mean(loss[len(items_group_0['input']):])
+        loss = torch.mean(loss)
+
+
+
+
+        global_loss[s_group_0] =  0.2 * torch.exp(tilt_t*torch.clone(loss_without_backward_group_0).detach()) + 0.8 * global_loss[s_group_0]
+        global_loss[s_group_1] =  0.2 * torch.exp(tilt_t*torch.clone(loss_without_backward_group_1).detach()) + 0.8 * global_loss[s_group_1]
+
+        # weights = torch.exp(tao*loss_without_backward - tao*global_loss[s])
+        global_weight = global_loss / torch.sum(global_loss)
+        # global_weight = global_loss
+        # loss = torch.mean(weights*loss)
+
+
+        # fair mixup now
+
+
+
+        loss = loss + mixup_rg*abs(loss_without_backward_group_0 - loss_without_backward_group_1)
+
+
+
+        loss.backward()
+        optimizer.step()
+
+        output['loss_batch'] = loss.item()
+        track_output.append(output)
+        track_input.append(composite_items)
+
+
+
+    epoch_metric_tracker, loss = train_tilted_params.per_epoch_metric(track_output,
+                                                                   track_input,
+                                                                   train_tilted_params.fairness_function)
+
+
+
+    return epoch_metric_tracker, loss, global_weight, global_loss
+
+
+
 def train_only_tilted_erm(train_tilted_params:TrainParameters):
 
     global_weight = train_tilted_params.other_params['global_weight']
@@ -277,6 +373,11 @@ def train_only_tilted_erm(train_tilted_params:TrainParameters):
 
 
     return epoch_metric_tracker, loss, global_weight, global_loss
+
+
+
+
+
 
 
 def test(train_parameters: TrainParameters):
@@ -415,6 +516,8 @@ def training_loop(training_loop_parameters: TrainingLoopParameters):
             train_epoch_metric, loss, global_weight, global_loss = train_only_mixup(train_parameters)
         elif training_loop_type == 'only_titled_erm':
             train_epoch_metric, loss, global_weight, global_loss = train_only_tilted_erm(train_parameters)
+        elif training_loop_type == 'tilted_erm_with_fairness_loss':
+            train_epoch_metric, loss, global_weight, global_loss = train_tilted_erm_with_fairness_loss(train_parameters)
         log_epoch_metric(logger, start_message='train', epoch_metric=train_epoch_metric, epoch_number=ep, loss=loss)
         if training_loop_parameters.use_wandb:
             log_and_plot_data(epoch_metric=train_epoch_metric, loss=loss, train=True)
