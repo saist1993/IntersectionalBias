@@ -45,6 +45,10 @@ if __name__ == '__main__':
         titled_scales = [0.1, 1.0, 3.0, 5.0, 8.0, 10.0, 50.0]
         mixup_scales = [0.0]
 
+    if args.method == 'tilted_erm_with_fairness_loss':
+        titled_scales = [1.0, 5.0, 10.0]
+        mixup_scales = [0.3, 0.6, 0.9]
+
 
     for seed in args.seeds:
         for titled_scale in titled_scales:
