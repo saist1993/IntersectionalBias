@@ -8,7 +8,8 @@ from random import seed, shuffle, sample
 from scipy.stats import multivariate_normal
 from scipy.stats import norm as univariate_normal
 from .common_functionality import CreateIterators, IteratorData, split_data
-from .simple_classification_dataset_helper import get_adult_multigroups_data, get_adult_data
+from .simple_classification_dataset_helper import get_adult_multigroups_data, get_adult_data, \
+    get_celeb_multigroups_data_with_varying_protected_group
 
 @dataclass
 class GaussianInfo:
@@ -33,6 +34,9 @@ class SimpleClassificationDataset:
                     self.s = self.s[:, :2]
         elif self.dataset_name == 'adult':
             self.X, self.y, self.s = get_adult_data()
+        elif 'celeb_multigroup_v' in self.dataset_name:
+            k = int(self.dataset_name[-1])
+            self.X, self.y, self.s = get_celeb_multigroups_data_with_varying_protected_group(k=k)
 
         if len(self.s.shape) == 1:
             self.s = self.s.reshape(-1, 1)

@@ -106,6 +106,51 @@ def get_celeb_multigroups_data():
     return X, y, s
 
 
+def get_celeb_multigroups_data_with_varying_protected_group(k=5):
+    """Load the celebA dataset.
+    Source: http://mmlab.ie.cuhk.edu.hk/projects/CelebA.html
+
+    Parameters
+    ----------
+    load_data_size: int
+        The number of points to be loaded. If None, returns all data points unshuffled.
+
+    Returns
+    ---------
+    X: numpy array
+        The features of the datapoints with shape=(number_points, number_features).
+    y: numpy array
+        The class labels of the datapoints with shape=(number_points,).
+    s: numpy array
+        The binary sensitive attribute of the datapoints with shape=(number_points,).
+    """
+
+    # src_path = os.path.dirname(os.path.realpath(__file__))
+    if k > 7:
+        raise NotImplementedError
+
+    df = pd.read_csv(os.path.join(folder_location, 'celebA/list_attr_celeba.csv'), sep=';')
+    df = df.rename(columns={'Male': 'sex'})
+
+    protected_attribute = ['Pale_Skin', 'sex', 'Narrow_Eyes', 'Big_Nose', 'Young', 'Straight_Hair', 'Attractive'][:k]
+    s = [df[i]*-1 for i in protected_attribute]
+    y = df['Smiling']
+    df = df.drop(columns=['Smiling', 'picture_ID'])
+    df = df.drop(columns=protected_attribute)
+
+    X = df.to_numpy()
+    y = y.to_numpy()
+    s = np.asarray(s).transpose()
+    # s1 = s1.to_numpy()
+    # s2 = s2.to_numpy()
+
+    X = X[:, (X != 0).any(axis=0)]
+
+    # _, s = np.unique(np.hstack((s1.reshape(-1, 1), s2.reshape(-1, 1))), return_inverse=True, axis=0)
+
+    return X, y, s
+
+
 def get_adult_data(load_data_size=None):
     """Load the Adult dataset.
     Source: UCI Machine Learning Repository.
@@ -1001,7 +1046,7 @@ def normalize(x):
 if __name__ == '__main__':
     # x, y, s = load_adult_data_zafar()
     # x, y, s = get_adult_multigroups_data_sensr()
-    x, y, s = get_adult_multigroups_data()
+    x, y, s = get_celeb_multigroups_data_with_varying_protected_group(k=8)
 
     print(x.shape)
     print(s.shape)

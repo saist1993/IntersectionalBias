@@ -17,8 +17,9 @@ print(basic_parser.get_best_run(dataset_name='adult_multi_group', method='uncons
 def temp_table_generator():
     methods = ['unconstrained', 'unconstrained_with_fairness_loss',
                'adversarial_group', 'adversarial_group_with_fairness_loss',
-               'only_titled_erm', 'only_mixup', 'tilted_erm_with_mixup']
-    dataset_names = ['adult']
+               'only_titled_erm', 'only_mixup', 'tilted_erm_with_mixup',
+               'tilted_erm_with_fairness_loss']
+    dataset_names = ['adult_multi_group']
     models = ['simple_non_linear']
     seeds = [10,20,30,40,50]
     fairness_function = 'equal_opportunity'

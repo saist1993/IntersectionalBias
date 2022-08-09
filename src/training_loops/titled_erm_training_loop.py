@@ -127,7 +127,16 @@ def train_with_mixup(train_tilted_params:TrainParameters):
     track_input = []
 
     for i in tqdm(range(train_tilted_params.other_params['number_of_iterations'])):
-        s_group_0, s_group_1 = np.random.choice(train_tilted_params.other_params['groups'], 2, p=global_weight, replace=False)
+        # s_group_0, s_group_1 = np.random.choice(train_tilted_params.other_params['groups'], 2, p=global_weight, replace=False)
+        s_group_0 = np.random.choice(train_tilted_params.other_params['groups'], 1, p=global_weight, replace=False)[0]
+        break_flag = True
+        while break_flag:
+            temp_global_weight = np.reciprocal(global_weight)
+            temp_global_weight = temp_global_weight / np.linalg.norm(temp_global_weight, 1)# Invert all weights
+            s_group_1 = np.random.choice(train_tilted_params.other_params['groups'], 1, p=temp_global_weight, replace=False)[0]
+
+            if s_group_1 != s_group_0:
+                break_flag = False
         # s = F.gumbel_softmax(global_weight, tau=1/10, hard=True).nonzero()[0][0].item()
 
         if train_tilted_params.fairness_function == 'equal_opportunity':
