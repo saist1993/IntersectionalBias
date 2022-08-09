@@ -89,7 +89,9 @@ class CreateIterators:
     def get_iterators(self, iterator_data:IteratorData):
         train_X, train_y, train_s, dev_X, \
         dev_y, dev_s, test_X, test_y, test_s,batch_size,do_standard_scalar_transformation= iterator_data
-        self.flatten_s(train_s)
+        self.flatten_s(train_s) # need to add test as well as valid
+        self.flatten_s(test_s) # need to add test as well as valid
+        self.flatten_s(dev_s) # need to add test as well as valid
         if do_standard_scalar_transformation:
             scaler = StandardScaler().fit(train_X)
             train_X = scaler.transform(train_X)

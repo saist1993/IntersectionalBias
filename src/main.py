@@ -243,12 +243,12 @@ if __name__ == '__main__':
     parser.add_argument('--fairness_lambda', '-fairness_lambda', help="the lambda in the fairness loss equation", type=float,
                         default=0.0)
     parser.add_argument('--method', '-method', help="unconstrained/adversarial_single/adversarial_group", type=str,
-                        default='tilted_erm_with_mixup')
+                        default='unconstrained_with_fairness_loss')
     parser.add_argument('--save_model_as', '-save_model_as', help="unconstrained/adversarial_single/adversarial_group", type=str,
                         default=None)
     parser.add_argument('--dataset_name', '-dataset_name', help="twitter_hate_speech/adult_multi_group",
                         type=str,
-                        default='celeb_multigroup_v5')
+                        default='celeb_multigroup_v7')
 
     parser.add_argument('--log_file_name', '-log_file_name', help="the name of the log file",
                         type=str,
