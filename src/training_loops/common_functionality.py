@@ -40,12 +40,12 @@ class TrainingLoopParameters:
 
 def get_fairness_loss(fairness_function, loss, preds, aux, label, all_patterns):
 
-    if fairness_function == 'equal_opportunity':
+    if fairness_function == 'demographic_parity':
         losses = []
-        label_mask = label == 1
+        preds_mask = preds == 1
         for pattern in all_patterns:
             aux_mask = torch.einsum("ij->i", torch.eq(aux, pattern)) > aux.shape[1] - 1
-            final_mask = torch.logical_and(label_mask, aux_mask)
+            final_mask = torch.logical_and(preds_mask, aux_mask)
             _loss = loss[final_mask]
             if len(_loss) > 0:
                 losses.append(torch.mean(_loss))
@@ -54,7 +54,27 @@ def get_fairness_loss(fairness_function, loss, preds, aux, label, all_patterns):
             final_loss.append(abs(l1-l2))
         if len(losses) == 0:
             return None
-        return torch.stack(losses).sum()
+        return torch.stack(final_loss).sum()
+    elif fairness_function == 'equal_odds' or fairness_function == 'equal_opportunity':
+        losses = []
+        label_mask_1 = label == 1
+        label_mask_0 = label == 0
+        for pattern in all_patterns:
+            aux_mask = torch.einsum("ij->i", torch.eq(aux, pattern)) > aux.shape[1] - 1
+            final_mask_1 = torch.logical_and(label_mask_1, aux_mask)
+            final_mask_0 = torch.logical_and(label_mask_0, aux_mask)
+            _loss_1 = loss[final_mask_1]
+            _loss_0 = loss[final_mask_0]
+            losses.append([torch.mean(_loss_0),torch.mean(_loss_1)])
+        final_loss = []
+        for l1, l2 in combinations(losses, 2):
+            if len(l1[0]) > 0 and len(l2[0]) > 0 and fairness_function == 'equal_odds':
+                final_loss.append(abs(l1[0] - l2[0]))
+            if len(l1[1]) > 0 and len(l2[1]) > 0:
+                final_loss.append(abs(l1[1] - l2[1]))
+        if len(losses) == 0:
+            return None
+        return torch.stack(final_loss).sum()
     else:
         raise NotImplementedError
 

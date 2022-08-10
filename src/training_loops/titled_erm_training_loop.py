@@ -24,7 +24,7 @@ def train_only_mixup(train_tilted_params:TrainParameters):
         s_group_0, s_group_1 = np.random.choice(train_tilted_params.other_params['groups'], 2, replace=False)
         # s = F.gumbel_softmax(global_weight, tau=1/10, hard=True).nonzero()[0][0].item()
 
-        if train_tilted_params.fairness_function == 'equal_opportunity':
+        if train_tilted_params.fairness_function == 'demographic_parity':
             items_group_0 = sample_batch_sen_idx(train_tilted_params.other_params['all_input'],
                                          train_tilted_params.other_params['all_label'],
                                          train_tilted_params.other_params['all_aux'],
@@ -38,6 +38,29 @@ def train_only_mixup(train_tilted_params:TrainParameters):
                                                  train_tilted_params.other_params['all_aux_flatten'],
                                                  train_tilted_params.other_params['batch_size'],
                                                  s_group_1)
+
+        elif train_tilted_params.fairness_function == 'equal_odds' or \
+                train_tilted_params.fairness_function == 'equal_opportunity':
+            # group splits -
+            # What we want is y=0,g=g0 and y=1,g=g0
+            # here items_group_0 say with batch 500 -> first 250 are 0 label and next (last) 250 are 1 label
+            items_group_0 = sample_batch_sen_idx_with_y(train_tilted_params.other_params['all_input'],
+                                                 train_tilted_params.other_params['all_label'],
+                                                 train_tilted_params.other_params['all_aux'],
+                                                 train_tilted_params.other_params['all_aux_flatten'],
+                                                 train_tilted_params.other_params['batch_size'],
+                                                 s_group_0)
+            # What we want is y=0,g=g1 and y=1,g=g1
+            # here items_group_0 say with batch 500 -> first 250 are 0 label and next (last) 250 are 0 label
+            items_group_1 = sample_batch_sen_idx_with_y(train_tilted_params.other_params['all_input'],
+                                                 train_tilted_params.other_params['all_label'],
+                                                 train_tilted_params.other_params['all_aux'],
+                                                 train_tilted_params.other_params['all_aux_flatten'],
+                                                 train_tilted_params.other_params['batch_size'],
+                                                 s_group_1)
+            # group split
+
+            # class split
 
         else:
             raise NotImplementedError
@@ -58,56 +81,75 @@ def train_only_mixup(train_tilted_params:TrainParameters):
         optimizer.zero_grad()
         output = model(composite_items)
         loss = criterion(output['prediction'], composite_items['labels'])
-        loss_without_backward = torch.clone(loss).detach()
-        loss_without_backward_group_0 = torch.mean(loss_without_backward[:len(items_group_0['input'])])
-        loss_without_backward_group_1 = torch.mean(loss_without_backward[len(items_group_0['input']):])
         loss = torch.mean(loss)
 
 
+        # Mix up
 
-        global_loss[s_group_0] =  0.2 * torch.exp(tilt_t*loss_without_backward_group_0) + 0.8 * global_loss[s_group_0]
-        global_loss[s_group_1] =  0.2 * torch.exp(tilt_t*loss_without_backward_group_1) + 0.8 * global_loss[s_group_1]
-
-        # weights = torch.exp(tao*loss_without_backward - tao*global_loss[s])
-        global_weight = global_loss / torch.sum(global_loss)
-        # global_weight = global_loss
-        # loss = torch.mean(weights*loss)
-
-
-        # fair mixup now
         alpha = 1
         gamma = beta(alpha, alpha)
 
-        batch_x_mix = items_group_0['input'] * gamma + items_group_1['input'] * (1 - gamma)
-        batch_x_mix = batch_x_mix.requires_grad_(True)
-        output_mixup = model({'input':batch_x_mix})
-        gradx = torch.autograd.grad(output_mixup['prediction'].sum(), batch_x_mix, create_graph=True)[0] # may be .sum()
 
-        batch_x_d = items_group_1['input'] - items_group_0['input']
-        grad_inn = (gradx * batch_x_d).sum(1)
-        E_grad = grad_inn.mean(0)
-        loss_reg = torch.abs(E_grad)
+        if train_tilted_params.fairness_function == 'demographic_parity':
+            batch_x_mix = items_group_0['input'] * gamma + items_group_1['input'] * (1 - gamma)
+            batch_x_mix = batch_x_mix.requires_grad_(True)
+            output_mixup = model({'input': batch_x_mix})
+            gradx = torch.autograd.grad(output_mixup['prediction'].sum(), batch_x_mix, create_graph=True)[
+                0]  # may be .sum()
+
+            batch_x_d = items_group_1['input'] - items_group_0['input']
+            grad_inn = (gradx * batch_x_d).sum(1)
+            E_grad = grad_inn.mean(0)
+            loss_reg = torch.abs(E_grad)
+
+        elif train_tilted_params.fairness_function == 'equal_odds' or \
+            train_tilted_params.fairness_function == 'equal_opportunity':
+            split_index = int(train_tilted_params.other_params['batch_size']/2)
+            if train_tilted_params.fairness_function == 'equal_odds':
+                gold_labels = [0,1]
+            elif train_tilted_params.fairness_function == 'equal_opportunity':
+                gold_labels = [1]
+            else:
+                raise NotImplementedError
+            loss_reg = 0
+            for i in gold_labels:
+                if i == 0:
+                    index_start = 0
+                    index_end = split_index
+                elif i == 1:
+                    index_start = split_index
+                    index_end = -1
+                else:
+                    raise NotImplementedError("only support binary labels!")
+
+
+
+                batch_x_mix = items_group_0['input'][index_start:index_end] * gamma + items_group_1['input'][index_start:index_end] * (1 - gamma)
+                batch_x_mix = batch_x_mix.requires_grad_(True)
+                output_mixup = model({'input':batch_x_mix})
+                gradx = torch.autograd.grad(output_mixup['prediction'].sum(), batch_x_mix, create_graph=True)[0] # may be .sum()
+
+                batch_x_d = items_group_1['input'][index_start:index_end] - items_group_0['input'][index_start:index_end]
+                grad_inn = (gradx * batch_x_d).sum(1)
+                E_grad = grad_inn.mean(0)
+                loss_reg = loss_reg + torch.abs(E_grad)
+
+        else:
+            raise NotImplementedError
 
 
         loss = loss + mixup_rg*loss_reg
-
-
-
         loss.backward()
         optimizer.step()
+
 
         output['loss_batch'] = loss.item()
         track_output.append(output)
         track_input.append(composite_items)
 
-
-
     epoch_metric_tracker, loss = train_tilted_params.per_epoch_metric(track_output,
                                                                    track_input,
                                                                    train_tilted_params.fairness_function)
-
-
-
     return epoch_metric_tracker, loss, global_weight, global_loss
 
 
@@ -436,6 +478,28 @@ def sample_batch_sen_idx(all_input, all_label, all_aux, all_aux_flatten, batch_s
     }
 
     return batch_input
+
+
+
+def sample_batch_sen_idx_with_y(all_input, all_label, all_aux, all_aux_flatten, batch_size, s):
+    """
+        This will sample batch size number of elements from input with given s!
+    """
+    index_s_0 = np.where(np.logical_and(all_aux_flatten==s, all_label==0) == True)[0]
+    index_s_1 = np.where(np.logical_and(all_aux_flatten==s, all_label==1) == True)[0]
+    relevant_index = np.random.choice(index_s_0, size=int(batch_size/2), replace=True).tolist()
+    relevant_index = relevant_index + np.random.choice(index_s_1,size=int(batch_size/2), replace=True).tolist()
+
+    # THIS IS DIFFERENT. IN ORIGINAL VERSION IT IS REPLACEMENT TRUE
+    batch_input = {
+        'labels': torch.LongTensor(all_label[relevant_index]),
+        'input': torch.FloatTensor(all_input[relevant_index]),
+        'aux': torch.LongTensor(all_aux[relevant_index]),
+        'aux_flattened': torch.LongTensor(all_aux_flatten[relevant_index])
+    }
+
+    return batch_input
+
 
 
 def training_loop(training_loop_parameters: TrainingLoopParameters):

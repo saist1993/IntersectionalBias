@@ -19,7 +19,7 @@ def temp_table_generator():
                'adversarial_group', 'adversarial_group_with_fairness_loss',
                'only_titled_erm', 'only_mixup', 'tilted_erm_with_mixup',
                'tilted_erm_with_fairness_loss']
-    dataset_names = ['adult_multi_group']
+    dataset_names = ['twitter_hate_speech']
     models = ['simple_non_linear']
     seeds = [10,20,30,40,50]
     fairness_function = 'equal_opportunity'
