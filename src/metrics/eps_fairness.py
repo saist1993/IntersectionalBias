@@ -338,35 +338,37 @@ class EpsFairness(fairness_utils.FairnessTemplateClass):
 
 
 
-            if fairness_mode == 'demographic_parity':
-                """We also calculate the bias amplification ratio"""
-                fairness_mode_intersectional_smoothed_bias_amplification = get_analytics('intersectional',
-                                                                                         'smoothed_empirical_estimate',
-                                                                                         fairness_mode,
-                                                                                         True)
-                fairness_mode_intersectional_simple_bayesian_bias_amplification = get_analytics('intersectional',
-                                                                                                'simple_bayesian_estimate',
-                                                                                                fairness_mode,
-                                                                                                True)
+            # if fairness_mode == 'demographic_parity':
+            #     """We also calculate the bias amplification ratio"""
+            #     fairness_mode_intersectional_smoothed_bias_amplification = get_analytics('intersectional',
+            #                                                                              'smoothed_empirical_estimate',
+            #                                                                              fairness_mode,
+            #                                                                              True)
+            #     fairness_mode_intersectional_simple_bayesian_bias_amplification = get_analytics('intersectional',
+            #                                                                                     'simple_bayesian_estimate',
+            #                                                                                     fairness_mode,
+            #                                                                                     True)
+            #
+            #     fairness_mode_intersectional_bootstrap_bias_amplification = get_analytics('intersectional',
+            #                                                            'bootstrap_empirical_estimate',
+            #                                                            fairness_mode,
+            #                                                            True)
+            #
+            #     intersectional_smoothed_bias_amplification = fairness_mode_intersectional_smoothed[0] -\
+            #                                                  fairness_mode_intersectional_smoothed_bias_amplification[0]
+            #
+            #     intersectional_simple_bayesian_bias_amplification = fairness_mode_intersectional_simple_bayesian[0] - \
+            #                                                         fairness_mode_intersectional_simple_bayesian_bias_amplification[0]
+            #
+            #     intersectional_bootstrap_bias_amplification = fairness_mode_intersectional_bootstrap[0] - \
+            #                                                   fairness_mode_intersectional_bootstrap_bias_amplification[0]
+            #
+            # else:
 
-                fairness_mode_intersectional_bootstrap_bias_amplification = get_analytics('intersectional',
-                                                                       'bootstrap_empirical_estimate',
-                                                                       fairness_mode,
-                                                                       True)
 
-                intersectional_smoothed_bias_amplification = fairness_mode_intersectional_smoothed[0] -\
-                                                             fairness_mode_intersectional_smoothed_bias_amplification[0]
-
-                intersectional_simple_bayesian_bias_amplification = fairness_mode_intersectional_simple_bayesian[0] - \
-                                                                    fairness_mode_intersectional_simple_bayesian_bias_amplification[0]
-
-                intersectional_bootstrap_bias_amplification = fairness_mode_intersectional_bootstrap[0] - \
-                                                              fairness_mode_intersectional_bootstrap_bias_amplification[0]
-
-            else:
-                intersectional_smoothed_bias_amplification = 0
-                intersectional_simple_bayesian_bias_amplification = 0
-                intersectional_bootstrap_bias_amplification = 0
+            intersectional_smoothed_bias_amplification = 0
+            intersectional_simple_bayesian_bias_amplification = 0
+            intersectional_bootstrap_bias_amplification = 0
 
             fairness_metric_tracker = EPSFairnessMetric(
                 intersectional_smoothed=fairness_mode_intersectional_smoothed,

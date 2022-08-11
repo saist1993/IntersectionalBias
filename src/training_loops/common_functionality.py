@@ -42,7 +42,7 @@ def get_fairness_loss(fairness_function, loss, preds, aux, label, all_patterns):
 
     if fairness_function == 'demographic_parity':
         losses = []
-        preds_mask = preds == 1
+        preds_mask = torch.argmax(preds,1) == 1
         for pattern in all_patterns:
             aux_mask = torch.einsum("ij->i", torch.eq(aux, pattern)) > aux.shape[1] - 1
             final_mask = torch.logical_and(preds_mask, aux_mask)
@@ -52,8 +52,9 @@ def get_fairness_loss(fairness_function, loss, preds, aux, label, all_patterns):
         final_loss = []
         for l1, l2 in combinations(losses, 2):
             final_loss.append(abs(l1-l2))
-        if len(losses) == 0:
+        if len(final_loss) == 0:
             return None
+        # if len(final_loss) <
         return torch.stack(final_loss).sum()
     elif fairness_function == 'equal_odds' or fairness_function == 'equal_opportunity':
         losses = []
@@ -65,12 +66,22 @@ def get_fairness_loss(fairness_function, loss, preds, aux, label, all_patterns):
             final_mask_0 = torch.logical_and(label_mask_0, aux_mask)
             _loss_1 = loss[final_mask_1]
             _loss_0 = loss[final_mask_0]
-            losses.append([torch.mean(_loss_0),torch.mean(_loss_1)])
+            if len(_loss_1) == 0:
+                _loss_1 = None
+            else:
+                _loss_1 = torch.mean(_loss_1)
+
+            if len(_loss_0) == 0:
+                _loss_0 = None
+            else:
+                _loss_0 = torch.mean(_loss_0)
+
+            losses.append([_loss_0,_loss_1])
         final_loss = []
         for l1, l2 in combinations(losses, 2):
-            if len(l1[0]) > 0 and len(l2[0]) > 0 and fairness_function == 'equal_odds':
+            if l1[0] != None and l2[0] != None and fairness_function == 'equal_odds':
                 final_loss.append(abs(l1[0] - l2[0]))
-            if len(l1[1]) > 0 and len(l2[1]) > 0:
+            if l1[1] != None and l2[1] != None:
                 final_loss.append(abs(l1[1] - l2[1]))
         if len(losses) == 0:
             return None
