@@ -83,7 +83,7 @@ def get_fairness_loss(fairness_function, loss, preds, aux, label, all_patterns):
                 final_loss.append(abs(l1[0] - l2[0]))
             if l1[1] != None and l2[1] != None:
                 final_loss.append(abs(l1[1] - l2[1]))
-        if len(losses) == 0:
+        if len(final_loss) == 0:
             return None
         return torch.stack(final_loss).sum()
     else:
