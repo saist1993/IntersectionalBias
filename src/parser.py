@@ -8,10 +8,10 @@ level_1_strategy_params = {'keep_last_k': 100.0}
 level_2_strategy_params = {'relaxation_threshold': 0.02,
                            'fairness_function': fairness_function}
 #
-print(basic_parser.get_best_run(dataset_name='adult_multi_group', method='unconstrained', model='simple_non_linear',
-                          seed=10, fairness_function=fairness_function,
-                          level_1_strategy='keep_last_k', level_1_strategy_params=level_1_strategy_params,
-                          level_2_strategy='relaxation_threshold', level_2_strategy_params=level_2_strategy_params))
+# print(basic_parser.get_best_run(dataset_name='adult_multi_group', method='unconstrained', model='simple_non_linear',
+#                           seed=10, fairness_function=fairness_function,
+#                           level_1_strategy='keep_last_k', level_1_strategy_params=level_1_strategy_params,
+#                           level_2_strategy='relaxation_threshold', level_2_strategy_params=level_2_strategy_params))
 
 
 def temp_table_generator():
@@ -20,11 +20,11 @@ def temp_table_generator():
     #            'only_titled_erm', 'only_mixup', 'tilted_erm_with_mixup',
     #            'tilted_erm_with_fairness_loss']
 
-    methods = ['unconstrained', 'unconstrained_with_fairness_loss'
+    methods = ['unconstrained', 'unconstrained_with_fairness_loss',
                'adversarial_group',
                'only_titled_erm', 'only_mixup', 'tilted_erm_with_mixup',
                ]
-    dataset_names = ['adult']
+    dataset_names = ['adult_multi_group']
     models = ['simple_non_linear']
     seeds = [10,20,30,40,50]
     fairness_function = 'equal_opportunity'
