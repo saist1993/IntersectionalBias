@@ -443,15 +443,12 @@ def train_only_tilted_erm(train_tilted_params:TrainParameters):
         s = np.random.choice(train_tilted_params.other_params['groups'], 1, p=global_weight)[0]
         # s = F.gumbel_softmax(global_weight, tau=1/10, hard=True).nonzero()[0][0].item()
 
-        if train_tilted_params.fairness_function == 'equal_opportunity':
-            items = sample_batch_sen_idx(train_tilted_params.other_params['all_input'],
-                                         train_tilted_params.other_params['all_label'],
-                                         train_tilted_params.other_params['all_aux'],
-                                         train_tilted_params.other_params['all_aux_flatten'],
-                                         train_tilted_params.other_params['batch_size'],
-                                         s)
-        else:
-            raise NotImplementedError
+        items = sample_batch_sen_idx(train_tilted_params.other_params['all_input'],
+                                     train_tilted_params.other_params['all_label'],
+                                     train_tilted_params.other_params['all_aux'],
+                                     train_tilted_params.other_params['all_aux_flatten'],
+                                     train_tilted_params.other_params['batch_size'],
+                                     s)
 
         for key in items.keys():
             items[key] = items[key].to(train_tilted_params.device)
