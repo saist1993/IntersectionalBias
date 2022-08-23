@@ -85,8 +85,14 @@ def train_only_mixup(train_tilted_params:TrainParameters):
 
 
         # Mix up
-
-        alpha = 1
+        #
+        # if abs(sum(items_group_1['aux'][0]) - sum(items_group_0['aux'][0])) > 1:
+        #     alpha = 1.0
+        #     gamma = beta(alpha, alpha)
+        # else:
+        #     alpha = 1.0
+        #     gamma = beta(alpha, alpha)
+        alpha = 1.0
         gamma = beta(alpha, alpha)
 
 
@@ -101,6 +107,7 @@ def train_only_mixup(train_tilted_params:TrainParameters):
             grad_inn = (gradx * batch_x_d).sum(1)
             E_grad = grad_inn.mean(0)
             loss_reg = torch.abs(E_grad)
+            # loss_reg = torch.abs(E_grad)/torch.mean(loss[len(items_group_0['input']):])
 
         elif train_tilted_params.fairness_function == 'equal_odds' or \
             train_tilted_params.fairness_function == 'equal_opportunity':

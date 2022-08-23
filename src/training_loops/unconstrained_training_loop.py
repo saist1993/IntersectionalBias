@@ -46,7 +46,8 @@ def train(train_parameters: TrainParameters):
         if mode == 'train':
             optimizer.zero_grad()
             output = model(items)
-            loss = criterion(output['prediction'], items['labels'])
+
+            loss = criterion(output['prediction'], items['labels'], items['aux_flattened'], mode='train')
 
             if train_parameters.other_params['fairness_lambda'] != 0.0:
                 fairness_loss = \
@@ -64,7 +65,7 @@ def train(train_parameters: TrainParameters):
         elif mode == 'evaluate':
             with torch.no_grad():
                 output = model(items)
-                loss = torch.mean(criterion(output['prediction'], items['labels']))  # As reduction is None.
+                loss = torch.mean(criterion(output['prediction'], items['labels'], mode='eval'))  # As reduction is None.
         else:
             raise misc.CustomError("only supports train and evaluate")
 

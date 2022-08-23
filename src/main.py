@@ -10,6 +10,7 @@ import torch.nn as nn
 from pathlib import Path
 from functools import partial
 from utils import plot_and_visualize
+from fairgrad.torch import CrossEntropyLoss as fairgrad_CrossEntropyLoss
 from typing import NamedTuple, Dict, Optional
 from training_loops import titled_erm_training_loop
 from training_loops import adversarial_training_loop
@@ -47,6 +48,25 @@ class RunnerArguments(NamedTuple):
     titled_t:float = 5.0
     mixup_rg:float = 0.5
 
+
+def get_fairness_related_meta_dict(train_iterator, fairness_measure, fairness_rate, epsilon):
+    all_train_y, all_train_s = [], []
+    for items in train_iterator:
+        all_train_y.append(items['labels'])
+        all_train_s.append(items['aux_flattened'])
+
+    all_train_y = np.hstack(all_train_y)
+    all_train_s = np.hstack(all_train_s)
+
+    fairness_related_info = {
+        'y_train': all_train_y,
+        's_train': all_train_s,
+        'fairness_measure': fairness_measure,
+        'fairness_rate': fairness_rate,
+        'epsilon': epsilon
+    }
+
+    return fairness_related_info
 
 
 def get_logger(unique_id_for_run, log_file_name:Optional[str], runner_arguments):
@@ -97,7 +117,7 @@ def get_model(method:str, model_name:str, other_meta_data:Dict, device:torch.dev
 
         if method in ['unconstrained', 'unconstrained_with_fairness_loss',
                       'only_titled_erm', 'only_mixup', 'tilted_erm_with_mixup',
-                      'tilted_erm_with_fairness_loss']:
+                      'tilted_erm_with_fairness_loss', 'fairgrad']:
             model = simple_model.SimpleNonLinear(model_params)
         elif method == 'adversarial_single':
             total_adv_dim = len(other_meta_data['s_flatten_lookup'])
@@ -192,7 +212,14 @@ def runner(runner_arguments:RunnerArguments):
 
     # Create optimizer and loss function
     optimizer = make_opt(model, get_optimizer(runner_arguments.optimizer_name), lr=runner_arguments.lr)
-    criterion = nn.CrossEntropyLoss(reduction='none')
+    if runner_arguments.method == 'fairgrad':
+        fairness_related_meta_data = get_fairness_related_meta_dict(iterators[0]['train_iterator'],
+                                                                    runner_arguments.fairness_function,
+                                                                    fairness_rate=0.01,
+                                                                    epsilon=0.0)
+        criterion = fairgrad_CrossEntropyLoss(reduction='none', **fairness_related_meta_data)
+    else:
+        criterion = fairgrad_CrossEntropyLoss(reduction='none')
 
     # Fairness function (Later)
 
@@ -219,7 +246,7 @@ def runner(runner_arguments:RunnerArguments):
     )
     # Combine everything
 
-    if 'unconstrained' in runner_arguments.method :
+    if 'unconstrained' in runner_arguments.method or 'fairgrad' in  runner_arguments.method:
         output = unconstrained_training_loop.training_loop(training_loop_params)
     elif runner_arguments.method in ['adversarial_group', 'adversarial_single', 'adversarial_group_with_fairness_loss']:
         output = adversarial_training_loop.training_loop(training_loop_params)
@@ -243,12 +270,12 @@ if __name__ == '__main__':
     parser.add_argument('--fairness_lambda', '-fairness_lambda', help="the lambda in the fairness loss equation", type=float,
                         default=0.1)
     parser.add_argument('--method', '-method', help="unconstrained/adversarial_single/adversarial_group", type=str,
-                        default='only_titled_erm')
+                        default='fairgrad')
     parser.add_argument('--save_model_as', '-save_model_as', help="unconstrained/adversarial_single/adversarial_group", type=str,
                         default=None)
     parser.add_argument('--dataset_name', '-dataset_name', help="twitter_hate_speech/adult_multi_group",
                         type=str,
-                        default='celeb_multigroup_v3')
+                        default='adult_multi_group')
 
     parser.add_argument('--log_file_name', '-log_file_name', help="the name of the log file",
                         type=str,
@@ -256,7 +283,7 @@ if __name__ == '__main__':
 
     parser.add_argument('--fairness_function', '-fairness_function', help="fairness function to concern with",
                         type=str,
-                        default='equal_opportunity')
+                        default='equal_odds')
 
     parser.add_argument('--titled_t', '-titled_t', help="fairness function to concern with",
                         type=float,
@@ -282,13 +309,13 @@ if __name__ == '__main__':
     runner_arguments = RunnerArguments(
         seed=10,
         dataset_name=args.dataset_name, # twitter_hate_speech
-        batch_size=512,
+        batch_size=1024,
         model='simple_non_linear',
         epochs=200,
         save_model_as=save_model_as,
         method=args.method, # unconstrained, adversarial_single
-        optimizer_name='adam',
-        lr=0.001,
+        optimizer_name='sgd',
+        lr=0.1,
         use_wandb=False,
         adversarial_lambda=args.adversarial_lambda,
         dataset_size=10000,
