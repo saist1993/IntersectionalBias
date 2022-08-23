@@ -21,14 +21,19 @@ def temp_table_generator():
     #            'tilted_erm_with_fairness_loss']
 
     methods = ['unconstrained', 'unconstrained_with_fairness_loss',
-               'adversarial_group',
+               'adversarial_group','only_titled_erm',
                 'only_mixup', 'tilted_erm_with_mixup',
                ]
-    dataset_names = ['adult_multi_group']
+
+    dataset_names = ['twitter_hate_speech']
     models = ['simple_non_linear']
     seeds = [10,20,30,40,50]
     fairness_function = 'equal_odds'
     k = 2
+
+    level_1_strategy_params = {'keep_last_k': 100.0}
+    level_2_strategy_params = {'relaxation_threshold': 0.02,
+                               'fairness_function': fairness_function}
 
     rows = []
     average_rows = []

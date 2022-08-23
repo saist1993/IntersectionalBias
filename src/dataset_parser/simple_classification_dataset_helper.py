@@ -141,6 +141,7 @@ def get_celeb_multigroups_data_with_varying_protected_group(k=5):
     X = df.to_numpy()
     y = y.to_numpy()
     s = np.asarray(s).transpose()
+    s = np.vstack(s.tolist())
     # s1 = s1.to_numpy()
     # s2 = s2.to_numpy()
 

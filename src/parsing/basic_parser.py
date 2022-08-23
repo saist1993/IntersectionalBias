@@ -42,7 +42,11 @@ class BestCandidateMechanism:
         self.data = pruned_data
 
     def relaxation_threshold(self):
-        best_validation_accuracy = max([block.valid_epoch_metric.accuracy for blocks in self.data for block in blocks])
+        try:
+           best_validation_accuracy = max([block.valid_epoch_metric.accuracy for blocks in self.data for block in blocks])
+           print(best_validation_accuracy)
+        except ValueError:
+            print("here")
         all_blocks_flat = [block for blocks in self.data for block in blocks
                            if block.valid_epoch_metric.accuracy > best_validation_accuracy -
                            self.level_2_strategy_params['relaxation_threshold']]
@@ -82,6 +86,8 @@ class BasicLogParser:
 
     def core_parser(self, file_name:Path):
         print(f"file name received {file_name}")
+        if 'kNpapCsDje9NtBjYUVK3yL.log' in str(file_name):
+            print("here")
         with open(file_name, 'r') as f:
             lines = [line for line in f]
             unique_id = lines[0].split("unique id is:")[1]

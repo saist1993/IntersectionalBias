@@ -47,9 +47,9 @@ class CreateIterators:
 
         labels = torch.LongTensor(labels)
         aux_flattened = torch.LongTensor(self.get_flatten_s(aux))
-        aux = torch.LongTensor(aux)
+        aux = torch.LongTensor(np.asarray(aux))
         lengths = torch.LongTensor([len(x) for x in encoded_input])
-        encoded_input = torch.FloatTensor(encoded_input)
+        encoded_input = torch.FloatTensor(np.asarray(encoded_input))
 
         input_data = {
             'labels': labels,
