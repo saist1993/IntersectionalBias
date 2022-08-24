@@ -117,7 +117,7 @@ def get_model(method:str, model_name:str, other_meta_data:Dict, device:torch.dev
 
         if method in ['unconstrained', 'unconstrained_with_fairness_loss',
                       'only_titled_erm', 'only_mixup', 'tilted_erm_with_mixup',
-                      'tilted_erm_with_fairness_loss', 'fairgrad', 'only_mixup_with_loss_group']:
+                      'tilted_erm_with_fairness_loss', 'fairgrad', 'only_mixup_with_loss_group', 'tilted_erm_with_mixup_only_one_group']:
             model = simple_model.SimpleNonLinear(model_params)
         elif method == 'adversarial_single':
             total_adv_dim = len(other_meta_data['s_flatten_lookup'])
@@ -253,7 +253,7 @@ def runner(runner_arguments:RunnerArguments):
     elif runner_arguments.method in ['adversarial_moe']:
         output = adversarial_moe_training_loop.training_loop(training_loop_params)
     elif runner_arguments.method in ['only_titled_erm', 'only_mixup', 'only_mixup_with_loss_group',
-                                     'tilted_erm_with_mixup', 'tilted_erm_with_fairness_loss']:
+                                     'tilted_erm_with_mixup', 'tilted_erm_with_fairness_loss', 'tilted_erm_with_mixup_only_one_group']:
         output = titled_erm_training_loop.training_loop(training_loop_params)
     else:
         raise NotImplementedError
@@ -270,7 +270,7 @@ if __name__ == '__main__':
     parser.add_argument('--fairness_lambda', '-fairness_lambda', help="the lambda in the fairness loss equation", type=float,
                         default=0.1)
     parser.add_argument('--method', '-method', help="unconstrained/adversarial_single/adversarial_group", type=str,
-                        default='only_mixup_with_loss_group')
+                        default='tilted_erm_with_mixup_only_one_group')
     parser.add_argument('--save_model_as', '-save_model_as', help="unconstrained/adversarial_single/adversarial_group", type=str,
                         default=None)
     parser.add_argument('--dataset_name', '-dataset_name', help="twitter_hate_speech/adult_multi_group",

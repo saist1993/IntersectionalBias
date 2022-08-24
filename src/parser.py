@@ -22,13 +22,13 @@ def temp_table_generator():
 
     methods = ['unconstrained', 'unconstrained_with_fairness_loss',
                'adversarial_group','fairgrad', 'only_titled_erm',
-                'only_mixup', 'tilted_erm_with_mixup',
+                'only_mixup', 'tilted_erm_with_mixup'
                ]
 
-    dataset_names = ['celeb_multigroup_v3']
+    dataset_names = ['adult_multi_group']
     models = ['simple_non_linear']
     seeds = [10,20,30,40,50]
-    fairness_function = 'equal_opportunity'
+    fairness_function = 'equal_odds'
     k = 2
 
     level_1_strategy_params = {'keep_last_k': 100.0}
