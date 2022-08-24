@@ -81,7 +81,7 @@ def train_only_mixup(train_tilted_params:TrainParameters):
         optimizer.zero_grad()
         output = model(composite_items)
         loss = criterion(output['prediction'], composite_items['labels'])
-        loss = torch.mean(loss)
+
 
 
         # Mix up
@@ -106,8 +106,10 @@ def train_only_mixup(train_tilted_params:TrainParameters):
             batch_x_d = items_group_1['input'] - items_group_0['input']
             grad_inn = (gradx * batch_x_d).sum(1)
             E_grad = grad_inn.mean(0)
-            loss_reg = torch.abs(E_grad)
-            # loss_reg = torch.abs(E_grad)/torch.mean(loss[len(items_group_0['input']):])
+            if train_tilted_params.other_params['method'] == 'only_mixup_with_loss_group':
+                loss_reg = torch.abs(E_grad)/torch.mean(loss[len(items_group_0['input']):])
+            else:
+                loss_reg = torch.abs(E_grad)
 
         elif train_tilted_params.fairness_function == 'equal_odds' or \
             train_tilted_params.fairness_function == 'equal_opportunity':
@@ -139,12 +141,16 @@ def train_only_mixup(train_tilted_params:TrainParameters):
                 batch_x_d = items_group_1['input'][index_start:index_end] - items_group_0['input'][index_start:index_end]
                 grad_inn = (gradx * batch_x_d).sum(1)
                 E_grad = grad_inn.mean(0)
-                loss_reg = loss_reg + torch.abs(E_grad)
+                if train_tilted_params.other_params['method'] == 'only_mixup_with_loss_group':
+                    loss_reg = loss_reg +  torch.abs(E_grad) / torch.mean(loss[index_start:index_end])
+                else:
+                    loss_reg = loss_reg + torch.abs(E_grad)
+                # loss_reg = loss_reg + torch.abs(E_grad)
 
         else:
             raise NotImplementedError
 
-
+        loss = torch.mean(loss)
         loss = loss + mixup_rg*loss_reg
         loss.backward()
         optimizer.step()
@@ -651,7 +657,7 @@ def training_loop(training_loop_parameters: TrainingLoopParameters):
 
         if training_loop_type == 'tilted_erm_with_mixup':
             train_epoch_metric, loss, global_weight, global_loss = train_with_mixup(train_parameters)
-        elif training_loop_type == 'only_mixup':
+        elif training_loop_type == 'only_mixup' or training_loop_type == 'only_mixup_with_loss_group':
             train_epoch_metric, loss, global_weight, global_loss = train_only_mixup(train_parameters)
         elif training_loop_type == 'only_titled_erm':
             train_epoch_metric, loss, global_weight, global_loss = train_only_tilted_erm(train_parameters)
