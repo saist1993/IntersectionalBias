@@ -2,6 +2,8 @@ import torch
 import numpy as np
 from main import *
 from tqdm.auto import tqdm
+from texttable import Texttable
+from metrics import fairness_utils
 from fairgrad.torch import CrossEntropyLoss
 from training_loops.common_functionality import *
 
@@ -58,45 +60,89 @@ def smoothed_empirical_estimate_rate_parity(preds, labels, mask_aux, use_tpr=Tru
     # find the number of instance with S=s and label=1
 
     prob = (numerator + 0.01) / (denominator * 1.0 + 0.01 + 0.01)
-    return prob
+    return prob, numerator, denominator
+
+
+def generate_mask(all_s, mask_pattern):
+    keep_indices = []
+
+    for index, i in enumerate(mask_pattern):
+        if i != 'x':
+            keep_indices.append(i == all_s[:, index])
+        else:
+            keep_indices.append(np.ones_like(all_s[:, 0], dtype='bool'))
+
+    mask = np.ones_like(all_s[:, 0], dtype='bool')
+
+    # mask = [np.logical_and(mask, i) for i in keep_indices]
+
+    for i in keep_indices:
+        mask = np.logical_and(mask, i)
+    return mask
 
 
 def calculate_equal_odds(all_prediction, all_label, all_s, all_unique_aux, use_tpr):
     all_probs = []
+    all_group_size = []
+    all_group_size_numerator = []
+    all_group_size_denomerator = []
     for s in all_unique_aux:
-        repeat_aux = np.tile(s,(all_s.shape[0],1))
-        mask_aux = (repeat_aux == all_s).sum(axis=1) == all_s.shape[1]
-        prob = smoothed_empirical_estimate_rate_parity(all_prediction, all_label, mask_aux, use_tpr=use_tpr)
+        mask_aux = generate_mask(all_s, s)
+        prob, numerator, denominator = smoothed_empirical_estimate_rate_parity(all_prediction, all_label, mask_aux, use_tpr=use_tpr)
         all_probs.append(prob)
+        all_group_size.append(np.sum(mask_aux))
+        all_group_size_numerator.append(numerator)
+        all_group_size_denomerator.append(denominator)
     max_prob = max(all_probs)
     min_prob = min(all_probs)
     eps = np.log(max_prob / min_prob)
-    return eps, all_probs
+    return eps, all_probs, all_group_size, all_group_size_numerator, all_group_size_denomerator
 
 
-def run(model, iterators, criterion):
-    all_prediction, all_label, all_s, all_s_flatten = generate_flat_outputs(model, iterators[0]['test_iterator'], criterion)
+def run_equal_odds(model, iterators, criterion, mode):
+    all_prediction, all_label, all_s, all_s_flatten = generate_flat_outputs(model, iterators[0][mode], criterion)
 
     eps_tpr, eps_fpr = 0.0, 0.0
     eps_tpr_prob, eps_fpr_prob = [], []
+    all_group_size_numerator_tpr, all_group_size_denomerator_tpr = [], []
+    all_group_size_numerator_fpr, all_group_size_denomerator_fpr = [], []
 
     all_unique_aux = np.unique(all_s, axis=0)
 
+    all_possible_groups = fairness_utils.create_all_possible_groups(
+        attributes=[list(np.unique(all_s[:, i])) for i in range(all_s.shape[1])])
+
     for _ in range(1000):
         index_select = np.random.choice(len(all_prediction), len(all_prediction), replace=True)
-        eps_tpr_, eps_tpr_prob_ = calculate_equal_odds(all_prediction[index_select], all_label[index_select],
-                                                    all_s[index_select], all_unique_aux, True)
-        eps_fpr_, eps_fpr_prob_ = calculate_equal_odds(all_prediction[index_select], all_label[index_select],
-                                                    all_s[index_select], all_unique_aux, False)
+        eps_tpr_, eps_tpr_prob_, group_size, group_size_numerator_tpr, group_size_denomerator_tpr = calculate_equal_odds(all_prediction[index_select], all_label[index_select],
+                                                    all_s[index_select], all_possible_groups, True)
+        eps_fpr_, eps_fpr_prob_, _, group_size_numerator_fpr, group_size_denomerator_fpr = calculate_equal_odds(all_prediction[index_select], all_label[index_select],
+                                                    all_s[index_select], all_possible_groups, False)
         eps_tpr += eps_tpr_
         eps_fpr += eps_fpr_
         eps_tpr_prob.append(eps_tpr_prob_)
         eps_fpr_prob.append(eps_fpr_prob_)
-
+        all_group_size_numerator_fpr.append(group_size_numerator_fpr)
+        all_group_size_numerator_tpr.append(group_size_numerator_tpr)
+        all_group_size_denomerator_fpr.append(group_size_denomerator_fpr)
+        all_group_size_denomerator_tpr.append(group_size_denomerator_tpr)
     print(max(eps_tpr / 1000, eps_fpr / 1000))
 
-    for i, j, k in zip(np.mean(eps_tpr_prob, axis=0), np.mean(eps_fpr_prob, axis=0), all_unique_aux):
-        print(i, j, k)
+    rows_header = ['group', 'group_size', 'tpr_prob', 'fpr_prob', 'num_tpr', 'deno_tpr', 'num_fpr', 'deno_fpr']
+    rows = [rows_header]
+    for i, j, k, l, m, n, o, p in zip(np.mean(eps_tpr_prob, axis=0), np.mean(eps_fpr_prob, axis=0), all_possible_groups,
+                                      group_size,
+                                      np.mean(all_group_size_numerator_tpr, axis=0),
+                                      np.mean(all_group_size_denomerator_tpr, axis=0),
+                                      np.mean(all_group_size_numerator_fpr, axis=0),
+                                      np.mean(all_group_size_denomerator_fpr, axis=0)  ):
+        a = [" ".join(map(str, list(k))), l, round(i,2), round(j,2), int(m), int(n), int(o), int(p)]
+        rows.append(a)
+
+
+    return rows
+
+
 
 
 
@@ -135,4 +181,8 @@ if __name__ == '__main__':
     # create a loss function
     criterion = CrossEntropyLoss()
 
-    run(model, iterators, criterion)
+    rows = run_equal_odds(model, iterators, criterion, mode='test_iterator')
+
+    t = Texttable()
+    t.add_rows(rows)
+    print(t.draw())
