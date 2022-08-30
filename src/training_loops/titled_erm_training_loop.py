@@ -184,14 +184,14 @@ def train_with_mixup(train_tilted_params:TrainParameters):
     for i in tqdm(range(train_tilted_params.other_params['number_of_iterations'])):
         s_group_0, s_group_1 = np.random.choice(train_tilted_params.other_params['groups'], 2, p=global_weight, replace=False)
         # s_group_0 = np.random.choice(train_tilted_params.other_params['groups'], 1, p=global_weight, replace=False)[0]
-        # break_flag = True
-        # while break_flag:
-        #     temp_global_weight = np.reciprocal(global_weight)
-        #     temp_global_weight = temp_global_weight / np.linalg.norm(temp_global_weight, 1)# Invert all weights
-        #     s_group_1 = np.random.choice(train_tilted_params.other_params['groups'], 1, p=temp_global_weight, replace=False)[0]
-        #
-        #     if s_group_1 != s_group_0:
-        #         break_flag = False
+        break_flag = True
+        while break_flag:
+            temp_global_weight = np.reciprocal(global_weight)
+            temp_global_weight = temp_global_weight / np.linalg.norm(temp_global_weight, 1)# Invert all weights
+            s_group_1 = np.random.choice(train_tilted_params.other_params['groups'], 1, p=temp_global_weight, replace=False)[0]
+
+            if s_group_1 != s_group_0:
+                break_flag = False
         # s = F.gumbel_softmax(global_weight, tau=1/10, hard=True).nonzero()[0][0].item()
 
         if train_tilted_params.fairness_function == 'demographic_parity':
@@ -834,7 +834,7 @@ def training_loop(training_loop_parameters: TrainingLoopParameters):
 
         if training_loop_type == 'tilted_erm_with_mixup':
             train_epoch_metric, loss, global_weight, global_loss = train_with_mixup(train_parameters)
-        if training_loop_type == 'tilted_erm_with_mixup_only_one_group':
+        elif training_loop_type == 'tilted_erm_with_mixup_only_one_group':
             train_epoch_metric, loss, global_weight, global_loss = train_with_mixup_only_one_group(train_parameters)
         elif training_loop_type == 'only_mixup' or training_loop_type == 'only_mixup_with_loss_group':
             train_epoch_metric, loss, global_weight, global_loss = train_only_mixup(train_parameters)

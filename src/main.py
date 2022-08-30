@@ -268,9 +268,9 @@ if __name__ == '__main__':
     parser.add_argument('--adversarial_lambda', '-adversarial_lambda', help="the lambda in the adv loss equation", type=float,
                         default=0.0)
     parser.add_argument('--fairness_lambda', '-fairness_lambda', help="the lambda in the fairness loss equation", type=float,
-                        default=0.1)
+                        default=0.0)
     parser.add_argument('--method', '-method', help="unconstrained/adversarial_single/adversarial_group", type=str,
-                        default='tilted_erm_with_mixup_only_one_group')
+                        default='unconstrained')
     parser.add_argument('--save_model_as', '-save_model_as', help="unconstrained/adversarial_single/adversarial_group", type=str,
                         default=None)
     parser.add_argument('--dataset_name', '-dataset_name', help="twitter_hate_speech/adult_multi_group",
@@ -287,7 +287,7 @@ if __name__ == '__main__':
 
     parser.add_argument('--titled_t', '-titled_t', help="fairness function to concern with",
                         type=float,
-                        default=5.0)
+                        default=100.0)
 
     parser.add_argument('--mixup_rg', '-mixup_rg', help="fairness function to concern with",
                         type=float,
@@ -311,7 +311,7 @@ if __name__ == '__main__':
         dataset_name=args.dataset_name, # twitter_hate_speech
         batch_size=1024,
         model='simple_non_linear',
-        epochs=200,
+        epochs=20,
         save_model_as=save_model_as,
         method=args.method, # unconstrained, adversarial_single
         optimizer_name='sgd',

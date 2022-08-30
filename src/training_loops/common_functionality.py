@@ -277,6 +277,8 @@ def training_loop_common(training_loop_parameters: TrainingLoopParameters, train
         logger.info("end of epoch block")
 
 
+    # Saving the last epoch model.
+    torch.save(training_loop_parameters.model.state_dict(), '../saved_models/equal_odds/unconstrained_adult_multi_group.pt')
 
     output['all_train_eps_metric'] = all_train_eps_metrics
     output['all_test_eps_metric'] = all_test_eps_metrics
