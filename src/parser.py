@@ -25,10 +25,11 @@ def temp_table_generator():
                 'only_mixup', 'tilted_erm_with_mixup', 'tilted_erm_with_mixup_only_one_group'
                ]
 
-    dataset_names = ['celeb_multigroup_v3']
+    dataset_names = ['adult_multi_group']
     models = ['simple_non_linear']
-    seeds = [10,20,30,40,50]
-    fairness_function = 'equal_opportunity'
+    # seeds = [10,20,30,40,50]
+    seeds = [10]
+    fairness_function = 'equal_odds'
     k = 2
 
     level_1_strategy_params = {'keep_last_k': 100.0}
@@ -58,6 +59,10 @@ def temp_table_generator():
                     confidence_interval[0], confidence_interval[1] = round(confidence_interval[0], k),\
                                                                      round(confidence_interval[1], k)
                     rows_temp.append([method, round(accuracy,k), round(fairness,k), confidence_interval, seed])
+
+                    if method == 'tilted_erm_with_mixup_only_one_group':
+                        print(result.arguments)
+                        print(result.test_epoch_metric.epoch_number)
                 # average over seeds
                 rows = rows + rows_temp
                 average_accuracy = round(np.mean([r[1] for r in rows_temp]), k)

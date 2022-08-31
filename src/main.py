@@ -241,7 +241,9 @@ def runner(runner_arguments:RunnerArguments):
                       'batch_size': runner_arguments.batch_size,
                       'titled_t': runner_arguments.titled_t,
                       'gamma': 0.2,
-                      'mixup_rg': runner_arguments.mixup_rg},
+                      'mixup_rg': runner_arguments.mixup_rg,
+                      'dataset_name': runner_arguments.dataset_name,
+                      'seed': runner_arguments.seed},
         fairness_function=runner_arguments.fairness_function
     )
     # Combine everything
@@ -275,7 +277,7 @@ if __name__ == '__main__':
                         default=None)
     parser.add_argument('--dataset_name', '-dataset_name', help="twitter_hate_speech/adult_multi_group",
                         type=str,
-                        default='adult_multi_group')
+                        default='celeb_multigroup_v3')
 
     parser.add_argument('--log_file_name', '-log_file_name', help="the name of the log file",
                         type=str,
@@ -309,13 +311,13 @@ if __name__ == '__main__':
     runner_arguments = RunnerArguments(
         seed=10,
         dataset_name=args.dataset_name, # twitter_hate_speech
-        batch_size=1024,
+        batch_size=1000,
         model='simple_non_linear',
-        epochs=20,
+        epochs=32,
         save_model_as=save_model_as,
         method=args.method, # unconstrained, adversarial_single
-        optimizer_name='sgd',
-        lr=0.1,
+        optimizer_name='adam',
+        lr=0.001,
         use_wandb=False,
         adversarial_lambda=args.adversarial_lambda,
         dataset_size=10000,
