@@ -283,6 +283,7 @@ if __name__ == '__main__':
                         type=str,
                         default='dummy')
 
+
     parser.add_argument('--fairness_function', '-fairness_function', help="fairness function to concern with",
                         type=str,
                         default='equal_odds')
