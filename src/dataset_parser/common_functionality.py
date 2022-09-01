@@ -129,7 +129,7 @@ class CreateIterators:
         iterator_set = {
             'train_iterator': train_iterator,
             'valid_iterator': dev_iterator,
-            'test_iterator': test_iterator,
+            'test_iterator': test_iterator
         }
 
         return iterator_set, vocab, self.s_to_flattened_s

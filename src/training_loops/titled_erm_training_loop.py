@@ -5,7 +5,7 @@ from numpy.random import beta
 import torch.nn.functional as F
 from collections import Counter
 from .common_functionality import *
-
+from .mixup_training_loop import train_only_mixup_with_abstract_group
 
 def train_only_mixup(train_tilted_params:TrainParameters):
 
@@ -807,6 +807,8 @@ def training_loop(training_loop_parameters: TrainingLoopParameters):
     # global_loss = global_weight/ torch.norm(global_loss, 1)
     groups = [i for i in range(total_no_groups)]
 
+    models = []
+
 
     for ep in range(training_loop_parameters.n_epochs):
 
@@ -842,6 +844,8 @@ def training_loop(training_loop_parameters: TrainingLoopParameters):
             train_epoch_metric, loss, global_weight, global_loss = train_only_tilted_erm(train_parameters)
         elif training_loop_type == 'tilted_erm_with_fairness_loss':
             train_epoch_metric, loss, global_weight, global_loss = train_tilted_erm_with_fairness_loss(train_parameters)
+        elif training_loop_type == 'only_mixup_with_abstract_group':
+            train_epoch_metric, loss, global_weight, global_loss = train_only_mixup_with_abstract_group(train_parameters)
         else:
             raise NotImplementedError
 
@@ -890,10 +894,20 @@ def training_loop(training_loop_parameters: TrainingLoopParameters):
 
         logger.info("end of epoch block")
 
+        models.append(copy.deepcopy(training_loop_parameters.model))
+
     output['all_train_eps_metric'] = all_train_eps_metrics
     output['all_test_eps_metric'] = all_test_eps_metrics
     output['all_valid_eps_metric'] = all_valid_eps_metrics
-    index = find_best_model(output)
+    index = find_best_model(output, training_loop_parameters.fairness_function)
     output['best_model_index'] = index
+    method = training_loop_parameters.other_params['method']
+    dataset_name = training_loop_parameters.other_params['dataset_name']
+    seed = training_loop_parameters.other_params['seed']
+    _dir = f'../saved_models/{dataset_name}/{method}/{seed}'
+    Path(_dir).mkdir(parents=True, exist_ok=True)
+    if training_loop_parameters.save_model_as != None:
+        torch.save(models[index].state_dict(),
+                   f'{_dir}/{training_loop_parameters.fairness_function}_{training_loop_parameters.save_model_as}.pt')
 
     return output
