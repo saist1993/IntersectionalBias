@@ -267,6 +267,23 @@ def runner(runner_arguments:RunnerArguments):
 if __name__ == '__main__':
     # setting up parser and parsing the arguments.
     parser = argparse.ArgumentParser()
+    parser.add_argument('--seed', '-seed', help="seed for reproduction",
+                        type=int,
+                        default=10)
+
+    parser.add_argument('--batch_size', '-batch_size', help="seed for reproduction",
+                        type=int,
+                        default=1000)
+
+    parser.add_argument('--epochs', '-epochs', help="epochs to work on",
+                        type=int,
+                        default=100)
+
+    parser.add_argument('--model', '-model', help="simple_non_linear",
+                        type=str,
+                        default='simple_non_linear')
+
+
     parser.add_argument('--adversarial_lambda', '-adversarial_lambda', help="the lambda in the adv loss equation", type=float,
                         default=0.0)
     parser.add_argument('--fairness_lambda', '-fairness_lambda', help="the lambda in the fairness loss equation", type=float,
@@ -310,11 +327,11 @@ if __name__ == '__main__':
 
 
     runner_arguments = RunnerArguments(
-        seed=10,
+        seed=args.seed,
         dataset_name=args.dataset_name, # twitter_hate_speech
-        batch_size=1000,
-        model='simple_non_linear',
-        epochs=32,
+        batch_size=args.batch_size,
+        model=args.model,
+        epochs=args.epochs,
         save_model_as=save_model_as,
         method=args.method, # unconstrained, adversarial_single
         optimizer_name='adam',
