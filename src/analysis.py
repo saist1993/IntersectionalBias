@@ -115,9 +115,9 @@ def run_equal_odds(model, iterators, criterion, mode):
     for _ in range(1000):
         index_select = np.random.choice(len(all_prediction), len(all_prediction), replace=True)
         eps_tpr_, eps_tpr_prob_, group_size, group_size_numerator_tpr, group_size_denomerator_tpr = calculate_equal_odds(all_prediction[index_select], all_label[index_select],
-                                                    all_s[index_select], all_possible_groups, True)
+                                                    all_s[index_select], all_unique_aux, True)
         eps_fpr_, eps_fpr_prob_, _, group_size_numerator_fpr, group_size_denomerator_fpr = calculate_equal_odds(all_prediction[index_select], all_label[index_select],
-                                                    all_s[index_select], all_possible_groups, False)
+                                                    all_s[index_select], all_unique_aux, False)
         eps_tpr += eps_tpr_
         eps_fpr += eps_fpr_
         eps_tpr_prob.append(eps_tpr_prob_)
@@ -130,7 +130,7 @@ def run_equal_odds(model, iterators, criterion, mode):
 
     rows_header = ['group', 'group_size', 'tpr_prob', 'fpr_prob', 'num_tpr', 'deno_tpr', 'num_fpr', 'deno_fpr']
     rows = [rows_header]
-    for i, j, k, l, m, n, o, p in zip(np.mean(eps_tpr_prob, axis=0), np.mean(eps_fpr_prob, axis=0), all_possible_groups,
+    for i, j, k, l, m, n, o, p in zip(np.mean(eps_tpr_prob, axis=0), np.mean(eps_fpr_prob, axis=0), all_unique_aux,
                                       group_size,
                                       np.mean(all_group_size_numerator_tpr, axis=0),
                                       np.mean(all_group_size_denomerator_tpr, axis=0),

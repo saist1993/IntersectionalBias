@@ -10,7 +10,6 @@ import torch.nn as nn
 from pathlib import Path
 from functools import partial
 from utils import plot_and_visualize
-from fairgrad.torch import CrossEntropyLoss as fairgrad_CrossEntropyLoss
 from typing import NamedTuple, Dict, Optional
 from training_loops import titled_erm_training_loop
 from training_loops import adversarial_training_loop
@@ -18,6 +17,7 @@ from dataset_iterators import generate_data_iterators
 from training_loops import unconstrained_training_loop
 from training_loops import adversarial_moe_training_loop
 from models import simple_model, adversarial, adversarial_moe
+from fairgrad.torch import CrossEntropyLoss as fairgrad_CrossEntropyLoss
 from utils.misc import resolve_device, set_seed, make_opt, CustomError
 
 # Setting up logger
@@ -119,7 +119,7 @@ def get_model(method:str, model_name:str, other_meta_data:Dict, device:torch.dev
                       'only_titled_erm', 'only_mixup', 'tilted_erm_with_mixup',
                       'tilted_erm_with_fairness_loss', 'fairgrad', 'only_mixup_with_loss_group',
                       'tilted_erm_with_mixup_only_one_group',
-                      'only_mixup_with_abstract_group']:
+                      'only_mixup_with_abstract_group', 'weighted_sample_erm']:
             model = simple_model.SimpleNonLinear(model_params)
         elif method == 'adversarial_single':
             total_adv_dim = len(other_meta_data['s_flatten_lookup'])
@@ -259,7 +259,8 @@ def runner(runner_arguments:RunnerArguments):
         output = adversarial_moe_training_loop.training_loop(training_loop_params)
     elif runner_arguments.method in ['only_titled_erm', 'only_mixup', 'only_mixup_with_loss_group',
                                      'tilted_erm_with_mixup', 'tilted_erm_with_fairness_loss',
-                                     'tilted_erm_with_mixup_only_one_group', 'only_mixup_with_abstract_group']:
+                                     'tilted_erm_with_mixup_only_one_group', 'only_mixup_with_abstract_group',
+                                     'weighted_sample_erm']:
         output = titled_erm_training_loop.training_loop(training_loop_params)
     else:
         raise NotImplementedError
@@ -293,7 +294,7 @@ if __name__ == '__main__':
     parser.add_argument('--fairness_lambda', '-fairness_lambda', help="the lambda in the fairness loss equation", type=float,
                         default=0.0)
     parser.add_argument('--method', '-method', help="unconstrained/adversarial_single/adversarial_group", type=str,
-                        default='only_mixup_with_abstract_group')
+                        default='weighted_sample_erm')
     parser.add_argument('--save_model_as', '-save_model_as', help="unconstrained/adversarial_single/adversarial_group", type=str,
                         default=None)
     parser.add_argument('--dataset_name', '-dataset_name', help="twitter_hate_speech/adult_multi_group",

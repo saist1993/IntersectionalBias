@@ -25,10 +25,10 @@ def temp_table_generator():
                 'only_mixup', 'tilted_erm_with_mixup', 'tilted_erm_with_mixup_only_one_group'
                ]
 
-    dataset_names = ['adult_multi_group']
+    dataset_names = ['celeb_multigroup_v3']
     models = ['simple_non_linear']
-    # seeds = [10,20,30,40,50]
-    seeds = [10]
+    seeds = [10,20,30,40,50]
+    # seeds = [50]
     fairness_function = 'equal_odds'
     k = 2
 
