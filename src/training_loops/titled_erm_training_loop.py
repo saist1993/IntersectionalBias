@@ -5,7 +5,10 @@ from numpy.random import beta
 import torch.nn.functional as F
 from collections import Counter
 from .common_functionality import *
-from .mixup_training_loop import train_only_mixup_with_abstract_group
+from .mixup_training_loop import \
+    train_only_mixup_with_abstract_group,\
+    train_only_tilted_erm_with_abstract_group, \
+    train_only_tilted_erm_with_mixup_augmentation
 
 def train_only_mixup(train_tilted_params:TrainParameters):
 
@@ -837,7 +840,7 @@ def training_loop(training_loop_parameters: TrainingLoopParameters):
     # global_weight = torch.tensor(np.full(total_no_groups, 1.0/total_no_groups))
     # global_loss = torch.tensor(np.full(total_no_groups, 1.0/total_no_groups))
 
-    if training_loop_type == 'weighted_sample_erm':
+    if training_loop_type == 'weighted_sample_erm' or training_loop_type == 'only_titled_erm_with_weights':
         size_of_each_group = [counts[i] for i in range(total_no_groups)]
         weights = np.asarray([1.0/i for i in size_of_each_group])
         global_weight = torch.tensor(weights / np.linalg.norm(weights, 1))
@@ -846,6 +849,7 @@ def training_loop(training_loop_parameters: TrainingLoopParameters):
         weights = np.asarray([1/total_no_groups for i in range(total_no_groups)])
         global_weight = torch.tensor(weights/np.linalg.norm(weights, 1))
         global_loss = torch.tensor(weights/np.linalg.norm(weights, 1))
+
     # global_weight = global_weight/ torch.norm(global_weight, 1)
     # global_loss = global_weight/ torch.norm(global_loss, 1)
     groups = [i for i in range(total_no_groups)]
@@ -883,7 +887,7 @@ def training_loop(training_loop_parameters: TrainingLoopParameters):
             train_epoch_metric, loss, global_weight, global_loss = train_with_mixup_only_one_group(train_parameters)
         elif training_loop_type == 'only_mixup' or training_loop_type == 'only_mixup_with_loss_group':
             train_epoch_metric, loss, global_weight, global_loss = train_only_mixup(train_parameters)
-        elif training_loop_type == 'only_titled_erm':
+        elif training_loop_type == 'only_titled_erm' or training_loop_type == 'only_titled_erm_with_weights':
             train_epoch_metric, loss, global_weight, global_loss = train_only_tilted_erm(train_parameters)
         elif training_loop_type == 'tilted_erm_with_fairness_loss':
             train_epoch_metric, loss, global_weight, global_loss = train_tilted_erm_with_fairness_loss(train_parameters)
@@ -891,6 +895,12 @@ def training_loop(training_loop_parameters: TrainingLoopParameters):
             train_epoch_metric, loss, global_weight, global_loss = train_only_mixup_with_abstract_group(train_parameters)
         elif training_loop_type == 'weighted_sample_erm':
             train_epoch_metric, loss, global_weight, global_loss = train_weighted_sample_erm(
+                train_parameters)
+        elif training_loop_type == 'only_tilted_erm_with_abstract_group':
+            train_epoch_metric, loss, global_weight, global_loss = train_only_tilted_erm_with_abstract_group(
+                train_parameters)
+        elif training_loop_type == 'tilted_erm_with_mixup_augmentation':
+            train_epoch_metric, loss, global_weight, global_loss = train_only_tilted_erm_with_mixup_augmentation(
                 train_parameters)
         else:
             raise NotImplementedError

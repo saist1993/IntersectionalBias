@@ -277,6 +277,18 @@ def training_loop_common(training_loop_parameters: TrainingLoopParameters, train
 
         models.append(copy.deepcopy(training_loop_parameters.model))
 
+        if test_epoch_metric.eps_fairness['equal_odds'].intersectional_bootstrap[0] < 1.4:
+            method = training_loop_parameters.other_params['method']
+            dataset_name = training_loop_parameters.other_params['dataset_name']
+            seed = training_loop_parameters.other_params['seed']
+            _dir = f'../saved_models/{dataset_name}/{method}/{seed}'
+            Path(_dir).mkdir(parents=True, exist_ok=True)
+            if training_loop_parameters.save_model_as != None:
+                torch.save(training_loop_parameters.model.state_dict(),
+                           f'{_dir}/{training_loop_parameters.fairness_function}_{training_loop_parameters.save_model_as}.pt')
+
+            raise IOError
+
 
     # Saving the last epoch model.
 
@@ -291,9 +303,9 @@ def training_loop_common(training_loop_parameters: TrainingLoopParameters, train
     seed = training_loop_parameters.other_params['seed']
     _dir = f'../saved_models/{dataset_name}/{method}/{seed}'
     Path(_dir).mkdir(parents=True, exist_ok=True)
-    if training_loop_parameters.save_model_as != None:
-        torch.save(models[index].state_dict(),
-                   f'{_dir}/{training_loop_parameters.fairness_function}_{training_loop_parameters.save_model_as}.pt')
+    # if training_loop_parameters.save_model_as != None:
+    #     torch.save(models[index].state_dict(),
+    #                f'{_dir}/{training_loop_parameters.fairness_function}_{training_loop_parameters.save_model_as}.pt')
 
 
     return output

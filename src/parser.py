@@ -20,10 +20,15 @@ def temp_table_generator():
     #            'only_titled_erm', 'only_mixup', 'tilted_erm_with_mixup',
     #            'tilted_erm_with_fairness_loss']
 
-    methods = ['unconstrained', 'unconstrained_with_fairness_loss',
-               'adversarial_group','fairgrad', 'only_titled_erm',
-                'only_mixup', 'tilted_erm_with_mixup', 'tilted_erm_with_mixup_only_one_group'
+    # methods = ['unconstrained', 'unconstrained_with_fairness_loss',
+    #            'adversarial_group','fairgrad', 'only_titled_erm',
+    #             'only_mixup', 'tilted_erm_with_mixup', 'tilted_erm_with_mixup_only_one_group', 'weighted_sample_erm'
+    #            ]
+
+    methods = [ 'unconstrained_with_fairness_loss', 'tilted_erm_with_mixup_only_one_group'
                ]
+
+
 
     dataset_names = ['celeb_multigroup_v3']
     models = ['simple_non_linear']
@@ -60,7 +65,7 @@ def temp_table_generator():
                                                                      round(confidence_interval[1], k)
                     rows_temp.append([method, round(accuracy,k), round(fairness,k), confidence_interval, seed])
 
-                    if method == 'tilted_erm_with_mixup_only_one_group':
+                    if method == 'unconstrained_with_fairness_loss':
                         print(result.arguments)
                         print(result.test_epoch_metric.epoch_number)
                 # average over seeds

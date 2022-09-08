@@ -86,6 +86,75 @@ def sample_batch_sen_idx_with_y(all_input, all_label, all_aux, all_aux_flatten, 
 
     return batch_input_s0, batch_input_s1
 
+def sample_batch_sen_idx(all_input, all_label, all_aux, all_aux_flatten, batch_size, s):
+    all_extra_combinations = generate_combinations(s, k=1)
+    extra_mask_s = np.logical_or.reduce([generate_mask(all_aux, mask_pattern) for mask_pattern in all_extra_combinations])
+    mask_s = generate_mask(all_aux,s)
+
+    sample_from_extra = batch_size - np.sum(mask_s)
+
+    if sample_from_extra <= 0:
+        relevant_index = np.random.choice(np.where(mask_s == True)[0], size=batch_size, replace=True).tolist()
+    else:
+        relevant_index_1 = np.random.choice(np.where(mask_s == True)[0], size=np.sum(mask_s), replace=True).tolist()
+        relevant_index_2 = np.random.choice(np.where(extra_mask_s == True)[0], size=sample_from_extra, replace=True).tolist()
+        relevant_index = np.hstack([relevant_index_1, relevant_index_2])
+        np.random.shuffle(relevant_index)
+
+    batch_input = {
+        'labels': torch.LongTensor(all_label[relevant_index]),
+        'input': torch.FloatTensor(all_input[relevant_index]),
+        'aux': torch.LongTensor(all_aux[relevant_index]),
+        'aux_flattened': torch.LongTensor(all_aux_flatten[relevant_index])
+    }
+
+    return batch_input
+
+
+
+def sample_batch_sen_idx_with_augmentation(all_input, all_label, all_aux, all_aux_flatten, batch_size, s):
+    all_extra_combinations = generate_combinations(s, k=1)
+    extra_mask_s =[generate_mask(all_aux, mask_pattern) for mask_pattern in all_extra_combinations] # this stores all the combinations
+    mask_s = generate_mask(all_aux,s)
+
+    relevant_index = np.random.choice(np.where(mask_s == True)[0], size=batch_size, replace=True).tolist()
+
+    # now comes the augmentations
+    each_split_size = int(batch_size/len(extra_mask_s)) # check this
+
+    all_augmented_label_group1,all_augmented_label_group2, all_augmented_input, all_augmented_aux, all_augmented_flat_aux = [], [], [], [], []
+    lam = np.random.beta(1, 1)
+
+    for group2_mask in extra_mask_s:
+        group1 = np.random.choice(np.where(mask_s == True)[0], size=each_split_size, replace=True).tolist()
+        group2 = np.random.choice(np.where(group2_mask == True)[0], size=each_split_size, replace=True).tolist()
+
+        augmented_input = lam*torch.FloatTensor(all_input[group1]) + (1-lam)*torch.FloatTensor(all_input[group2])
+        all_augmented_input.append(augmented_input)
+        # augmented_label = lam*torch.LongTensor(all_label[group1]) + (1-lam)*torch.LongTensor(all_label[group2]) # this is not a long tensor anymore
+        all_augmented_label_group1.append(torch.LongTensor(all_label[group1]))
+        all_augmented_label_group2.append(torch.LongTensor(all_label[group2]))
+        all_augmented_aux.append(torch.LongTensor(all_aux[group2]))
+        all_augmented_flat_aux.append(torch.LongTensor(all_aux_flatten[group2]))
+    # stack them now
+    all_augmented_label_group1 = torch.hstack(all_augmented_label_group1)
+    all_augmented_label_group2 = torch.hstack(all_augmented_label_group2)
+    all_aux = torch.vstack(all_augmented_aux)
+    all_aux_flatten = torch.hstack(all_augmented_flat_aux)
+    all_input = torch.vstack(all_augmented_input)
+
+    batch_input = {
+        'all_augmented_label_group1': torch.LongTensor(all_augmented_label_group1),
+        'all_augmented_label_group2': torch.LongTensor(all_augmented_label_group2),
+        'input': torch.FloatTensor(all_input),
+        'labels': torch.LongTensor(all_augmented_label_group1),
+        'aux': torch.LongTensor(all_aux),
+        'aux_flattened': torch.LongTensor(all_aux_flatten),
+        'lam': lam
+    }
+
+    return batch_input
+
 
 
 def train_only_mixup_with_abstract_group(train_tilted_params:TrainParameters):
@@ -246,3 +315,133 @@ def train_only_mixup_with_abstract_group(train_tilted_params:TrainParameters):
                                                                    track_input,
                                                                    train_tilted_params.fairness_function)
     return epoch_metric_tracker, loss, global_weight, global_loss
+
+
+def train_only_tilted_erm_with_abstract_group(train_tilted_params:TrainParameters):
+
+    global_weight = train_tilted_params.other_params['global_weight']
+    global_loss = train_tilted_params.other_params['global_loss']
+    tilt_t = train_tilted_params.other_params['titled_t']
+    flattened_s_to_s = {value: key for key, value in train_tilted_params.other_params['s_to_flattened_s'].items()}
+
+
+    model, optimizer, device, criterion = \
+        train_tilted_params.model, train_tilted_params.optimizer, train_tilted_params.device, train_tilted_params.criterion
+    model.train()
+    track_output = []
+    track_input = []
+
+    for i in tqdm(range(train_tilted_params.other_params['number_of_iterations'])):
+        s = np.random.choice(train_tilted_params.other_params['groups'], 1, p=global_weight)[0]
+        s_flat = eval(flattened_s_to_s[s].replace('.', ','))
+
+        items = sample_batch_sen_idx(train_tilted_params.other_params['all_input'],
+                                     train_tilted_params.other_params['all_label'],
+                                     train_tilted_params.other_params['all_aux'],
+                                     train_tilted_params.other_params['all_aux_flatten'],
+                                     train_tilted_params.other_params['batch_size'],
+                                     s_flat)
+
+        for key in items.keys():
+            items[key] = items[key].to(train_tilted_params.device)
+
+        optimizer.zero_grad()
+        output = model(items)
+        loss = torch.mean(criterion(output['prediction'], items['labels']))
+        loss_without_backward = torch.clone(loss).detach()
+
+        # tilt the loss
+        # loss_r_b = torch.log(torch.mean(torch.exp(tao * loss_without_backward)))/tao
+
+
+        global_loss[s] =  0.2 * torch.exp(tilt_t*loss_without_backward) + 0.8 * global_loss[s]
+
+        # weights = torch.exp(tao*loss_without_backward - tao*global_loss[s])
+        global_weight = global_loss / torch.sum(global_loss)
+        # global_weight = global_loss
+        # loss = torch.mean(weights*loss)
+        loss.backward()
+        optimizer.step()
+
+        output['loss_batch'] = loss.item()
+        track_output.append(output)
+        track_input.append(items)
+
+
+
+    epoch_metric_tracker, loss = train_tilted_params.per_epoch_metric(track_output,
+                                                                   track_input,
+                                                                   train_tilted_params.fairness_function)
+
+
+    return epoch_metric_tracker, loss, global_weight, global_loss
+
+
+def custom_criterion(prediction, all_augmented_label_group1, all_augmented_label_group2, lam, criterion):
+    return lam * criterion(prediction, all_augmented_label_group1) + (1 - lam) * criterion(prediction, all_augmented_label_group2)
+
+
+
+def train_only_tilted_erm_with_mixup_augmentation(train_tilted_params:TrainParameters):
+
+    global_weight = train_tilted_params.other_params['global_weight']
+    global_loss = train_tilted_params.other_params['global_loss']
+    tilt_t = train_tilted_params.other_params['titled_t']
+    flattened_s_to_s = {value: key for key, value in train_tilted_params.other_params['s_to_flattened_s'].items()}
+
+
+    model, optimizer, device, criterion = \
+        train_tilted_params.model, train_tilted_params.optimizer, train_tilted_params.device, train_tilted_params.criterion
+    model.train()
+    track_output = []
+    track_input = []
+
+    for i in tqdm(range(train_tilted_params.other_params['number_of_iterations'])):
+        s = np.random.choice(train_tilted_params.other_params['groups'], 1, p=global_weight)[0]
+        s_flat = eval(flattened_s_to_s[s].replace('.', ','))
+
+        items = sample_batch_sen_idx_with_augmentation(train_tilted_params.other_params['all_input'],
+                                     train_tilted_params.other_params['all_label'],
+                                     train_tilted_params.other_params['all_aux'],
+                                     train_tilted_params.other_params['all_aux_flatten'],
+                                     train_tilted_params.other_params['batch_size'],
+                                     s_flat)
+
+        for key in items.keys():
+            if key == 'lam':
+                continue
+            items[key] = items[key].to(train_tilted_params.device)
+
+        optimizer.zero_grad()
+        output = model(items)
+        loss = torch.mean(custom_criterion(output['prediction'], items['all_augmented_label_group1'], items['all_augmented_label_group2'], items['lam'], criterion))
+        loss_without_backward = torch.clone(loss).detach()
+
+        # tilt the loss
+        # loss_r_b = torch.log(torch.mean(torch.exp(tao * loss_without_backward)))/tao
+
+
+        global_loss[s] =  0.2 * torch.exp(tilt_t*loss_without_backward) + 0.8 * global_loss[s]
+
+        # weights = torch.exp(tao*loss_without_backward - tao*global_loss[s])
+        global_weight = global_loss / torch.sum(global_loss)
+        # global_weight = global_loss
+        # loss = torch.mean(weights*loss)
+        loss.backward()
+        optimizer.step()
+
+        output['loss_batch'] = loss.item()
+        track_output.append(output)
+        track_input.append(items)
+
+
+
+    epoch_metric_tracker, loss = train_tilted_params.per_epoch_metric(track_output,
+                                                                   track_input,
+                                                                   train_tilted_params.fairness_function)
+
+
+    return epoch_metric_tracker, loss, global_weight, global_loss
+
+
+

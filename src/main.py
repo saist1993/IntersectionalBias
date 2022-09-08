@@ -119,7 +119,9 @@ def get_model(method:str, model_name:str, other_meta_data:Dict, device:torch.dev
                       'only_titled_erm', 'only_mixup', 'tilted_erm_with_mixup',
                       'tilted_erm_with_fairness_loss', 'fairgrad', 'only_mixup_with_loss_group',
                       'tilted_erm_with_mixup_only_one_group',
-                      'only_mixup_with_abstract_group', 'weighted_sample_erm']:
+                      'only_mixup_with_abstract_group', 'weighted_sample_erm',
+                      'only_titled_erm_with_weights', 'only_tilted_erm_with_abstract_group',
+                      'tilted_erm_with_mixup_augmentation']:
             model = simple_model.SimpleNonLinear(model_params)
         elif method == 'adversarial_single':
             total_adv_dim = len(other_meta_data['s_flatten_lookup'])
@@ -260,7 +262,8 @@ def runner(runner_arguments:RunnerArguments):
     elif runner_arguments.method in ['only_titled_erm', 'only_mixup', 'only_mixup_with_loss_group',
                                      'tilted_erm_with_mixup', 'tilted_erm_with_fairness_loss',
                                      'tilted_erm_with_mixup_only_one_group', 'only_mixup_with_abstract_group',
-                                     'weighted_sample_erm']:
+                                     'weighted_sample_erm', 'only_titled_erm_with_weights',
+                                     'only_tilted_erm_with_abstract_group', 'tilted_erm_with_mixup_augmentation']:
         output = titled_erm_training_loop.training_loop(training_loop_params)
     else:
         raise NotImplementedError
@@ -292,9 +295,9 @@ if __name__ == '__main__':
     parser.add_argument('--adversarial_lambda', '-adversarial_lambda', help="the lambda in the adv loss equation", type=float,
                         default=0.0)
     parser.add_argument('--fairness_lambda', '-fairness_lambda', help="the lambda in the fairness loss equation", type=float,
-                        default=0.0)
+                        default=0.05)
     parser.add_argument('--method', '-method', help="unconstrained/adversarial_single/adversarial_group", type=str,
-                        default='weighted_sample_erm')
+                        default='tilted_erm_with_mixup_augmentation')
     parser.add_argument('--save_model_as', '-save_model_as', help="unconstrained/adversarial_single/adversarial_group", type=str,
                         default=None)
     parser.add_argument('--dataset_name', '-dataset_name', help="twitter_hate_speech/adult_multi_group",
@@ -312,7 +315,7 @@ if __name__ == '__main__':
 
     parser.add_argument('--titled_t', '-titled_t', help="fairness function to concern with",
                         type=float,
-                        default=100.0)
+                        default=1.0)
 
     parser.add_argument('--mixup_rg', '-mixup_rg', help="fairness function to concern with",
                         type=float,
