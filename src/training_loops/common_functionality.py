@@ -176,6 +176,7 @@ def log_and_plot_data(epoch_metric, loss, train=True):
                suffix + "loss": loss})
 
 
+
 # def find_best_model(output, fairness_measure = 'equal_opportunity', relexation_threshold=0.02):
 #     best_fairness_measure = 100
 #     best_fairness_index = 0
