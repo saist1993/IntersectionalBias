@@ -176,17 +176,17 @@ def log_and_plot_data(epoch_metric, loss, train=True):
                suffix + "loss": loss})
 
 
-def find_best_model(output, fairness_measure = 'equal_opportunity', relexation_threshold=0.02):
-    best_fairness_measure = 100
-    best_fairness_index = 0
-    best_valid_accuracy = max([metric.accuracy for metric in output['all_valid_eps_metric']])
-    for index, validation_metric in enumerate(output['all_valid_eps_metric']):
-        if validation_metric.accuracy >= best_valid_accuracy - relexation_threshold:
-            fairness_value = validation_metric.eps_fairness[fairness_measure].intersectional_bootstrap[0]
-            if fairness_value < best_fairness_measure:
-                best_fairness_measure = fairness_value
-                best_fairness_index = index
-    return best_fairness_index
+# def find_best_model(output, fairness_measure = 'equal_opportunity', relexation_threshold=0.02):
+#     best_fairness_measure = 100
+#     best_fairness_index = 0
+#     best_valid_accuracy = max([metric.accuracy for metric in output['all_valid_eps_metric']])
+#     for index, validation_metric in enumerate(output['all_valid_eps_metric']):
+#         if validation_metric.accuracy >= best_valid_accuracy - relexation_threshold:
+#             fairness_value = validation_metric.eps_fairness[fairness_measure].intersectional_bootstrap[0]
+#             if fairness_value < best_fairness_measure:
+#                 best_fairness_measure = fairness_value
+#                 best_fairness_index = index
+#     return best_fairness_index
 
 
 def log_epoch_metric(logger, start_message, epoch_metric, epoch_number, loss):

@@ -854,7 +854,7 @@ def training_loop(training_loop_parameters: TrainingLoopParameters):
     # global_loss = global_weight/ torch.norm(global_loss, 1)
     groups = [i for i in range(total_no_groups)]
 
-    models = []
+    # models = []
 
 
     for ep in range(training_loop_parameters.n_epochs):
@@ -950,20 +950,20 @@ def training_loop(training_loop_parameters: TrainingLoopParameters):
 
         logger.info("end of epoch block")
 
-        models.append(copy.deepcopy(training_loop_parameters.model))
+        # models.append(copy.deepcopy(training_loop_parameters.model))
 
     output['all_train_eps_metric'] = all_train_eps_metrics
     output['all_test_eps_metric'] = all_test_eps_metrics
     output['all_valid_eps_metric'] = all_valid_eps_metrics
-    index = find_best_model(output, training_loop_parameters.fairness_function)
-    output['best_model_index'] = index
-    method = training_loop_parameters.other_params['method']
-    dataset_name = training_loop_parameters.other_params['dataset_name']
-    seed = training_loop_parameters.other_params['seed']
-    _dir = f'../saved_models/{dataset_name}/{method}/{seed}'
-    Path(_dir).mkdir(parents=True, exist_ok=True)
-    if training_loop_parameters.save_model_as != None:
-        torch.save(models[index].state_dict(),
-                   f'{_dir}/{training_loop_parameters.fairness_function}_{training_loop_parameters.save_model_as}.pt')
+    # index = find_best_model(output, training_loop_parameters.fairness_function)
+    # output['best_model_index'] = index
+    # method = training_loop_parameters.other_params['method']
+    # dataset_name = training_loop_parameters.other_params['dataset_name']
+    # seed = training_loop_parameters.other_params['seed']
+    # _dir = f'../saved_models/{dataset_name}/{method}/{seed}'
+    # Path(_dir).mkdir(parents=True, exist_ok=True)
+    # if training_loop_parameters.save_model_as != None:
+    #     torch.save(models[index].state_dict(),
+    #                f'{_dir}/{training_loop_parameters.fairness_function}_{training_loop_parameters.save_model_as}.pt')
 
     return output
