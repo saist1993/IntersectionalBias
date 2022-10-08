@@ -166,7 +166,7 @@ class EstimateProbability:
         # np.percentile(all_eps, [97.5])
         return [np.mean(all_eps), self.get_confidence_interval(all_eps)]
 
-    def bootstrap_estimate_rate_parity(self, preds, labels, masks, use_tpr=True):
+    def bootstrap_estimate_rate_parity(self, preds:np.ndarray, labels:np.ndarray, masks:np.ndarray, use_tpr:bool=True):
         """ Similar to bagging. Performed via smoothing"""
         all_eps = []
         for _ in range(self.number_of_bootstrap_dataset):

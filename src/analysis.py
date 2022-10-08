@@ -24,12 +24,14 @@ def generate_flat_outputs(model, iterator, criterion, attribute_id=None):
     all_loss = []
     all_s = []
     all_s_flatten = []
+    all_input = []
 
     for batch_output, batch_input in zip(track_output, track_input):
         all_prediction.append(batch_output['prediction'].detach().numpy())
         all_loss.append(batch_output['loss_batch'])
         all_label.append(batch_input['labels'].numpy())
         all_s.append(batch_input['aux'].numpy())
+        all_input.append(batch_input['input'].numpy())
         if attribute_id is not None:
             all_s_flatten.append(batch_input['aux'][:, attribute_id].numpy())
         else:
@@ -39,8 +41,9 @@ def generate_flat_outputs(model, iterator, criterion, attribute_id=None):
     all_label = np.hstack(all_label)
     all_s = np.vstack(all_s)
     all_s_flatten = np.hstack(all_s_flatten)
+    all_input = np.vstack(all_input)
 
-    return all_prediction, all_label, all_s, all_s_flatten
+    return all_prediction, all_label, all_s, all_s_flatten, all_input
 
 
 def smoothed_empirical_estimate_rate_parity(preds, labels, mask_aux, use_tpr=True):

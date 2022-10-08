@@ -20,17 +20,17 @@ def temp_table_generator():
     #            'only_titled_erm', 'only_mixup', 'tilted_erm_with_mixup',
     #            'tilted_erm_with_fairness_loss']
 
-    # methods = ['unconstrained', 'unconstrained_with_fairness_loss',
-    #            'adversarial_group','fairgrad', 'only_titled_erm',
-    #             'only_mixup', 'tilted_erm_with_mixup', 'tilted_erm_with_mixup_only_one_group', 'weighted_sample_erm'
-    #            ]
-
-    methods = [ 'unconstrained_with_fairness_loss', 'tilted_erm_with_mixup_only_one_group'
+    methods = ['unconstrained', 'unconstrained_with_fairness_loss',
+               'adversarial_group','fairgrad', 'only_titled_erm',
+                'only_mixup', 'tilted_erm_with_mixup', 'tilted_erm_with_mixup_only_one_group', 'weighted_sample_erm'
                ]
 
+    # methods = [ 'unconstrained_with_fairness_loss', 'tilted_erm_with_mixup_only_one_group'
+    #            ]
 
 
-    dataset_names = ['celeb_multigroup_v3']
+
+    dataset_names = ['twitter_hate_speech']
     models = ['simple_non_linear']
     seeds = [10,20,30,40,50]
     # seeds = [50]
