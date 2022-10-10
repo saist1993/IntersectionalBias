@@ -8,7 +8,8 @@ from .common_functionality import *
 from .mixup_training_loop import \
     train_only_mixup_with_abstract_group,\
     train_only_tilted_erm_with_abstract_group, \
-    train_only_tilted_erm_with_mixup_augmentation
+    train_only_tilted_erm_with_mixup_augmentation,\
+    train_only_mixup_based_on_distance
 
 def train_only_mixup(train_tilted_params:TrainParameters):
 
@@ -869,6 +870,7 @@ def training_loop(training_loop_parameters: TrainingLoopParameters):
         training_loop_parameters.other_params['all_aux'] = all_aux
         training_loop_parameters.other_params['all_aux_flatten'] = all_aux_flatten
         training_loop_parameters.other_params['all_input'] = all_input
+        training_loop_parameters.other_params['valid_iterator'] = training_loop_parameters.iterators[0]['valid_iterator']
 
         train_parameters = TrainParameters(
             model=training_loop_parameters.model,
@@ -901,6 +903,9 @@ def training_loop(training_loop_parameters: TrainingLoopParameters):
                 train_parameters)
         elif training_loop_type == 'tilted_erm_with_mixup_augmentation':
             train_epoch_metric, loss, global_weight, global_loss = train_only_tilted_erm_with_mixup_augmentation(
+                train_parameters)
+        elif training_loop_type == 'train_only_mixup_based_on_distance':
+            train_epoch_metric, loss, global_weight, global_loss = train_only_mixup_based_on_distance(
                 train_parameters)
         else:
             raise NotImplementedError

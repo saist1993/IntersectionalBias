@@ -30,7 +30,7 @@ def temp_table_generator():
 
 
 
-    dataset_names = ['twitter_hate_speech']
+    dataset_names = ['adult_multi_group']
     models = ['simple_non_linear']
     seeds = [10,20,30,40,50]
     # seeds = [50]

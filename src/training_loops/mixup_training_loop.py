@@ -6,7 +6,27 @@ from collections import Counter
 import torch.nn.functional as F
 from itertools import combinations
 from .common_functionality import *
+from sklearn.metrics.pairwise import cosine_distances
 
+
+def titled_sample_batch_sen_idx_with_y(all_input, all_label, all_aux, all_aux_flatten, batch_size, s):
+    """
+        This will sample batch size number of elements from input with given s!
+    """
+    index_s_0 = np.where(np.logical_and(all_aux_flatten==s, all_label==0) == True)[0]
+    index_s_1 = np.where(np.logical_and(all_aux_flatten==s, all_label==1) == True)[0]
+    relevant_index = np.random.choice(index_s_0, size=int(batch_size/2), replace=True).tolist()
+    relevant_index = relevant_index + np.random.choice(index_s_1,size=int(batch_size/2), replace=True).tolist()
+
+    # THIS IS DIFFERENT. IN ORIGINAL VERSION IT IS REPLACEMENT TRUE
+    batch_input = {
+        'labels': torch.LongTensor(all_label[relevant_index]),
+        'input': torch.FloatTensor(all_input[relevant_index]),
+        'aux': torch.LongTensor(all_aux[relevant_index]),
+        'aux_flattened': torch.LongTensor(all_aux_flatten[relevant_index])
+    }
+
+    return batch_input
 
 def generate_combinations(s, k =1):
     all_s_combinations = []
@@ -381,6 +401,222 @@ def custom_criterion(prediction, all_augmented_label_group1, all_augmented_label
     return lam * criterion(prediction, all_augmented_label_group1) + (1 - lam) * criterion(prediction, all_augmented_label_group2)
 
 
+def generate_flat_output_custom(input_iterator, attribute_id=None):
+    all_label = []
+    all_s = []
+    all_s_flatten = []
+    all_input = []
+
+    for batch_input in input_iterator:
+        all_label.append(batch_input['labels'].numpy())
+        all_s.append(batch_input['aux'].numpy())
+        all_s_flatten.append(batch_input['aux_flattened'].numpy())
+        all_input.append(batch_input['input'].numpy())
+
+    all_label = np.hstack(all_label)
+    all_s = np.vstack(all_s)
+    all_s_flatten = np.hstack(all_s_flatten)
+    all_input = np.vstack(all_input)
+
+    return all_label, all_s, all_s_flatten, all_input
+
+
+def generate_similarity_matrix(iterator, model, groups, reverse_groups):
+    all_train_label, all_train_s, all_train_s_flatten, all_input = generate_flat_output_custom(
+        iterator)
+
+    all_unique_groups = np.unique(all_train_s, axis=0) # unique groups - [[0,0,0], [0,0,1], [0,1,1]]
+    all_average_representation = {}
+
+
+
+    for unique_group in all_unique_groups:
+        mask = generate_mask(all_train_s, unique_group)
+        current_input = all_input[mask]
+
+        batch_input = {
+            'input': torch.FloatTensor(current_input),
+        }
+
+        model_hidden = model(batch_input)['hidden']
+
+
+        # average_representation = np.mean(all_input[mask], axis=0) # THIS IS INCORRECT. WE NEED MODEL OUTPUT AND NOT INPUT
+        average_representation = torch.mean(model_hidden, axis=0).cpu().detach().numpy() # THIS IS INCORRECT. WE NEED MODEL OUTPUT AND NOT INPUT
+        all_average_representation[str(unique_group).replace('.', '')] = average_representation
+
+    # average representation = {str([0,0,1]): average_representation, str([0,1,1]): average_representation}
+    distance_lookup = {}
+
+    for unique_group in groups:
+        distance = []
+        unique_group_representation = all_average_representation[reverse_groups[unique_group].replace('.','')]
+        for group in groups:
+            distance.append(cosine_distances([unique_group_representation], [all_average_representation[reverse_groups[group].replace('.','')]])[0][0])
+        distance_lookup[unique_group] = distance
+    return distance_lookup
+
+def train_only_mixup_based_on_distance(train_tilted_params:TrainParameters):
+    mixup_rg = train_tilted_params.other_params['mixup_rg']
+    model, optimizer, device, criterion = \
+        train_tilted_params.model, train_tilted_params.optimizer, train_tilted_params.device, train_tilted_params.criterion
+
+    track_output = []
+    track_input = []
+
+    global_weight = train_tilted_params.other_params['global_weight']
+    global_loss = train_tilted_params.other_params['global_loss']
+
+    flattened_s_to_s = {value: key for key, value in train_tilted_params.other_params['s_to_flattened_s'].items()}
+
+    similarity_matrix = generate_similarity_matrix(train_tilted_params.other_params['valid_iterator'], model, train_tilted_params.other_params['groups'], flattened_s_to_s)
+    # similarity_matrix = generate_similarity_matrix(train_tilted_params.iterator, model, train_tilted_params.other_params['groups'], flattened_s_to_s)
+    # print([np.sum(value) for key, value in similarity_matrix.items()])
+
+    for i in tqdm(range(train_tilted_params.other_params['number_of_iterations'])):
+        s_group_0 = np.random.choice(train_tilted_params.other_params['groups'], 2, replace=False)[0]
+        s_group_distance = similarity_matrix[s_group_0]
+        s_group_1 = np.random.choice(train_tilted_params.other_params['groups'], 1, replace=False, p=s_group_distance/np.linalg.norm(s_group_distance, 1))[0]
+
+        if train_tilted_params.fairness_function == 'demographic_parity':
+            items_group_0 = sample_batch_sen_idx(train_tilted_params.other_params['all_input'],
+                                                 train_tilted_params.other_params['all_label'],
+                                                 train_tilted_params.other_params['all_aux'],
+                                                 train_tilted_params.other_params['all_aux_flatten'],
+                                                 train_tilted_params.other_params['batch_size'],
+                                                 s_group_0)
+
+            items_group_1 = sample_batch_sen_idx(train_tilted_params.other_params['all_input'],
+                                                 train_tilted_params.other_params['all_label'],
+                                                 train_tilted_params.other_params['all_aux'],
+                                                 train_tilted_params.other_params['all_aux_flatten'],
+                                                 train_tilted_params.other_params['batch_size'],
+                                                 s_group_1)
+
+        elif train_tilted_params.fairness_function == 'equal_odds' or \
+                train_tilted_params.fairness_function == 'equal_opportunity':
+            # group splits -
+            # What we want is y=0,g=g0 and y=1,g=g0
+            # here items_group_0 say with batch 500 -> first 250 are 0 label and next (last) 250 are 1 label
+            items_group_0 = titled_sample_batch_sen_idx_with_y(train_tilted_params.other_params['all_input'],
+                                                        train_tilted_params.other_params['all_label'],
+                                                        train_tilted_params.other_params['all_aux'],
+                                                        train_tilted_params.other_params['all_aux_flatten'],
+                                                        train_tilted_params.other_params['batch_size'],
+                                                        s_group_0)
+            # What we want is y=0,g=g1 and y=1,g=g1
+            # here items_group_0 say with batch 500 -> first 250 are 0 label and next (last) 250 are 0 label
+            items_group_1 = titled_sample_batch_sen_idx_with_y(train_tilted_params.other_params['all_input'],
+                                                        train_tilted_params.other_params['all_label'],
+                                                        train_tilted_params.other_params['all_aux'],
+                                                        train_tilted_params.other_params['all_aux_flatten'],
+                                                        train_tilted_params.other_params['batch_size'],
+                                                        s_group_1)
+            # group split
+
+            # class split
+
+        else:
+            raise NotImplementedError
+
+        for key in items_group_0.keys():
+            items_group_0[key] = items_group_0[key].to(train_tilted_params.device)
+
+        for key in items_group_1.keys():
+            items_group_1[key] = items_group_1[key].to(train_tilted_params.device)
+
+        composite_items = {
+            'input': torch.vstack([items_group_0['input'], items_group_1['input']]),
+            'labels': torch.hstack([items_group_0['labels'], items_group_1['labels']]),
+            'aux': torch.vstack([items_group_0['aux'], items_group_1['aux']]),
+            'aux_flattened': torch.hstack([items_group_0['aux_flattened'], items_group_1['aux_flattened']])
+        }
+
+        optimizer.zero_grad()
+        output = model(composite_items)
+        loss = criterion(output['prediction'], composite_items['labels'])
+
+        # Mix up
+        #
+        # if abs(sum(items_group_1['aux'][0]) - sum(items_group_0['aux'][0])) > 1:
+        #     alpha = 1.0
+        #     gamma = beta(alpha, alpha)
+        # else:
+        #     alpha = 1.0
+        #     gamma = beta(alpha, alpha)
+        alpha = 1.0
+        gamma = beta(alpha, alpha)
+
+        if train_tilted_params.fairness_function == 'demographic_parity':
+            batch_x_mix = items_group_0['input'] * gamma + items_group_1['input'] * (1 - gamma)
+            batch_x_mix = batch_x_mix.requires_grad_(True)
+            output_mixup = model({'input': batch_x_mix})
+            gradx = torch.autograd.grad(output_mixup['prediction'].sum(), batch_x_mix, create_graph=True)[
+                0]  # may be .sum()
+
+            batch_x_d = items_group_1['input'] - items_group_0['input']
+            grad_inn = (gradx * batch_x_d).sum(1)
+            E_grad = grad_inn.mean(0)
+            if train_tilted_params.other_params['method'] == 'only_mixup_with_loss_group':
+                loss_reg = torch.abs(E_grad) / torch.mean(loss[len(items_group_0['input']):])
+            else:
+                loss_reg = torch.abs(E_grad)
+
+        elif train_tilted_params.fairness_function == 'equal_odds' or \
+                train_tilted_params.fairness_function == 'equal_opportunity':
+            split_index = int(train_tilted_params.other_params['batch_size'] / 2)
+            if train_tilted_params.fairness_function == 'equal_odds':
+                gold_labels = [0, 1]
+            elif train_tilted_params.fairness_function == 'equal_opportunity':
+                gold_labels = [1]
+            else:
+                raise NotImplementedError
+            loss_reg = 0
+            for i in gold_labels:
+                if i == 0:
+                    index_start = 0
+                    index_end = split_index
+                elif i == 1:
+                    index_start = split_index
+                    index_end = -1
+                else:
+                    raise NotImplementedError("only support binary labels!")
+
+                batch_x_mix = items_group_0['input'][index_start:index_end] * gamma + items_group_1['input'][
+                                                                                      index_start:index_end] * (
+                                          1 - gamma)
+                batch_x_mix = batch_x_mix.requires_grad_(True)
+                output_mixup = model({'input': batch_x_mix})
+                gradx = torch.autograd.grad(output_mixup['prediction'].sum(), batch_x_mix, create_graph=True)[
+                    0]  # may be .sum()
+
+                batch_x_d = items_group_1['input'][index_start:index_end] - items_group_0['input'][
+                                                                            index_start:index_end]
+                grad_inn = (gradx * batch_x_d).sum(1)
+                E_grad = grad_inn.mean(0)
+                if train_tilted_params.other_params['method'] == 'only_mixup_with_loss_group':
+                    loss_reg = loss_reg + torch.abs(E_grad) / torch.mean(loss[index_start:index_end])
+                else:
+                    loss_reg = loss_reg + torch.abs(E_grad)
+                # loss_reg = loss_reg + torch.abs(E_grad)
+
+        else:
+            raise NotImplementedError
+
+        loss = torch.mean(loss)
+        loss = loss + mixup_rg * loss_reg
+        loss.backward()
+        optimizer.step()
+
+        output['loss_batch'] = loss.item()
+        track_output.append(output)
+        track_input.append(composite_items)
+
+    epoch_metric_tracker, loss = train_tilted_params.per_epoch_metric(track_output,
+                                                                      track_input,
+                                                                      train_tilted_params.fairness_function)
+    return epoch_metric_tracker, loss, global_weight, global_loss
+
 
 def train_only_tilted_erm_with_mixup_augmentation(train_tilted_params:TrainParameters):
 
@@ -395,6 +631,9 @@ def train_only_tilted_erm_with_mixup_augmentation(train_tilted_params:TrainParam
     model.train()
     track_output = []
     track_input = []
+
+
+
 
     for i in tqdm(range(train_tilted_params.other_params['number_of_iterations'])):
         s = np.random.choice(train_tilted_params.other_params['groups'], 1, p=global_weight)[0]

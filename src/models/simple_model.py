@@ -33,15 +33,15 @@ class SimpleNonLinear(nn.Module):
         x = self.relu(x)
         x = self.dropout(x)
 
-        x = self.layer_3(x)
-        x = self.batchnorm3(x)
-        x = self.relu(x)
-        x = self.dropout(x)
+        z = self.layer_3(x)
+        z = self.batchnorm3(z)
+        z = self.relu(z)
+        z = self.dropout(z)
 
-        x = self.layer_out(x)
+        z = self.layer_out(z)
 
         output = {
-            'prediction': x,
+            'prediction': z,
             'adv_output': None,
             'hidden': x,  # just for compatabilit
             'classifier_hiddens': None,
