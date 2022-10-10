@@ -122,7 +122,7 @@ def get_model(method:str, model_name:str, other_meta_data:Dict, device:torch.dev
                       'only_mixup_with_abstract_group', 'weighted_sample_erm',
                       'only_titled_erm_with_weights', 'only_tilted_erm_with_abstract_group',
                       'tilted_erm_with_mixup_augmentation',
-                      'train_only_mixup_based_on_distance']:
+                      'only_mixup_based_on_distance']:
             model = simple_model.SimpleNonLinear(model_params)
         elif method == 'adversarial_single':
             total_adv_dim = len(other_meta_data['s_flatten_lookup'])
@@ -265,7 +265,7 @@ def runner(runner_arguments:RunnerArguments):
                                      'tilted_erm_with_mixup_only_one_group', 'only_mixup_with_abstract_group',
                                      'weighted_sample_erm', 'only_titled_erm_with_weights',
                                      'only_tilted_erm_with_abstract_group', 'tilted_erm_with_mixup_augmentation',
-                                     'train_only_mixup_based_on_distance']:
+                                     'only_mixup_based_on_distance']:
         output = titled_erm_training_loop.training_loop(training_loop_params)
     else:
         raise NotImplementedError
@@ -299,7 +299,7 @@ if __name__ == '__main__':
     parser.add_argument('--fairness_lambda', '-fairness_lambda', help="the lambda in the fairness loss equation", type=float,
                         default=0.05)
     parser.add_argument('--method', '-method', help="unconstrained/adversarial_single/adversarial_group", type=str,
-                        default='train_only_mixup_based_on_distance')
+                        default='only_mixup_based_on_distance')
     parser.add_argument('--save_model_as', '-save_model_as', help="unconstrained/adversarial_single/adversarial_group", type=str,
                         default=None)
     parser.add_argument('--dataset_name', '-dataset_name', help="twitter_hate_speech/adult_multi_group",

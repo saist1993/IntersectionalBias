@@ -904,7 +904,7 @@ def training_loop(training_loop_parameters: TrainingLoopParameters):
         elif training_loop_type == 'tilted_erm_with_mixup_augmentation':
             train_epoch_metric, loss, global_weight, global_loss = train_only_tilted_erm_with_mixup_augmentation(
                 train_parameters)
-        elif training_loop_type == 'train_only_mixup_based_on_distance':
+        elif training_loop_type == 'only_mixup_based_on_distance':
             train_epoch_metric, loss, global_weight, global_loss = train_only_mixup_based_on_distance(
                 train_parameters)
         else:
