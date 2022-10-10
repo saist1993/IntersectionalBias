@@ -37,7 +37,7 @@ if __name__ == '__main__':
         titled_scales = [1.0, 5.0, 10.0]
         mixup_scales = [0.3, 0.6, 0.9]
 
-    if args.method == 'only_mixup' or args.method == 'only_mixup_with_loss_group':
+    if args.method == 'only_mixup' or args.method == 'only_mixup_with_loss_group' or args.method == 'train_only_mixup_based_on_distance':
         titled_scales = [0.0]
         mixup_scales = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]
 
