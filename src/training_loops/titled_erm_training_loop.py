@@ -10,7 +10,8 @@ from .mixup_training_loop import \
     train_only_tilted_erm_with_abstract_group, \
     train_only_tilted_erm_with_mixup_augmentation,\
     train_only_mixup_based_on_distance,\
-    train_with_mixup_only_one_group_based_distance
+    train_with_mixup_only_one_group_based_distance, \
+    train_only_mixup_based_on_distance_and_augmentation
 
 def train_only_mixup(train_tilted_params:TrainParameters):
 
@@ -911,6 +912,8 @@ def training_loop(training_loop_parameters: TrainingLoopParameters):
         elif training_loop_type == 'tilted_erm_with_mixup_based_on_distance':
             train_epoch_metric, loss, global_weight, global_loss = train_with_mixup_only_one_group_based_distance(
                 train_parameters)
+        elif training_loop_type == 'only_mixup_based_on_distance_and_augmentation':
+            train_epoch_metric, loss, global_weight, global_loss = train_only_mixup_based_on_distance_and_augmentation(train_parameters)
         else:
             raise NotImplementedError
 
