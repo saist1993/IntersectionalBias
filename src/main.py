@@ -124,7 +124,8 @@ def get_model(method:str, model_name:str, other_meta_data:Dict, device:torch.dev
                       'tilted_erm_with_mixup_augmentation',
                       'only_mixup_based_on_distance', 'tilted_erm_with_mixup_based_on_distance',
                       'only_mixup_based_on_distance_and_augmentation',
-                      'only_tilted_dro', 'only_tilted_erm_with_mixup_augmentation_lambda_weights']:
+                      'only_tilted_dro', 'only_tilted_erm_with_mixup_augmentation_lambda_weights',
+                      'only_tilted_erm_with_mixup_augmentation_lambda_weights_v2']:
             model = simple_model.SimpleNonLinear(model_params)
         elif method == 'adversarial_single':
             total_adv_dim = len(other_meta_data['s_flatten_lookup'])
@@ -270,7 +271,8 @@ def runner(runner_arguments:RunnerArguments):
                                      'only_mixup_based_on_distance', 'tilted_erm_with_mixup_based_on_distance',
                                      'only_mixup_based_on_distance_and_augmentation',
                                      'only_tilted_dro',
-                                     'only_tilted_erm_with_mixup_augmentation_lambda_weights']:
+                                     'only_tilted_erm_with_mixup_augmentation_lambda_weights',
+                                     'only_tilted_erm_with_mixup_augmentation_lambda_weights_v2']:
         output = titled_erm_training_loop.training_loop(training_loop_params)
     else:
         raise NotImplementedError

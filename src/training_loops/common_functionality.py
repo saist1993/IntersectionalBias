@@ -208,6 +208,21 @@ def generate_combinations(s, k =1):
     return all_s_combinations
 
 
+def sample_batch_sen_idx(all_input, all_label, all_aux, all_aux_flatten, batch_size, s):
+    """
+        This will sample batch size number of elements from input with given s!
+    """
+    relevant_index = np.random.choice(np.where(all_aux_flatten==s)[0], size=batch_size, replace=True).tolist()
+    # THIS IS DIFFERENT. IN ORIGINAL VERSION IT IS REPLACEMENT TRUE
+    batch_input = {
+        'labels': torch.LongTensor(all_label[relevant_index]),
+        'input': torch.FloatTensor(all_input[relevant_index]),
+        'aux': torch.LongTensor(all_aux[relevant_index]),
+        'aux_flattened': torch.LongTensor(all_aux_flatten[relevant_index])
+    }
+
+    return batch_input
+
 def generate_possible_patterns(s0, s1):
     all_s0_combinations, all_s1_combinations = generate_combinations(s0,1), generate_combinations(s1,1)
     all_unique_s0_combination = list(set(all_s0_combinations) - set(all_s1_combinations))

@@ -15,7 +15,8 @@ from .mixup_training_loop import \
     train_only_mixup_based_on_distance,\
     train_with_mixup_only_one_group_based_distance, \
     train_only_mixup_based_on_distance_and_augmentation
-from .titled_erm_with_abstract import  train_only_tilted_erm_with_mixup_augmentation_lambda_weights
+from .titled_erm_with_abstract import  train_only_tilted_erm_with_mixup_augmentation_lambda_weights, \
+    train_only_tilted_erm_with_mixup_augmentation_lambda_weights_v2
 
 
 def train_only_mixup(train_tilted_params:TrainParameters):
@@ -820,20 +821,7 @@ def test(train_parameters: TrainParameters):
     return epoch_metric_tracker, loss
 
 
-def sample_batch_sen_idx(all_input, all_label, all_aux, all_aux_flatten, batch_size, s):
-    """
-        This will sample batch size number of elements from input with given s!
-    """
-    relevant_index = np.random.choice(np.where(all_aux_flatten==s)[0], size=batch_size, replace=True).tolist()
-    # THIS IS DIFFERENT. IN ORIGINAL VERSION IT IS REPLACEMENT TRUE
-    batch_input = {
-        'labels': torch.LongTensor(all_label[relevant_index]),
-        'input': torch.FloatTensor(all_input[relevant_index]),
-        'aux': torch.LongTensor(all_aux[relevant_index]),
-        'aux_flattened': torch.LongTensor(all_aux_flatten[relevant_index])
-    }
 
-    return batch_input
 
 
 
@@ -1041,6 +1029,8 @@ def training_loop(training_loop_parameters: TrainingLoopParameters):
             train_epoch_metric, loss, global_weight, global_loss = train_only_tilted_dro(train_parameters)
         elif training_loop_type == 'only_tilted_erm_with_mixup_augmentation_lambda_weights':
             train_epoch_metric, loss, global_weight, global_loss = train_only_tilted_erm_with_mixup_augmentation_lambda_weights(train_parameters)
+        elif training_loop_type == 'only_tilted_erm_with_mixup_augmentation_lambda_weights_v2':
+            train_epoch_metric, loss, global_weight, global_loss = train_only_tilted_erm_with_mixup_augmentation_lambda_weights_v2(train_parameters)
         else:
             raise NotImplementedError
 
