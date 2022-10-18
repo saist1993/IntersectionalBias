@@ -196,6 +196,67 @@ def log_epoch_metric(logger, start_message, epoch_metric, epoch_number, loss):
     logger.info(f"{start_message} epoch metric: {epoch_metric}")
 
 
+def generate_combinations(s, k =1):
+    all_s_combinations = []
+
+    for i in combinations(range(len(s)),k):
+        _temp = copy.deepcopy(s)
+        for j in i:
+            _temp[j] = 'x'
+        all_s_combinations.append(tuple(_temp))
+
+    return all_s_combinations
+
+
+def generate_possible_patterns(s0, s1):
+    all_s0_combinations, all_s1_combinations = generate_combinations(s0,1), generate_combinations(s1,1)
+    all_unique_s0_combination = list(set(all_s0_combinations) - set(all_s1_combinations))
+    all_unique_s0_combination.append(tuple(s0))
+    all_unique_s1_combination = list(set(all_s1_combinations) - set(all_s0_combinations))
+    all_unique_s1_combination.append(tuple(s1))
+    return all_unique_s0_combination, all_unique_s1_combination
+
+
+def generate_mask(all_s, mask_pattern):
+    keep_indices = []
+
+    for index, i in enumerate(mask_pattern):
+        if i != 'x':
+            keep_indices.append(i == all_s[:, index])
+        else:
+            keep_indices.append(np.ones_like(all_s[:, 0], dtype='bool'))
+
+    mask = np.ones_like(all_s[:, 0], dtype='bool')
+
+    # mask = [np.logical_and(mask, i) for i in keep_indices]
+
+    for i in keep_indices:
+        mask = np.logical_and(mask, i)
+    return mask
+
+
+
+def generate_flat_output_custom(input_iterator, attribute_id=None):
+    all_label = []
+    all_s = []
+    all_s_flatten = []
+    all_input = []
+
+    for batch_input in input_iterator:
+        all_label.append(batch_input['labels'].numpy())
+        all_s.append(batch_input['aux'].numpy())
+        all_s_flatten.append(batch_input['aux_flattened'].numpy())
+        all_input.append(batch_input['input'].numpy())
+
+    all_label = np.hstack(all_label)
+    all_s = np.vstack(all_s)
+    all_s_flatten = np.hstack(all_s_flatten)
+    all_input = np.vstack(all_input)
+
+    return all_label, all_s, all_s_flatten, all_input
+
+
+
 
 def training_loop_common(training_loop_parameters: TrainingLoopParameters, train_function):
     logger = logging.getLogger(training_loop_parameters.unique_id_for_run)

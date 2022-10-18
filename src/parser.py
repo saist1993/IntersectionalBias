@@ -27,7 +27,7 @@ def temp_table_generator():
                'weighted_sample_erm',
                'only_mixup_based_on_distance',
                'tilted_erm_with_mixup_based_on_distance',
-               'only_mixup_based_on_distance_and_augmentation'
+               'only_mixup_based_on_distance_and_augmentation', 'only_tilted_dro'
                ]
 
     # methods = [ 'unconstrained_with_fairness_loss', 'tilted_erm_with_mixup_only_one_group'

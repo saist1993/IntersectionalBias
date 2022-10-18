@@ -1,10 +1,13 @@
 import math
 import torch
+import pandas as pd
+from scipy import optimize
 from tqdm.auto import tqdm
 from numpy.random import beta
 import torch.nn.functional as F
 from collections import Counter
 from .common_functionality import *
+from metrics import fairness_utils
 from .mixup_training_loop import \
     train_only_mixup_with_abstract_group,\
     train_only_tilted_erm_with_abstract_group, \
@@ -12,6 +15,8 @@ from .mixup_training_loop import \
     train_only_mixup_based_on_distance,\
     train_with_mixup_only_one_group_based_distance, \
     train_only_mixup_based_on_distance_and_augmentation
+from .titled_erm_with_abstract import  train_only_tilted_erm_with_mixup_augmentation_lambda_weights
+
 
 def train_only_mixup(train_tilted_params:TrainParameters):
 
@@ -851,7 +856,57 @@ def sample_batch_sen_idx_with_y(all_input, all_label, all_aux, all_aux_flatten, 
 
     return batch_input
 
+def get_all_representation(df, s):
+    s_abstract = generate_combinations(list(s))
+    s_abstract.insert(0, s)
+    all_representation = [df.loc[df['group_pattern'] == _s]['average_representation'].item() for _s in s_abstract]
+    return all_representation
 
+
+
+def create_group_to_lambda_weight(iterator, s_aux_to_s_flat):
+    all_train_label, all_train_s, all_train_s_flatten, all_input = generate_flat_output_custom(iterator)
+
+    all_possible_groups = fairness_utils.create_all_possible_groups(
+        attributes=[list(np.unique(all_train_s[:, i])) for i in range(all_train_s.shape[1])])
+
+    all_unique_groups = np.unique(all_train_s, axis=0)
+
+    row_header = ['group_pattern', 'size', 'label==1', 'label==0', 'average_representation']
+    rows = []
+    for unique_group in all_possible_groups:
+        mask = generate_mask(all_train_s, unique_group)
+        size = np.sum(mask)
+        train_1 = np.sum(all_train_label[mask] == 1)
+        train_0 = np.sum(all_train_label[mask] == 0)
+        average_representation = np.mean(all_input[mask], axis=0)
+        rows.append([unique_group, size, train_1, train_0, average_representation])
+
+    df = pd.DataFrame(rows, columns=row_header)
+
+    group_to_lambda_weights = {}
+
+
+
+    for unique_group in all_unique_groups:
+        unique_group = tuple(list(unique_group))
+        all_representation = get_all_representation(df, unique_group)
+        P = np.matrix([all_representation[1], all_representation[2], all_representation[3]])
+        Ps = np.array(all_representation[0])
+
+        def objective(x):
+            x = np.array([x])
+            res = Ps - np.dot(x, P)
+            return np.asarray(res).flatten()
+
+        def main():
+            x = np.array([1 for i in range(len(unique_group))]/np.sum([1 for i in range(len(unique_group))]))
+            final_lambda_weights = optimize.least_squares(objective, x).x
+            return final_lambda_weights
+
+        group_to_lambda_weights[s_aux_to_s_flat[str(list(unique_group)).replace(']',',]').replace(',', '.')]] = main()
+
+    return group_to_lambda_weights
 
 def training_loop(training_loop_parameters: TrainingLoopParameters):
     '''
@@ -919,6 +974,10 @@ def training_loop(training_loop_parameters: TrainingLoopParameters):
 
     # models = []
 
+    group_to_lambda_weight = create_group_to_lambda_weight(training_loop_parameters.iterators[0]['valid_iterator'],
+                                                           training_loop_parameters.other_params['s_to_flattened_s'])
+
+
 
     for ep in range(training_loop_parameters.n_epochs):
 
@@ -933,6 +992,10 @@ def training_loop(training_loop_parameters: TrainingLoopParameters):
         training_loop_parameters.other_params['all_aux_flatten'] = all_aux_flatten
         training_loop_parameters.other_params['all_input'] = all_input
         training_loop_parameters.other_params['valid_iterator'] = training_loop_parameters.iterators[0]['valid_iterator']
+        training_loop_parameters.other_params['train_iterator'] = training_loop_parameters.iterators[0][
+            'train_iterator']
+        training_loop_parameters.other_params['group_to_lambda_weight'] = group_to_lambda_weight
+
 
         train_parameters = TrainParameters(
             model=training_loop_parameters.model,
@@ -976,6 +1039,8 @@ def training_loop(training_loop_parameters: TrainingLoopParameters):
             train_epoch_metric, loss, global_weight, global_loss = train_only_mixup_based_on_distance_and_augmentation(train_parameters)
         elif training_loop_type == 'only_tilted_dro':
             train_epoch_metric, loss, global_weight, global_loss = train_only_tilted_dro(train_parameters)
+        elif training_loop_type == 'only_tilted_erm_with_mixup_augmentation_lambda_weights':
+            train_epoch_metric, loss, global_weight, global_loss = train_only_tilted_erm_with_mixup_augmentation_lambda_weights(train_parameters)
         else:
             raise NotImplementedError
 
