@@ -65,7 +65,8 @@ def train_only_tilted_erm_with_mixup_augmentation_lambda_weights(train_tilted_pa
 
     for i in tqdm(range(train_tilted_params.other_params['number_of_iterations'])):
         s = np.random.choice(train_tilted_params.other_params['groups'], 1, p=global_weight)[0]
-        s_flat = eval(flattened_s_to_s[s].replace('.', ','))
+        s_flat = flattened_s_to_s[s]
+        # s_flat = train_tilted_params.other_params['s_to_flattened_s'][s]
 
         items = sample_batch_sen_idx_with_augmentation_with_lambda(train_tilted_params.other_params['all_input'],
                                      train_tilted_params.other_params['all_label'],
@@ -137,7 +138,7 @@ def train_only_tilted_erm_with_mixup_augmentation_lambda_weights_v2(train_tilted
 
     for i in tqdm(range(train_tilted_params.other_params['number_of_iterations'])):
         s = np.random.choice(train_tilted_params.other_params['groups'], 1, p=global_weight)[0]
-        s_flat = eval(flattened_s_to_s[s].replace('.', ','))
+        s_flat = flattened_s_to_s[s]
 
         items = sample_batch_sen_idx_with_augmentation_with_lambda(train_tilted_params.other_params['all_input'],
                                      train_tilted_params.other_params['all_label'],

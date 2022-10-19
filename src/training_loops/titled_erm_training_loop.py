@@ -880,6 +880,7 @@ def create_group_to_lambda_weight(iterator, s_aux_to_s_flat):
         unique_group = tuple(list(unique_group))
         all_representation = get_all_representation(df, unique_group)
         P = np.matrix([all_representation[1], all_representation[2], all_representation[3]])
+        P = np.matrix(all_representation[1:])
         Ps = np.array(all_representation[0])
 
         def objective(x):
@@ -891,8 +892,13 @@ def create_group_to_lambda_weight(iterator, s_aux_to_s_flat):
             x = np.array([1 for i in range(len(unique_group))]/np.sum([1 for i in range(len(unique_group))]))
             final_lambda_weights = optimize.least_squares(objective, x).x
             return final_lambda_weights
-
-        group_to_lambda_weights[s_aux_to_s_flat[str(list(unique_group)).replace(']',',]').replace(',', '.')]] = main()
+        # key = str(list(unique_group)).replace(']',',]').replace(',', '.')
+        key = tuple([int(i) for i in list(unique_group)])
+        group_to_lambda_weights[s_aux_to_s_flat[key]] = main()
+    # try:
+    #     group_to_lambda_weights[s_aux_to_s_flat[key]] = main()
+    # except KeyError:
+    #     group_to_lambda_weights[s_aux_to_s_flat[key.replace('.','')]] = main()
 
     return group_to_lambda_weights
 

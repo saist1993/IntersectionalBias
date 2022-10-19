@@ -78,12 +78,12 @@ class CreateIterators:
     def flatten_s(self, s:List[List]):
         for f in s:
             keys = self.s_to_flattened_s.keys()
-            if str(f) not in keys:
-                self.s_to_flattened_s[str(f)] = len(keys)
+            if tuple([int(i) for i in f]) not in keys:
+                self.s_to_flattened_s[tuple([int(i) for i in f])] = len(keys)
 
 
     def get_flatten_s(self, s:List[List]):
-        return [self.s_to_flattened_s[str(i)] for i in s]
+        return [self.s_to_flattened_s[tuple([int(j) for j in i])] for i in s]
 
 
     def get_iterators(self, iterator_data:IteratorData):

@@ -200,7 +200,7 @@ def generate_combinations(s, k =1):
     all_s_combinations = []
 
     for i in combinations(range(len(s)),k):
-        _temp = copy.deepcopy(s)
+        _temp = list(copy.deepcopy(s))
         for j in i:
             _temp[j] = 'x'
         all_s_combinations.append(tuple(_temp))

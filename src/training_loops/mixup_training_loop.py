@@ -387,16 +387,16 @@ def generate_similarity_matrix(iterator, model, groups, reverse_groups):
 
         # average_representation = np.mean(all_input[mask], axis=0) # THIS IS INCORRECT. WE NEED MODEL OUTPUT AND NOT INPUT
         average_representation = torch.mean(model_hidden, axis=0).cpu().detach().numpy() # THIS IS INCORRECT. WE NEED MODEL OUTPUT AND NOT INPUT
-        all_average_representation[str(unique_group).replace('.', '')] = average_representation
+        all_average_representation[tuple([int(i) for i in unique_group])] = average_representation
 
     # average representation = {str([0,0,1]): average_representation, str([0,1,1]): average_representation}
     distance_lookup = {}
 
     for unique_group in groups:
         distance = []
-        unique_group_representation = all_average_representation[reverse_groups[unique_group].replace('.','')]
+        unique_group_representation = all_average_representation[reverse_groups[unique_group]]
         for group in groups:
-            distance.append(cosine_distances([unique_group_representation], [all_average_representation[reverse_groups[group].replace('.','')]])[0][0])
+            distance.append(cosine_distances([unique_group_representation], [all_average_representation[reverse_groups[group]]])[0][0])
         distance_lookup[unique_group] = distance
     return distance_lookup
 
