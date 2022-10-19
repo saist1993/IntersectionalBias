@@ -37,13 +37,13 @@ def temp_table_generator():
 
 
     # dataset_names = ['adult_multi_group']
-    dataset_names = ['twitter_hate_speech']
-    # dataset_names = ['celeb_multigroup_v3']
+    # dataset_names = ['twitter_hate_speech']
+    dataset_names = ['celeb_multigroup_v3']
     models = ['simple_non_linear']
     seeds = [10,20,30,40,50]
     # seeds = [50]
-    # fairness_function = 'equal_opportunity'
-    fairness_function = 'equal_odds'
+    fairness_function = 'equal_opportunity'
+    # fairness_function = 'equal_odds'
     k = 2
 
     level_1_strategy_params = {'keep_last_k': 100.0}
