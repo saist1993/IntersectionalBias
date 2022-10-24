@@ -43,7 +43,10 @@ if __name__ == '__main__':
         titled_scales = [0.0]
         mixup_scales = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]
 
-    if args.method == 'only_titled_erm' or args.method == 'only_tilted_erm_with_mixup_augmentation_lambda_weights' or args.method == 'only_tilted_erm_with_mixup_augmentation_lambda_weights_v2':
+    if args.method == 'only_titled_erm' or args.method == 'only_tilted_erm_with_mixup_augmentation_lambda_weights'\
+            or args.method == 'only_tilted_erm_with_mixup_augmentation_lambda_weights_v2'\
+            or args.method == 'only_tilted_erm_with_mixup_augmentation_lambda_weights_v3'\
+            or args.method == 'only_tilted_erm_with_mixup_augmentation_lambda_weights_v4':
         titled_scales = [0.1, 1.0, 3.0, 5.0, 8.0, 10.0, 50.0]
         mixup_scales = [0.0]
 

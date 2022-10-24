@@ -125,7 +125,9 @@ def get_model(method:str, model_name:str, other_meta_data:Dict, device:torch.dev
                       'only_mixup_based_on_distance', 'tilted_erm_with_mixup_based_on_distance',
                       'only_mixup_based_on_distance_and_augmentation',
                       'only_tilted_dro', 'only_tilted_erm_with_mixup_augmentation_lambda_weights',
-                      'only_tilted_erm_with_mixup_augmentation_lambda_weights_v2']:
+                      'only_tilted_erm_with_mixup_augmentation_lambda_weights_v2',
+                      'only_tilted_erm_with_mixup_augmentation_lambda_weights_v3',
+                      'only_tilted_erm_with_mixup_augmentation_lambda_weights_v4']:
             model = simple_model.SimpleNonLinear(model_params)
         elif method == 'adversarial_single':
             total_adv_dim = len(other_meta_data['s_flatten_lookup'])
@@ -227,7 +229,7 @@ def runner(runner_arguments:RunnerArguments):
                                                                     epsilon=0.0)
         criterion = fairgrad_CrossEntropyLoss(reduction='none', **fairness_related_meta_data)
     else:
-        criterion = fairgrad_CrossEntropyLoss(reduction='none')
+        criterion = fairgrad_CrossEntropyLoss(reduction='none', label_smoothing=0.0)
 
     # Fairness function (Later)
 
@@ -272,7 +274,9 @@ def runner(runner_arguments:RunnerArguments):
                                      'only_mixup_based_on_distance_and_augmentation',
                                      'only_tilted_dro',
                                      'only_tilted_erm_with_mixup_augmentation_lambda_weights',
-                                     'only_tilted_erm_with_mixup_augmentation_lambda_weights_v2']:
+                                     'only_tilted_erm_with_mixup_augmentation_lambda_weights_v2',
+                                     'only_tilted_erm_with_mixup_augmentation_lambda_weights_v3',
+                                     'only_tilted_erm_with_mixup_augmentation_lambda_weights_v4']:
         output = titled_erm_training_loop.training_loop(training_loop_params)
     else:
         raise NotImplementedError
@@ -306,7 +310,7 @@ if __name__ == '__main__':
     parser.add_argument('--fairness_lambda', '-fairness_lambda', help="the lambda in the fairness loss equation", type=float,
                         default=0.05)
     parser.add_argument('--method', '-method', help="unconstrained/adversarial_single/adversarial_group", type=str,
-                        default='only_tilted_erm_with_mixup_augmentation_lambda_weights_v2')
+                        default='only_tilted_erm_with_mixup_augmentation_lambda_weights_v3')
     parser.add_argument('--save_model_as', '-save_model_as', help="unconstrained/adversarial_single/adversarial_group", type=str,
                         default=None)
     parser.add_argument('--dataset_name', '-dataset_name', help="twitter_hate_speech/adult_multi_group/celeb_multigroup_v3",

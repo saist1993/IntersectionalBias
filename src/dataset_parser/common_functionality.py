@@ -97,6 +97,8 @@ class CreateIterators:
             train_X = scaler.transform(train_X)
             dev_X = scaler.transform(dev_X)
             test_X = scaler.transform(test_X)
+        else:
+            scalar = None
 
         vocab = {'<pad>': 1}  # no need of vocab in these dataset. It is there for code compatibility purposes.
 
@@ -129,7 +131,8 @@ class CreateIterators:
         iterator_set = {
             'train_iterator': train_iterator,
             'valid_iterator': dev_iterator,
-            'test_iterator': test_iterator
+            'test_iterator': test_iterator,
+            'scalar': scaler
         }
 
         return iterator_set, vocab, self.s_to_flattened_s
