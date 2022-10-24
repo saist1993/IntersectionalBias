@@ -1039,7 +1039,7 @@ def training_loop(training_loop_parameters: TrainingLoopParameters):
 
     # models = []
 
-    if training_loop_type == 'only_tilted_erm_with_mixup_augmentation_lambda_weights_v3':
+    if training_loop_type == 'only_tilted_erm_with_mixup_augmentation_lambda_weights_v4':
         group_to_lambda_weight = create_group_to_lambda_weight_seperate_positive_negative(training_loop_parameters.iterators[0]['valid_iterator'],
                                                                training_loop_parameters.other_params['s_to_flattened_s'])
     else:
