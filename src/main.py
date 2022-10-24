@@ -229,7 +229,7 @@ def runner(runner_arguments:RunnerArguments):
                                                                     epsilon=0.0)
         criterion = fairgrad_CrossEntropyLoss(reduction='none', **fairness_related_meta_data)
     else:
-        criterion = fairgrad_CrossEntropyLoss(reduction='none', label_smoothing=0.0)
+        criterion = fairgrad_CrossEntropyLoss(reduction='none')
 
     # Fairness function (Later)
 
