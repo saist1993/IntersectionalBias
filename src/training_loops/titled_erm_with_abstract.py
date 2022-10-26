@@ -486,6 +486,7 @@ def train_only_tilted_erm_with_mixup_augmentation_lambda_weights_v4(train_tilted
         global_weight = global_loss / torch.sum(global_loss)
         # global_weight = global_loss
         # loss = torch.mean(weights*loss)
+        loss = loss
         loss.backward()
         optimizer.step()
 

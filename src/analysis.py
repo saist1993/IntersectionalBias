@@ -8,6 +8,8 @@ from fairgrad.torch import CrossEntropyLoss
 from training_loops.common_functionality import *
 
 
+confidence_interval = lambda eps: [np.percentile(eps, [100.0 - 95.0])[0], np.percentile(eps, [95.0])[0] ]
+
 def generate_flat_outputs(model, iterator, criterion, attribute_id=None):
     track_output = []
     track_input = []
@@ -61,8 +63,15 @@ def smoothed_empirical_estimate_rate_parity(preds, labels, mask_aux, use_tpr=Tru
         denominator = np.count_nonzero(new_mask)
 
     # find the number of instance with S=s and label=1
+    if use_tpr:
+        prob = (numerator + 2.0) / (denominator * 1.0 + 2.0 + 2.0)
+        # prob = (numerator + 0.01) / (denominator * 1.0 + 0.01 + 0.01)
+    else:
+        prob = (numerator + 2) / (denominator * 1.0 + 0.01 + 2.0)
 
-    prob = (numerator + 0.01) / (denominator * 1.0 + 0.01 + 0.01)
+        prob = (numerator + 3.0) / (denominator * 1.0 + 3.0 + 3.0)
+
+
     return prob, numerator, denominator
 
 
@@ -103,7 +112,7 @@ def calculate_equal_odds(all_prediction, all_label, all_s, all_unique_aux, use_t
 
 
 def run_equal_odds(model, iterators, criterion, mode):
-    all_prediction, all_label, all_s, all_s_flatten = generate_flat_outputs(model, iterators[0][mode], criterion)
+    all_prediction, all_label, all_s, all_s_flatten, all_input = generate_flat_outputs(model, iterators[0][mode], criterion)
 
     eps_tpr, eps_fpr = 0.0, 0.0
     eps_tpr_prob, eps_fpr_prob = [], []
@@ -114,7 +123,10 @@ def run_equal_odds(model, iterators, criterion, mode):
 
     all_possible_groups = fairness_utils.create_all_possible_groups(
         attributes=[list(np.unique(all_s[:, i])) for i in range(all_s.shape[1])])
-
+    flag = True
+    flag_2 = True
+    all_eps_tpr = []
+    all_eps_fpr = []
     for _ in range(1000):
         index_select = np.random.choice(len(all_prediction), len(all_prediction), replace=True)
         eps_tpr_, eps_tpr_prob_, group_size, group_size_numerator_tpr, group_size_denomerator_tpr = calculate_equal_odds(all_prediction[index_select], all_label[index_select],
@@ -129,6 +141,42 @@ def run_equal_odds(model, iterators, criterion, mode):
         all_group_size_numerator_tpr.append(group_size_numerator_tpr)
         all_group_size_denomerator_fpr.append(group_size_denomerator_fpr)
         all_group_size_denomerator_tpr.append(group_size_denomerator_tpr)
+
+        all_eps_fpr.append(eps_fpr_)
+        all_eps_tpr.append(eps_tpr_)
+        # if eps_fpr_ > 6.0 and flag:
+        #     print(f"eps_fpr: {eps_fpr_}")
+        #     print(f"eps_fpr_prob: {eps_fpr_prob_}")
+        #     print(f"numerator fpr: {group_size_numerator_fpr}")
+        #     print(f"denominator fpr: {group_size_denomerator_fpr}")
+        #     # print(eps_tpr_, eps_tpr_prob_, group_size, group_size_numerator_tpr, group_size_denomerator_tpr)
+        #     flag = False
+        # #
+        # if eps_fpr_ < 1.5 and flag_2:
+        #     print(f"eps_fpr: {eps_fpr_}")
+        #     print(f"eps_fpr_prob: {eps_fpr_prob_}")
+        #     print(f"numerator fpr: {group_size_numerator_fpr}")
+        #     print(f"denominator fpr: {group_size_denomerator_fpr}")
+        #     # print(eps_tpr_, eps_tpr_prob_, group_size, group_size_numerator_tpr, group_size_denomerator_tpr)
+        #     flag_2 = False
+
+        # if eps_tpr_ > 5.0 and flag:
+        #     print(f"eps_tpr: {eps_tpr_}")
+        #     print(f"eps_trp_prob: {eps_tpr_prob_}")
+        #     print(f"numerator tpr: {group_size_numerator_tpr}")
+        #     print(f"denominator tpr: {group_size_denomerator_tpr}")
+        #     print( eps_tpr_, eps_tpr_prob_, group_size, group_size_numerator_tpr, group_size_denomerator_tpr)
+        #     flag = False
+        #
+        # if eps_tpr_ < 0.2 and flag_2:
+        #     print(f"eps_tpr: {eps_tpr_}")
+        #     print(f"eps_trp_prob: {eps_tpr_prob_}")
+        #     print(f"numerator tpr: {group_size_numerator_tpr}")
+        #     print(f"denominator tpr: {group_size_denomerator_tpr}")
+        #     flag_2 = False
+
+        # print(eps_tpr_, eps_fpr_)
+    print(confidence_interval(all_eps_tpr), confidence_interval(all_eps_fpr))
     print(max(eps_tpr / 1000, eps_fpr / 1000))
 
     rows_header = ['group', 'group_size', 'tpr_prob', 'fpr_prob', 'num_tpr', 'deno_tpr', 'num_fpr', 'deno_fpr']

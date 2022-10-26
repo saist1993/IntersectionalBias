@@ -177,17 +177,17 @@ def log_and_plot_data(epoch_metric, loss, train=True):
 
 
 
-# def find_best_model(output, fairness_measure = 'equal_opportunity', relexation_threshold=0.02):
-#     best_fairness_measure = 100
-#     best_fairness_index = 0
-#     best_valid_accuracy = max([metric.accuracy for metric in output['all_valid_eps_metric']])
-#     for index, validation_metric in enumerate(output['all_valid_eps_metric']):
-#         if validation_metric.accuracy >= best_valid_accuracy - relexation_threshold:
-#             fairness_value = validation_metric.eps_fairness[fairness_measure].intersectional_bootstrap[0]
-#             if fairness_value < best_fairness_measure:
-#                 best_fairness_measure = fairness_value
-#                 best_fairness_index = index
-#     return best_fairness_index
+def find_best_model(output, fairness_measure = 'equal_opportunity', relexation_threshold=0.02):
+    best_fairness_measure = 100
+    best_fairness_index = 0
+    best_valid_accuracy = max([metric.accuracy for metric in output['all_valid_eps_metric']])
+    for index, validation_metric in enumerate(output['all_valid_eps_metric']):
+        if validation_metric.accuracy >= best_valid_accuracy - relexation_threshold:
+            fairness_value = validation_metric.eps_fairness[fairness_measure].intersectional_bootstrap[0]
+            if fairness_value < best_fairness_measure:
+                best_fairness_measure = fairness_value
+                best_fairness_index = index
+    return best_fairness_index
 
 
 def log_epoch_metric(logger, start_message, epoch_metric, epoch_number, loss):
@@ -281,7 +281,7 @@ def training_loop_common(training_loop_parameters: TrainingLoopParameters, train
     all_train_eps_metrics = []
     all_test_eps_metrics = []
     all_valid_eps_metrics = []
-    # models = []
+    models = []
     # best_test_accuracy = 0.0
     # best_eopp = 1.0
 
@@ -352,7 +352,7 @@ def training_loop_common(training_loop_parameters: TrainingLoopParameters, train
 
         logger.info("end of epoch block")
 
-        # models.append(copy.deepcopy(training_loop_parameters.model))
+        models.append(copy.deepcopy(training_loop_parameters.model))
 
         # if test_epoch_metric.eps_fairness['equal_odds'].intersectional_bootstrap[0] < 1.4:
         #     method = training_loop_parameters.other_params['method']
@@ -373,16 +373,18 @@ def training_loop_common(training_loop_parameters: TrainingLoopParameters, train
     output['all_train_eps_metric'] = all_train_eps_metrics
     output['all_test_eps_metric'] = all_test_eps_metrics
     output['all_valid_eps_metric'] = all_valid_eps_metrics
-    # index = find_best_model(output, training_loop_parameters.fairness_function)
-    # output['best_model_index'] = index
-    # method = training_loop_parameters.other_params['method']
-    # dataset_name = training_loop_parameters.other_params['dataset_name']
-    # seed = training_loop_parameters.other_params['seed']
-    # _dir = f'../saved_models/{dataset_name}/{method}/{seed}'
-    # Path(_dir).mkdir(parents=True, exist_ok=True)
-    # if training_loop_parameters.save_model_as != None:
-    #     torch.save(models[index].state_dict(),
-    #                f'{_dir}/{training_loop_parameters.fairness_function}_{training_loop_parameters.save_model_as}.pt')
+
+
+    index = find_best_model(output, training_loop_parameters.fairness_function)
+    output['best_model_index'] = index
+    method = training_loop_parameters.other_params['method']
+    dataset_name = training_loop_parameters.other_params['dataset_name']
+    seed = training_loop_parameters.other_params['seed']
+    _dir = f'../saved_models/{dataset_name}/{method}/{seed}'
+    Path(_dir).mkdir(parents=True, exist_ok=True)
+    if training_loop_parameters.save_model_as != None:
+        torch.save(models[index].state_dict(),
+                   f'{_dir}/{training_loop_parameters.fairness_function}_{training_loop_parameters.save_model_as}.pt')
 
 
     return output

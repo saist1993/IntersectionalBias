@@ -290,7 +290,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--seed', '-seed', help="seed for reproduction",
                         type=int,
-                        default=40)
+                        default=10)
 
     parser.add_argument('--batch_size', '-batch_size', help="seed for reproduction",
                         type=int,
@@ -298,7 +298,7 @@ if __name__ == '__main__':
 
     parser.add_argument('--epochs', '-epochs', help="epochs to work on",
                         type=int,
-                        default=100)
+                        default=25)
 
     parser.add_argument('--model', '-model', help="simple_non_linear",
                         type=str,
@@ -308,14 +308,14 @@ if __name__ == '__main__':
     parser.add_argument('--adversarial_lambda', '-adversarial_lambda', help="the lambda in the adv loss equation", type=float,
                         default=0.0)
     parser.add_argument('--fairness_lambda', '-fairness_lambda', help="the lambda in the fairness loss equation", type=float,
-                        default=0.05)
+                        default=0.0)
     parser.add_argument('--method', '-method', help="unconstrained/adversarial_single/adversarial_group", type=str,
-                        default='only_tilted_erm_with_mixup_augmentation_lambda_weights_v3')
+                        default='tilted_erm_with_mixup_only_one_group')
     parser.add_argument('--save_model_as', '-save_model_as', help="unconstrained/adversarial_single/adversarial_group", type=str,
-                        default=None)
+                        default='unconstrained__twitter__equal_odds.pt')
     parser.add_argument('--dataset_name', '-dataset_name', help="twitter_hate_speech/adult_multi_group/celeb_multigroup_v3",
                         type=str,
-                        default='adult_multi_group')
+                        default='twitter_hate_speech')
 
     parser.add_argument('--log_file_name', '-log_file_name', help="the name of the log file",
                         type=str,

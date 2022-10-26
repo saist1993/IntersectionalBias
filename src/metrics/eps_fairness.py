@@ -1,6 +1,8 @@
 from copy import deepcopy
 from dataclasses import dataclass
 from typing import List, Optional
+from itertools import combinations
+
 
 import numpy as np
 
@@ -10,8 +12,8 @@ from metrics import fairness_utils
 class EstimateProbability:
 
     def __init__(self):
-        self.alpha = 0.01
-        self.beta = 0.01
+        self.alpha = 2.0
+        self.beta = 2.0
         self.number_of_bootstrap_dataset = 1000
 
     @staticmethod
@@ -119,7 +121,9 @@ class EstimateProbability:
 
         max_prob = max(all_probs)
         min_prob = min(all_probs)
-        return [np.log(max_prob / min_prob), [0.0, 0.0]]
+        average_prob = [max(i/j , j/i) for i,j in combinations(all_probs , 2 )]
+
+        return [np.log(max_prob / min_prob), [0.0, 0.0], average_prob]
 
     def simple_bayesian_estimate_rate_parity(self, preds, labels, masks, use_tpr=True):
 
@@ -169,14 +173,16 @@ class EstimateProbability:
     def bootstrap_estimate_rate_parity(self, preds:np.ndarray, labels:np.ndarray, masks:np.ndarray, use_tpr:bool=True):
         """ Similar to bagging. Performed via smoothing"""
         all_eps = []
+        all_average_prob = []
         for _ in range(self.number_of_bootstrap_dataset):
             index_select = np.random.choice(len(preds), len(preds), replace=True)
 
-            eps, _ = self.smoothed_empirical_estimate_rate_parity(preds[index_select], labels[index_select],
+            eps, _, average_prob = self.smoothed_empirical_estimate_rate_parity(preds[index_select], labels[index_select],
                                                                [m[index_select] for m in masks], use_tpr=use_tpr)
             all_eps.append(eps)
+            all_average_prob.append(average_prob)
 
-        return [np.mean(all_eps), self.get_confidence_interval(all_eps)]
+        return [np.mean(all_eps), self.get_confidence_interval(all_eps), np.mean(all_average_prob)]
 
 
 @dataclass
