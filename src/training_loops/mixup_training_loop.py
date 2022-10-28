@@ -925,6 +925,195 @@ def train_with_mixup_only_one_group_based_distance(train_tilted_params:TrainPara
     return epoch_metric_tracker, loss, global_weight, global_loss
 
 
+def train_with_mixup_only_one_group_based_distance_v2(train_tilted_params:TrainParameters):
+
+    global_weight = train_tilted_params.other_params['global_weight']
+    global_loss = train_tilted_params.other_params['global_loss']
+    tilt_t = train_tilted_params.other_params['titled_t']
+    mixup_rg = train_tilted_params.other_params['mixup_rg']
+
+
+    model, optimizer, device, criterion = \
+        train_tilted_params.model, train_tilted_params.optimizer, train_tilted_params.device, train_tilted_params.criterion
+    model.train()
+    track_output = []
+    track_input = []
+
+    flattened_s_to_s = {value: key for key, value in train_tilted_params.other_params['s_to_flattened_s'].items()}
+
+    similarity_matrix = generate_similarity_matrix(train_tilted_params.other_params['valid_iterator'], model,
+                                                   train_tilted_params.other_params['groups'], flattened_s_to_s)
+
+    for i in tqdm(range(train_tilted_params.other_params['number_of_iterations'])):
+        # s_group_0, s_group_1 = np.random.choice(train_tilted_params.other_params['groups'], 2, p=global_weight, replace=False)
+        # s_group_0 = np.random.choice(train_tilted_params.other_params['groups'], 1, p=global_weight, replace=False)[0]
+        s_group_0 = np.random.choice(train_tilted_params.other_params['groups'], 1, replace=False,  p=global_weight)[0]
+        s_group_distance = similarity_matrix[s_group_0]
+        s_group_1 = np.random.choice(train_tilted_params.other_params['groups'], 1, replace=False,
+                                     p=s_group_distance / np.linalg.norm(s_group_distance, 1))[0]
+
+
+        # break_flag = True
+        # while break_flag:
+        #     temp_global_weight = np.reciprocal(global_weight)
+        #     temp_global_weight = temp_global_weight / np.linalg.norm(temp_global_weight, 1)# Invert all weights
+        #     s_group_1 = np.random.choice(train_tilted_params.other_params['groups'], 1, p=temp_global_weight, replace=False)[0]
+        #
+        #     if s_group_1 != s_group_0:
+        #         break_flag = False
+        # s = F.gumbel_softmax(global_weight, tau=1/10, hard=True).nonzero()[0][0].item()
+
+        if train_tilted_params.fairness_function == 'demographic_parity':
+            items_group_0 = sample_batch_sen_idx(train_tilted_params.other_params['all_input'],
+                                                 train_tilted_params.other_params['all_label'],
+                                                 train_tilted_params.other_params['all_aux'],
+                                                 train_tilted_params.other_params['all_aux_flatten'],
+                                                 train_tilted_params.other_params['batch_size'],
+                                                 s_group_0)
+
+            items_group_1 = sample_batch_sen_idx(train_tilted_params.other_params['all_input'],
+                                                 train_tilted_params.other_params['all_label'],
+                                                 train_tilted_params.other_params['all_aux'],
+                                                 train_tilted_params.other_params['all_aux_flatten'],
+                                                 train_tilted_params.other_params['batch_size'],
+                                                 s_group_1)
+
+        elif train_tilted_params.fairness_function == 'equal_odds' or \
+                train_tilted_params.fairness_function == 'equal_opportunity':
+            # group splits -
+            # What we want is y=0,g=g0 and y=1,g=g0
+            # here items_group_0 say with batch 500 -> first 250 are 0 label and next (last) 250 are 1 label
+            items_group_0 = titled_sample_batch_sen_idx_with_y(train_tilted_params.other_params['all_input'],
+                                                        train_tilted_params.other_params['all_label'],
+                                                        train_tilted_params.other_params['all_aux'],
+                                                        train_tilted_params.other_params['all_aux_flatten'],
+                                                        train_tilted_params.other_params['batch_size'],
+                                                        s_group_0)
+            # What we want is y=0,g=g1 and y=1,g=g1
+            # here items_group_0 say with batch 500 -> first 250 are 0 label and next (last) 250 are 0 label
+            items_group_1 = titled_sample_batch_sen_idx_with_y(train_tilted_params.other_params['all_input'],
+                                                        train_tilted_params.other_params['all_label'],
+                                                        train_tilted_params.other_params['all_aux'],
+                                                        train_tilted_params.other_params['all_aux_flatten'],
+                                                        train_tilted_params.other_params['batch_size'],
+                                                        s_group_1)
+            # group split
+
+            # class split
+
+        else:
+            raise NotImplementedError
+
+        for key in items_group_0.keys():
+            items_group_0[key] = items_group_0[key].to(train_tilted_params.device)
+
+        for key in items_group_1.keys():
+            items_group_1[key] = items_group_1[key].to(train_tilted_params.device)
+
+        composite_items = {
+            'input': torch.vstack([items_group_0['input'], items_group_1['input']]),
+            'labels': torch.hstack([items_group_0['labels'], items_group_1['labels']]),
+            'aux': torch.vstack([items_group_0['aux'], items_group_1['aux']]),
+            'aux_flattened': torch.hstack([items_group_0['aux_flattened'], items_group_1['aux_flattened']])
+        }
+
+        optimizer.zero_grad()
+        output_composite = model(composite_items)
+        loss = criterion(output_composite['prediction'], composite_items['labels'])
+        loss = torch.mean(loss)
+
+        output_group_zero = model(items_group_0)
+        output_group_one = model(items_group_1)
+
+        loss_group_zero = criterion(output_group_zero['prediction'], items_group_0['labels'])
+        loss_group_one = criterion(output_group_one['prediction'], items_group_1['labels'])
+
+        global_loss[s_group_0] = 0.2 * torch.exp(tilt_t * torch.mean(torch.clone(loss_group_zero).detach())) + 0.8 * global_loss[s_group_0]
+        global_loss[s_group_1] = 0.2 * torch.exp(tilt_t * torch.mean(torch.clone(loss_group_one).detach())) + 0.8 * global_loss[s_group_1]
+
+        global_weight = global_loss / torch.sum(global_loss)
+
+
+
+        # fair mixup now
+        alpha = 1
+        gamma = beta(alpha, alpha)
+
+        if train_tilted_params.fairness_function == 'demographic_parity':
+            batch_x_mix = items_group_0['input'] * gamma + items_group_1['input'] * (1 - gamma)
+            batch_x_mix = batch_x_mix.requires_grad_(True)
+            output_mixup = model({'input': batch_x_mix})
+            gradx = torch.autograd.grad(output_mixup['prediction'].sum(), batch_x_mix, create_graph=True)[
+                0]  # may be .sum()
+
+            batch_x_d = items_group_1['input'] - items_group_0['input']
+            grad_inn = (gradx * batch_x_d).sum(1)
+            E_grad = grad_inn.mean(0)
+            loss_reg = torch.abs(E_grad)
+
+        elif train_tilted_params.fairness_function == 'equal_odds' or \
+                train_tilted_params.fairness_function == 'equal_opportunity':
+            split_index = int(train_tilted_params.other_params['batch_size'] / 2)
+            if train_tilted_params.fairness_function == 'equal_odds':
+                gold_labels = [0, 1]
+            elif train_tilted_params.fairness_function == 'equal_opportunity':
+                gold_labels = [1]
+            else:
+                raise NotImplementedError
+            loss_reg = 0
+            for i in gold_labels:
+                if i == 0:
+                    index_start = 0
+                    index_end = split_index
+                elif i == 1:
+                    index_start = split_index
+                    index_end = -1
+                else:
+                    raise NotImplementedError("only support binary labels!")
+
+                batch_x_mix = items_group_0['input'][index_start:index_end] * gamma + items_group_1['input'][
+                                                                                      index_start:index_end] * (
+                                          1 - gamma)
+                batch_x_mix = batch_x_mix.requires_grad_(True)
+                output_mixup = model({'input': batch_x_mix})
+                gradx = torch.autograd.grad(output_mixup['prediction'].sum(), batch_x_mix, create_graph=True)[
+                    0]  # may be .sum()
+
+                batch_x_d = items_group_1['input'][index_start:index_end] - items_group_0['input'][
+                                                                            index_start:index_end]
+                grad_inn = (gradx * batch_x_d).sum(1)
+                E_grad = grad_inn.mean(0)
+                loss_reg = loss_reg + torch.abs(E_grad)
+
+        else:
+            raise NotImplementedError
+
+
+        loss = loss + mixup_rg*loss_reg
+
+
+
+        loss.backward()
+        optimizer.step()
+
+        output_composite['loss_batch'] = loss.item()
+        track_output.append(output_composite)
+        track_input.append(composite_items)
+
+
+
+    epoch_metric_tracker, loss = train_tilted_params.per_epoch_metric(track_output,
+                                                                   track_input,
+                                                                   train_tilted_params.fairness_function)
+
+
+
+    return epoch_metric_tracker, loss, global_weight, global_loss
+
+
+
+
+
 def train_only_tilted_erm_with_mixup_augmentation(train_tilted_params:TrainParameters):
 
     global_weight = train_tilted_params.other_params['global_weight']
