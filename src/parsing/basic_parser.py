@@ -1,4 +1,5 @@
 import os
+from numpy import nan
 from pathlib import Path
 from metrics.calculate_epoch_metric import *
 

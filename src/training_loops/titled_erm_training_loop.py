@@ -667,7 +667,66 @@ def train_only_tilted_erm(train_tilted_params:TrainParameters):
         global_weight = global_loss / torch.sum(global_loss)
         # global_weight = global_loss
         # loss = torch.mean(weights*loss)
-        # loss = global_weight[s]*loss
+        loss.backward()
+        optimizer.step()
+
+        output['loss_batch'] = loss.item()
+        track_output.append(output)
+        track_input.append(items)
+
+
+
+    epoch_metric_tracker, loss = train_tilted_params.per_epoch_metric(track_output,
+                                                                   track_input,
+                                                                   train_tilted_params.fairness_function)
+
+
+    return epoch_metric_tracker, loss, global_weight, global_loss
+
+
+
+def train_only_tilted_erm_with_weights_on_loss(train_tilted_params:TrainParameters):
+
+    global_weight = train_tilted_params.other_params['global_weight']
+    global_loss = train_tilted_params.other_params['global_loss']
+    tilt_t = train_tilted_params.other_params['titled_t']
+
+    model, optimizer, device, criterion = \
+        train_tilted_params.model, train_tilted_params.optimizer, train_tilted_params.device, train_tilted_params.criterion
+    model.train()
+    track_output = []
+    track_input = []
+
+    for i in tqdm(range(train_tilted_params.other_params['number_of_iterations'])):
+        s = np.random.choice(train_tilted_params.other_params['groups'], 1, p=global_weight)[0]
+        # s = F.gumbel_softmax(global_weight, tau=1/10, hard=True).nonzero()[0][0].item()
+
+        items = sample_batch_sen_idx(train_tilted_params.other_params['all_input'],
+                                     train_tilted_params.other_params['all_label'],
+                                     train_tilted_params.other_params['all_aux'],
+                                     train_tilted_params.other_params['all_aux_flatten'],
+                                     train_tilted_params.other_params['batch_size'],
+                                     s)
+
+        for key in items.keys():
+            items[key] = items[key].to(train_tilted_params.device)
+
+        optimizer.zero_grad()
+        output = model(items)
+        loss = torch.mean(criterion(output['prediction'], items['labels']))
+        loss_without_backward = torch.clone(loss).detach()
+
+        # tilt the loss
+        # loss_r_b = torch.log(torch.mean(torch.exp(tao * loss_without_backward)))/tao
+
+
+        global_loss[s] =  0.2 * torch.exp(tilt_t*loss_without_backward) + 0.8 * global_loss[s]
+
+        # weights = torch.exp(tao*loss_without_backward - tao*global_loss[s])
+        global_weight = global_loss / torch.sum(global_loss)
+        # global_weight = global_loss
+        # loss = torch.mean(weights*loss)
+        loss = global_weight[s]*loss
         loss.backward()
         optimizer.step()
 
@@ -1088,6 +1147,8 @@ def training_loop(training_loop_parameters: TrainingLoopParameters):
             train_epoch_metric, loss, global_weight, global_loss = train_only_mixup(train_parameters)
         elif training_loop_type == 'only_titled_erm' or training_loop_type == 'only_titled_erm_with_weights':
             train_epoch_metric, loss, global_weight, global_loss = train_only_tilted_erm(train_parameters)
+        elif training_loop_type == 'only_tilted_erm_with_weights_on_loss':
+            train_epoch_metric, loss, global_weight, global_loss = train_only_tilted_erm_with_weights_on_loss(train_parameters)
         elif training_loop_type == 'tilted_erm_with_fairness_loss':
             train_epoch_metric, loss, global_weight, global_loss = train_tilted_erm_with_fairness_loss(train_parameters)
         elif training_loop_type == 'only_mixup_with_abstract_group':
