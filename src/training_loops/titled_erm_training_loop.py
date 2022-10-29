@@ -1177,7 +1177,7 @@ def training_loop(training_loop_parameters: TrainingLoopParameters):
             train_epoch_metric, loss, global_weight, global_loss = train_with_mixup_only_one_group_based_distance_v2(
                 train_parameters)
         elif training_loop_type == 'train_with_mixup_only_one_group_based_distance_v3':
-            train_epoch_metric, loss, global_weight, global_loss = train_with_mixup_only_one_group_based_distance_v2(
+            train_epoch_metric, loss, global_weight, global_loss = train_with_mixup_only_one_group_based_distance_v3(
                 train_parameters)
         elif training_loop_type == 'only_mixup_based_on_distance_and_augmentation':
             train_epoch_metric, loss, global_weight, global_loss = train_only_mixup_based_on_distance_and_augmentation(train_parameters)

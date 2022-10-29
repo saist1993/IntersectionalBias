@@ -37,7 +37,8 @@ def temp_table_generator():
                'tilted_erm_with_mixup_only_one_group',
                'tilted_erm_with_mixup_based_on_distance',
                'only_tilted_erm_with_weights_on_loss',
-               'train_with_mixup_only_one_group_based_distance_v2'
+               'train_with_mixup_only_one_group_based_distance_v2',
+               'train_with_mixup_only_one_group_based_distance_v3'
                ]
 
     # methods = [ 'unconstrained_with_fairness_loss', 'tilted_erm_with_mixup_only_one_group'
