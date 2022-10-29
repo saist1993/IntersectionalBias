@@ -36,7 +36,8 @@ def temp_table_generator():
                'only_tilted_erm_with_mixup_augmentation_lambda_weights_v4',
                'tilted_erm_with_mixup_only_one_group',
                'tilted_erm_with_mixup_based_on_distance',
-               'only_tilted_erm_with_weights_on_loss'
+               'only_tilted_erm_with_weights_on_loss',
+               'train_with_mixup_only_one_group_based_distance_v2'
                ]
 
     # methods = [ 'unconstrained_with_fairness_loss', 'tilted_erm_with_mixup_only_one_group'
@@ -44,14 +45,14 @@ def temp_table_generator():
 
 
 
-    dataset_names = ['adult_multi_group']
-    # dataset_names = ['twitter_hate_speech']
+    # dataset_names = ['adult_multi_group']
+    dataset_names = ['twitter_hate_speech']
     # dataset_names = ['celeb_multigroup_v3']
     models = ['simple_non_linear']
     seeds = [10,20,30,40,50]
     # seeds = [50]
-    fairness_function = 'equal_odds'
-    # fairness_function = 'equal_opportunity'
+    # fairness_function = 'equal_odds'
+    fairness_function = 'equal_opportunity'
     k = 2
 
     level_1_strategy_params = {'keep_last_k': 100.0}
