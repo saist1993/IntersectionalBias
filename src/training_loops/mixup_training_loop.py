@@ -6,8 +6,8 @@ from collections import Counter
 import torch.nn.functional as F
 from itertools import combinations
 from .common_functionality import *
+from sklearn.preprocessing import normalize
 from sklearn.metrics.pairwise import cosine_distances
-
 
 def titled_sample_batch_sen_idx_with_y(all_input, all_label, all_aux, all_aux_flatten, batch_size, s):
     """
@@ -1133,10 +1133,10 @@ def train_with_mixup_only_one_group_based_distance_v3(train_tilted_params:TrainP
     for i in tqdm(range(train_tilted_params.other_params['number_of_iterations'])):
         # s_group_0, s_group_1 = np.random.choice(train_tilted_params.other_params['groups'], 2, p=global_weight, replace=False)
         # s_group_0 = np.random.choice(train_tilted_params.other_params['groups'], 1, p=global_weight, replace=False)[0]
-        s_group_0 = np.random.choice(train_tilted_params.other_params['groups'], 1, replace=False,  p=global_weight)[0]
-        s_group_distance = similarity_matrix[s_group_0]
-        s_group_1 = np.random.choice(train_tilted_params.other_params['groups'], 1, replace=False,
-                                     p=s_group_distance / np.linalg.norm(s_group_distance, 1))[0]
+        s_group_0, s_group_1 = eval(np.random.choice(train_tilted_params.other_params['groups_matrix'].reshape(1, -1)[0], 1, replace=False,  p=global_weight.reshape(1,-1)[0])[0])
+        # s_group_distance = similarity_matrix[s_group_0]
+        # s_group_1 = np.random.choice(train_tilted_params.other_params['groups'], 1, replace=False,
+        #                              p=s_group_distance / np.linalg.norm(s_group_distance, 1))[0]
 
 
         # break_flag = True
@@ -1205,8 +1205,8 @@ def train_with_mixup_only_one_group_based_distance_v3(train_tilted_params:TrainP
 
         optimizer.zero_grad()
         output_composite = model(composite_items)
-        loss = criterion(output_composite['prediction'], composite_items['labels'])
-        loss = torch.mean(loss)
+        # loss = criterion(output_composite['prediction'], composite_items['labels'])
+        # loss = torch.mean(loss)
 
         output_group_zero = model(items_group_0)
         output_group_one = model(items_group_1)
@@ -1214,12 +1214,15 @@ def train_with_mixup_only_one_group_based_distance_v3(train_tilted_params:TrainP
         loss_group_zero = criterion(output_group_zero['prediction'], items_group_0['labels'])
         loss_group_one = criterion(output_group_one['prediction'], items_group_1['labels'])
 
-        global_loss[s_group_0] = 0.2 * torch.exp(tilt_t * torch.mean(torch.clone(loss_group_zero).detach())) + 0.8 * global_loss[s_group_0]
-        global_loss[s_group_1] = 0.2 * torch.exp(tilt_t * torch.mean(torch.clone(loss_group_one).detach())) + 0.8 * global_loss[s_group_1]
-
-        global_weight = global_loss / torch.sum(global_loss)
 
 
+        global_weight[s_group_0, s_group_1] = 0.2 * torch.exp(tilt_t * torch.mean(torch.clone(loss_group_zero + loss_group_one).detach())) + 0.8 * global_loss[s_group_0, s_group_1]
+        # global_weight[s_group_0, s_group_1] = global_weight[s_group_0, s_group_1]*torch.exp(tilt_t * torch.mean(torch.clone(loss_group_zero + loss_group_one).detach()))
+
+        # global_loss[s_group_0] = 0.2 * torch.exp(tilt_t * torch.mean(torch.clone(loss_group_zero).detach())) + 0.8 * global_loss[s_group_0]
+        # global_loss[s_group_1] = 0.2 * torch.exp(tilt_t * torch.mean(torch.clone(loss_group_one).detach())) + 0.8 * global_loss[s_group_1]
+
+        global_weight = global_weight / np.sum(global_weight)
 
         # fair mixup now
         alpha = 1
@@ -1275,8 +1278,9 @@ def train_with_mixup_only_one_group_based_distance_v3(train_tilted_params:TrainP
             raise NotImplementedError
 
 
-        loss = (global_loss[s_group_0] + global_loss[s_group_1])*loss + mixup_rg*loss_reg
-
+        # loss = (global_loss[s_group_0] + global_loss[s_group_1])*loss + mixup_rg*loss_reg
+        # loss = len(global_weight)*global_weight[s_group_0]*torch.mean(loss_group_zero) + len(global_weight)*global_weight[s_group_1]*torch.mean(loss_group_one) + mixup_rg*loss_reg
+        loss = global_weight[s_group_0, s_group_1]*torch.mean(loss_group_zero + loss_group_one) + mixup_rg*loss_reg
 
 
         loss.backward()
@@ -1286,7 +1290,8 @@ def train_with_mixup_only_one_group_based_distance_v3(train_tilted_params:TrainP
         track_output.append(output_composite)
         track_input.append(composite_items)
 
-
+    # print( global_weight[s_group_0]*torch.mean(loss_group_zero), global_weight[s_group_1]*torch.mean(loss_group_one))
+    print(global_weight)
 
     epoch_metric_tracker, loss = train_tilted_params.per_epoch_metric(track_output,
                                                                    track_input,

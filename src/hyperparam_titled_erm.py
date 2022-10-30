@@ -50,7 +50,8 @@ if __name__ == '__main__':
             or args.method == 'only_tilted_erm_with_mixup_augmentation_lambda_weights_v2'\
             or args.method == 'only_tilted_erm_with_mixup_augmentation_lambda_weights_v3'\
             or args.method == 'only_tilted_erm_with_mixup_augmentation_lambda_weights_v4'\
-            or args.method == 'only_tilted_erm_with_weights_on_loss':
+            or args.method == 'only_tilted_erm_with_weights_on_loss'\
+            or args.method == 'only_titled_erm_with_mask':
         titled_scales = [0.1, 1.0, 3.0, 5.0, 8.0, 10.0, 50.0]
         mixup_scales = [0.0]
 
