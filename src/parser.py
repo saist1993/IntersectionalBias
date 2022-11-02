@@ -38,7 +38,8 @@ def temp_table_generator():
                'tilted_erm_with_mixup_based_on_distance',
                'only_tilted_erm_with_weights_on_loss',
                'train_with_mixup_only_one_group_based_distance_v2',
-               'train_with_mixup_only_one_group_based_distance_v3'
+               'train_with_mixup_only_one_group_based_distance_v3',
+               'only_titled_erm_with_mask'
                ]
 
     # methods = [ 'unconstrained_with_fairness_loss', 'tilted_erm_with_mixup_only_one_group'
@@ -84,7 +85,7 @@ def temp_table_generator():
                                                                      round(confidence_interval[1], k)
                     rows_temp.append([method, round(accuracy,k), round(fairness,k), confidence_interval, seed])
 
-                    if method == 'unconstrained_with_fairness_loss':
+                    if method == 'only_titled_erm':
                         print(result.arguments)
                         print(result.test_epoch_metric.epoch_number)
                 # average over seeds

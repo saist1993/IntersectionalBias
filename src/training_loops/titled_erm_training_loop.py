@@ -743,6 +743,7 @@ def train_only_tilted_erm_with_mask(train_tilted_params:TrainParameters):
         global_weight = global_loss / torch.sum(global_loss)
         # global_weight = global_loss
         # loss = torch.mean(weights*loss)
+        # loss = global_weight[s]*loss
         loss.backward()
         optimizer.step()
 

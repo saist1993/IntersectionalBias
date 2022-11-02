@@ -298,7 +298,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--seed', '-seed', help="seed for reproduction",
                         type=int,
-                        default=10)
+                        default=50)
 
     parser.add_argument('--batch_size', '-batch_size', help="seed for reproduction",
                         type=int,
@@ -323,7 +323,7 @@ if __name__ == '__main__':
                         default=None)
     parser.add_argument('--dataset_name', '-dataset_name', help="twitter_hate_speech/adult_multi_group/celeb_multigroup_v3",
                         type=str,
-                        default='celeb_multigroup_v3')
+                        default='adult_multi_group')
 
     parser.add_argument('--log_file_name', '-log_file_name', help="the name of the log file",
                         type=str,

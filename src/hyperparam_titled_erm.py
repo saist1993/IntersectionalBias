@@ -23,6 +23,7 @@ if __name__ == '__main__':
     parser.add_argument('--attribute_id', '-attribute_id', help="attribute_id", type=Optional[int], default=None)
     parser.add_argument('--log_file_name', '-log_file_name', help="log_file_name", type=Optional[str], default=None)
     parser.add_argument('--fairness_function', '-fairness_function', help="fairness_function", type=str, default='equal_opportunity')
+    parser.add_argument('--version', '-version', help="version number", type=float, default=0.0)
 
 
     torch.set_num_threads(2)
@@ -37,14 +38,26 @@ if __name__ == '__main__':
             or args.method == 'tilted_erm_with_mixup_based_on_distance' \
             or args.method == 'train_with_mixup_only_one_group_based_distance_v2' \
             or args.method == 'train_with_mixup_only_one_group_based_distance_v3':
-        titled_scales = [1.0, 5.0, 10.0]
-        mixup_scales = [0.3, 0.6, 0.9]
+        if args.version == 0:
+            titled_scales = [0.1, 1.0, 5.0, 10.0]
+            mixup_scales = [0.3, 0.6, 0.9]
+        else:
+            titled_scales = [0.1, 1.0, 5.0, 10.0]
+            mixup_scales = [args.version]
 
     if args.method == 'only_mixup' or args.method == 'only_mixup_with_loss_group' \
             or args.method == 'only_mixup_based_on_distance'\
             or args.method == 'only_mixup_based_on_distance_and_augmentation':
         titled_scales = [0.0]
-        mixup_scales = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]
+        if args.version == 0:
+            mixup_scales = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]
+        elif args.version == 1.0:
+            mixup_scales = [0.1, 0.2, 0.3, 0.4]
+        elif args.version == 2.0:
+            mixup_scales = [0.5, 0.6, 0.7, 0.8, 0.9]
+        else:
+            raise NotImplementedError
+
 
     if args.method == 'only_titled_erm' or args.method == 'only_tilted_erm_with_mixup_augmentation_lambda_weights'\
             or args.method == 'only_tilted_erm_with_mixup_augmentation_lambda_weights_v2'\
@@ -52,17 +65,34 @@ if __name__ == '__main__':
             or args.method == 'only_tilted_erm_with_mixup_augmentation_lambda_weights_v4'\
             or args.method == 'only_tilted_erm_with_weights_on_loss'\
             or args.method == 'only_titled_erm_with_mask':
-        titled_scales = [0.1, 1.0, 3.0, 5.0, 8.0, 10.0, 50.0]
-        mixup_scales = [0.0]
+        if args.version == 0:
+            titled_scales = [0.1, 1.0, 3.0, 5.0, 8.0, 10.0, 50.0]
+            mixup_scales = [0.0]
+        elif args.version == 1.0:
+            titled_scales = [0.1, 1.0, 3.0, 5.0]
+            mixup_scales = [0.0]
+        elif args.version == 2.0:
+            titled_scales = [8.0, 10.0, 50.0]
+            mixup_scales = [0.0]
+        else:
+            raise NotImplementedError
 
 
     if args.method == 'only_tilted_dro':
-        titled_scales = [0.1, 0.5, 0.01, 0.05, 0.8, 0.3, 0.08, 0.03]
         mixup_scales = [0.0]
+        if args.version == 0:
+            titled_scales = [0.1, 0.5, 0.01, 0.05, 0.8, 0.3, 0.08, 0.03]
+        elif args.version == 1.0:
+            titled_scales = [0.1, 0.5, 0.01, 0.05]
+        elif args.version == 2.0:
+            titled_scales = [0.8, 0.3, 0.08, 0.03]
+        else:
+            raise NotImplementedError
 
     if args.method == 'tilted_erm_with_fairness_loss':
-        titled_scales = [1.0, 5.0, 10.0]
-        mixup_scales = [0.3, 0.6, 0.9]
+        if args.version == 0:
+            titled_scales = [1.0, 5.0, 10.0]
+            mixup_scales = [0.3, 0.6, 0.9]
 
 
     for seed in args.seeds:
