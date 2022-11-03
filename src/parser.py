@@ -53,8 +53,8 @@ def temp_table_generator():
     models = ['simple_non_linear']
     seeds = [10,20,30,40,50]
     # seeds = [50]
-    fairness_function = 'equal_odds'
-    # fairness_function = 'equal_opportunity'
+    # fairness_function = 'equal_odds'
+    fairness_function = 'equal_opportunity'
     k = 2
 
     level_1_strategy_params = {'keep_last_k': 100.0}

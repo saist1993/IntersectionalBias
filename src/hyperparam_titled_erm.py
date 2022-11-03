@@ -64,7 +64,10 @@ if __name__ == '__main__':
             or args.method == 'only_tilted_erm_with_mixup_augmentation_lambda_weights_v3'\
             or args.method == 'only_tilted_erm_with_mixup_augmentation_lambda_weights_v4'\
             or args.method == 'only_tilted_erm_with_weights_on_loss'\
-            or args.method == 'only_titled_erm_with_mask':
+            or args.method == 'only_titled_erm_with_mask'\
+            or args.method in ['only_tilted_erm_generic', 'only_tilted_erm_with_mask_on_tpr',
+                                    'only_tilted_erm_with_weighted_loss_via_global_weight',
+                                    'only_tilted_erm_with_mask_on_tpr_and_weighted_loss_via_global_weight']:
         if args.version == 0:
             titled_scales = [0.1, 1.0, 3.0, 5.0, 8.0, 10.0, 50.0]
             mixup_scales = [0.0]
@@ -94,6 +97,9 @@ if __name__ == '__main__':
             titled_scales = [1.0, 5.0, 10.0]
             mixup_scales = [0.3, 0.6, 0.9]
 
+    if args.method == 'train_only_group_dro':
+        titled_scales = [0.05]
+        mixup_scales = [0.0]
 
     for seed in args.seeds:
         for titled_scale in titled_scales:

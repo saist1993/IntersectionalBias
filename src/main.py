@@ -131,7 +131,12 @@ def get_model(method:str, model_name:str, other_meta_data:Dict, device:torch.dev
                       'only_tilted_erm_with_weights_on_loss',
                       'train_with_mixup_only_one_group_based_distance_v2',
                       'train_with_mixup_only_one_group_based_distance_v3',
-                      'only_titled_erm_with_mask']:
+                      'only_titled_erm_with_mask',
+                      'only_tilted_erm_generic', 'only_tilted_erm_with_mask_on_tpr',
+                      'only_tilted_erm_with_weighted_loss_via_global_weight',
+                      'only_tilted_erm_with_mask_on_tpr_and_weighted_loss_via_global_weight',
+                      'train_only_group_dro'
+                      ]:
             model = simple_model.SimpleNonLinear(model_params)
         elif method == 'adversarial_single':
             total_adv_dim = len(other_meta_data['s_flatten_lookup'])
@@ -284,7 +289,12 @@ def runner(runner_arguments:RunnerArguments):
                                      'only_tilted_erm_with_weights_on_loss',
                                      'train_with_mixup_only_one_group_based_distance_v2',
                                      'train_with_mixup_only_one_group_based_distance_v3',
-                                     'only_titled_erm_with_mask']:
+                                     'only_titled_erm_with_mask',
+                                     'only_tilted_erm_generic', 'only_tilted_erm_with_mask_on_tpr',
+                                     'only_tilted_erm_with_weighted_loss_via_global_weight',
+                                     'only_tilted_erm_with_mask_on_tpr_and_weighted_loss_via_global_weight',
+                                     'train_only_group_dro'
+                                     ]:
         output = titled_erm_training_loop.training_loop(training_loop_params)
     else:
         raise NotImplementedError
@@ -306,7 +316,7 @@ if __name__ == '__main__':
 
     parser.add_argument('--epochs', '-epochs', help="epochs to work on",
                         type=int,
-                        default=25)
+                        default=200)
 
     parser.add_argument('--model', '-model', help="simple_non_linear",
                         type=str,
@@ -318,7 +328,7 @@ if __name__ == '__main__':
     parser.add_argument('--fairness_lambda', '-fairness_lambda', help="the lambda in the fairness loss equation", type=float,
                         default=0.0)
     parser.add_argument('--method', '-method', help="unconstrained/adversarial_single/adversarial_group", type=str,
-                        default='only_titled_erm_with_mask')
+                        default='train_only_group_dro')
     parser.add_argument('--save_model_as', '-save_model_as', help="unconstrained/adversarial_single/adversarial_group", type=str,
                         default=None)
     parser.add_argument('--dataset_name', '-dataset_name', help="twitter_hate_speech/adult_multi_group/celeb_multigroup_v3",
@@ -332,11 +342,11 @@ if __name__ == '__main__':
 
     parser.add_argument('--fairness_function', '-fairness_function', help="fairness function to concern with",
                         type=str,
-                        default='equal_opportunity')
+                        default='equal_odds')
 
     parser.add_argument('--titled_t', '-titled_t', help="fairness function to concern with",
                         type=float,
-                        default=5.0)
+                        default=0.05)
 
     parser.add_argument('--mixup_rg', '-mixup_rg', help="fairness function to concern with",
                         type=float,

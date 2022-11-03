@@ -22,6 +22,8 @@ from .titled_erm_with_abstract import  train_only_tilted_erm_with_mixup_augmenta
 train_only_tilted_erm_with_mixup_augmentation_lambda_weights_v3, \
 train_only_tilted_erm_with_mixup_augmentation_lambda_weights_v4
 
+from .train_titled_erm_v2 import train_only_tilted_erm_generic, train_only_group_dro
+
 
 def train_only_mixup(train_tilted_params:TrainParameters):
 
@@ -1174,6 +1176,14 @@ def training_loop(training_loop_parameters: TrainingLoopParameters):
         global_loss = np.full((total_no_groups, total_no_groups), 1.0/(total_no_groups*total_no_groups))
         groups_matrix = np.asarray([ [str((i,j)) for i in range(total_no_groups)] for j in range(total_no_groups)])
         training_loop_parameters.other_params['groups_matrix'] = groups_matrix
+    elif training_loop_type == 'train_only_group_dro':
+        size_of_each_group = np.asarray([1/counts[i] for i in range(total_no_groups)])
+        weights = np.asarray([1 / total_no_groups for i in range(total_no_groups)])
+
+
+        # global_weight = size_of_each_group / (np.linalg.norm(size_of_each_group, 1))
+        global_weight = weights / (np.linalg.norm(weights, 1))
+        global_loss = torch.tensor(weights / np.linalg.norm(weights, 1))
     else:
         weights = np.asarray([1/total_no_groups for i in range(total_no_groups)])
         global_weight = torch.tensor(weights/np.linalg.norm(weights, 1))
@@ -1276,11 +1286,35 @@ def training_loop(training_loop_parameters: TrainingLoopParameters):
             train_epoch_metric, loss, global_weight, global_loss = train_only_tilted_erm_with_mixup_augmentation_lambda_weights_v3(train_parameters)
         elif training_loop_type == 'only_tilted_erm_with_mixup_augmentation_lambda_weights_v4':
             train_epoch_metric, loss, global_weight, global_loss = train_only_tilted_erm_with_mixup_augmentation_lambda_weights_v4(train_parameters)
+        elif training_loop_type == 'train_only_group_dro':
+            train_epoch_metric, loss, global_weight, global_loss = train_only_group_dro(train_parameters)
+        elif training_loop_type in ['only_tilted_erm_generic', 'only_tilted_erm_with_mask_on_tpr',
+                                    'only_tilted_erm_with_weighted_loss_via_global_weight',
+                                    'only_tilted_erm_with_mask_on_tpr_and_weighted_loss_via_global_weight']:
+            train_epoch_metric, loss, global_weight, global_loss = train_only_tilted_erm_generic(train_parameters)
         else:
             raise NotImplementedError
 
 
-        log_epoch_metric(logger, start_message='train', epoch_metric=train_epoch_metric, epoch_number=ep, loss=loss)
+
+        valid_parameters = TrainParameters(
+            model=training_loop_parameters.model,
+            iterator=training_loop_parameters.iterators[0]['train_iterator'],
+            optimizer=training_loop_parameters.optimizer,
+            criterion=training_loop_parameters.criterion,
+            device=training_loop_parameters.device,
+            other_params=training_loop_parameters.other_params,
+            per_epoch_metric=per_epoch_metric,
+            mode='evaluate',
+            fairness_function=training_loop_parameters.fairness_function)
+
+        valid_epoch_metric, loss = test(valid_parameters)
+
+
+
+        log_epoch_metric(logger, start_message='train', epoch_metric=valid_epoch_metric, epoch_number=ep, loss=loss)
+
+
         if training_loop_parameters.use_wandb:
             log_and_plot_data(epoch_metric=train_epoch_metric, loss=loss, train=True)
         all_train_eps_metrics.append(train_epoch_metric)
