@@ -1184,6 +1184,14 @@ def training_loop(training_loop_parameters: TrainingLoopParameters):
         # global_weight = size_of_each_group / (np.linalg.norm(size_of_each_group, 1))
         global_weight = weights / (np.linalg.norm(weights, 1))
         global_loss = torch.tensor(weights / np.linalg.norm(weights, 1))
+    elif training_loop_type == 'train_only_group_dro_with_weighted_sampling':
+        size_of_each_group = np.asarray([1 / counts[i] for i in range(total_no_groups)])
+        weights = np.asarray([1 / total_no_groups for i in range(total_no_groups)])
+
+        global_weight = size_of_each_group / (np.linalg.norm(size_of_each_group, 1))
+        # global_weight = weights / (np.linalg.norm(weights, 1))
+        global_loss = torch.tensor(weights / np.linalg.norm(weights, 1))
+
     else:
         weights = np.asarray([1/total_no_groups for i in range(total_no_groups)])
         global_weight = torch.tensor(weights/np.linalg.norm(weights, 1))
@@ -1286,7 +1294,7 @@ def training_loop(training_loop_parameters: TrainingLoopParameters):
             train_epoch_metric, loss, global_weight, global_loss = train_only_tilted_erm_with_mixup_augmentation_lambda_weights_v3(train_parameters)
         elif training_loop_type == 'only_tilted_erm_with_mixup_augmentation_lambda_weights_v4':
             train_epoch_metric, loss, global_weight, global_loss = train_only_tilted_erm_with_mixup_augmentation_lambda_weights_v4(train_parameters)
-        elif training_loop_type == 'train_only_group_dro':
+        elif training_loop_type == 'train_only_group_dro' or training_loop_type == 'train_only_group_dro_with_weighted_sampling':
             train_epoch_metric, loss, global_weight, global_loss = train_only_group_dro(train_parameters)
         elif training_loop_type in ['only_tilted_erm_generic', 'only_tilted_erm_with_mask_on_tpr',
                                     'only_tilted_erm_with_weighted_loss_via_global_weight',
