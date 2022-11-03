@@ -98,7 +98,7 @@ if __name__ == '__main__':
             mixup_scales = [0.3, 0.6, 0.9]
 
     if args.method == 'train_only_group_dro':
-        titled_scales = [0.05]
+        titled_scales = [0.05, 0.01, 0.1, 0.5]
         mixup_scales = [0.0]
 
     for seed in args.seeds:
