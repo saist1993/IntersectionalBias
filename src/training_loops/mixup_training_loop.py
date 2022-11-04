@@ -1,5 +1,6 @@
 import math
 import torch
+from scipy import linalg
 from tqdm.auto import tqdm
 from numpy.random import beta
 from collections import Counter
@@ -400,8 +401,103 @@ def generate_similarity_matrix(iterator, model, groups, reverse_groups):
         distance_lookup[unique_group] = distance
     return distance_lookup
 
+def calculate_frechet_distance(all_group_1_rep, all_group_2_rep, eps=1e-6):
+    """Numpy implementation of the Frechet Distance.
+    The Frechet distance between two multivariate Gaussians X_1 ~ N(mu_1, C_1)
+    and X_2 ~ N(mu_2, C_2) is
+            d^2 = ||mu_1 - mu_2||^2 + Tr(C_1 + C_2 - 2*sqrt(C_1*C_2)).
+    Stable version by Dougal J. Sutherland.
+    Params:
+    -- mu1   : Numpy array containing the activations of a layer of the
+               inception net (like returned by the function 'get_predictions')
+               for generated samples.
+    -- mu2   : The sample mean over activations, precalculated on an
+               representative data set.
+    -- sigma1: The covariance matrix over activations for generated samples.
+    -- sigma2: The covariance matrix over activations, precalculated on an
+               representative data set.
+    Returns:
+    --   : The Frechet Distance.
+    """
+
+    mu1, sigma1, mu2, sigma2 = np.mean(all_group_1_rep), np.cov(all_group_1_rep, rowvar=0), np.mean(all_group_2_rep), np.cov(all_group_2_rep, rowvar=0)
+    mu1 = np.atleast_1d(mu1)
+    mu2 = np.atleast_1d(mu2)
+
+    sigma1 = np.atleast_2d(sigma1)
+    sigma2 = np.atleast_2d(sigma2)
+
+    assert mu1.shape == mu2.shape, \
+        'Training and test mean vectors have different lengths'
+    assert sigma1.shape == sigma2.shape, \
+        'Training and test covariances have different dimensions'
+
+    diff = mu1 - mu2
+
+    # Product might be almost singular
+    covmean, _ = linalg.sqrtm(sigma1.dot(sigma2), disp=False)
+    if not np.isfinite(covmean).all():
+        msg = ('fid calculation produces singular product; '
+               'adding %s to diagonal of cov estimates') % eps
+        # print(msg)
+        offset = np.eye(sigma1.shape[0]) * eps
+        covmean = linalg.sqrtm((sigma1 + offset).dot(sigma2 + offset))
+
+    # Numerical error might give slight imaginary component
+    if np.iscomplexobj(covmean):
+        if not np.allclose(np.diagonal(covmean).imag, 0, atol=1e-3):
+            m = np.max(np.abs(covmean.imag))
+            raise ValueError('Imaginary component {}'.format(m))
+        covmean = covmean.real
+
+    tr_covmean = np.trace(covmean)
+
+    return (diff.dot(diff) + np.trace(sigma1)
+            + np.trace(sigma2) - 2 * tr_covmean) + 0.001
+
+
+def generate_similarity_matrix_fid(iterator, model, groups, reverse_groups):
+    all_train_label, all_train_s, all_train_s_flatten, all_input = generate_flat_output_custom(
+        iterator)
+
+    all_unique_groups = np.unique(all_train_s, axis=0) # unique groups - [[0,0,0], [0,0,1], [0,1,1]]
+
+    all_average_representation = {}
+
+
+
+    for unique_group in all_unique_groups:
+        mask = generate_mask(all_train_s, unique_group)
+        current_input = all_input[mask]
+
+        batch_input = {
+            'input': torch.FloatTensor(current_input),
+        }
+
+        model_hidden = model(batch_input)['hidden']
+
+
+        # average_representation = np.mean(all_input[mask], axis=0) # THIS IS INCORRECT. WE NEED MODEL OUTPUT AND NOT INPUT
+        average_representation = model_hidden.cpu().detach().numpy() # THIS IS INCORRECT. WE NEED MODEL OUTPUT AND NOT INPUT
+        all_average_representation[tuple([int(i) for i in unique_group])] = average_representation
+
+    # average representation = {str([0,0,1]): average_representation, str([0,1,1]): average_representation}
+    distance_lookup = {}
+
+    for unique_group in groups:
+        distance = []
+        # unique_group_representation = all_input[all_train_s_flatten==unique_group]
+        unique_group_representation = all_average_representation[reverse_groups[unique_group]]
+        for group in groups:
+            distance.append(calculate_frechet_distance(unique_group_representation, all_average_representation[reverse_groups[group]]))
+        # distance[0] = 0.001
+        distance_lookup[unique_group] = distance
+    return distance_lookup
+
 def train_only_mixup_based_on_distance(train_tilted_params:TrainParameters):
     mixup_rg = train_tilted_params.other_params['mixup_rg']
+    method = train_tilted_params.other_params['method']
+
     model, optimizer, device, criterion = \
         train_tilted_params.model, train_tilted_params.optimizer, train_tilted_params.device, train_tilted_params.criterion
 
@@ -413,7 +509,10 @@ def train_only_mixup_based_on_distance(train_tilted_params:TrainParameters):
 
     flattened_s_to_s = {value: key for key, value in train_tilted_params.other_params['s_to_flattened_s'].items()}
 
-    similarity_matrix = generate_similarity_matrix(train_tilted_params.other_params['valid_iterator'], model, train_tilted_params.other_params['groups'], flattened_s_to_s)
+    if method == 'only_mixup_based_on_distance':
+        similarity_matrix = generate_similarity_matrix(train_tilted_params.other_params['valid_iterator'], model, train_tilted_params.other_params['groups'], flattened_s_to_s)
+    elif method == 'only_mixup_based_on_distance_fid':
+        similarity_matrix = generate_similarity_matrix_fid(train_tilted_params.other_params['valid_iterator'], model, train_tilted_params.other_params['groups'], flattened_s_to_s)
     # similarity_matrix = generate_similarity_matrix(train_tilted_params.iterator, model, train_tilted_params.other_params['groups'], flattened_s_to_s)
     # print([np.sum(value) for key, value in similarity_matrix.items()])
 

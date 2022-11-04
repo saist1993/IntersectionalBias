@@ -124,6 +124,7 @@ def train_only_group_dro(train_tilted_params:TrainParameters):
         optimizer.zero_grad()
         output = model(items)
         loss = torch.mean(criterion(output['prediction'], items['labels']))
+        # loss = loss + 2/np.sqrt(train_tilted_params.other_params['group_count'][s])
         global_loss[s] = global_loss[s] * torch.exp(tilt_t*loss.data)
         global_loss = global_loss/(global_loss.sum())
         loss = loss*global_loss[s]

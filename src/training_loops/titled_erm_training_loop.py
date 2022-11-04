@@ -693,8 +693,6 @@ def train_only_tilted_erm(train_tilted_params:TrainParameters):
     return epoch_metric_tracker, loss, global_weight, global_loss
 
 
-
-
 def train_only_tilted_erm_with_mask(train_tilted_params:TrainParameters):
 
     global_weight = train_tilted_params.other_params['global_weight']
@@ -764,7 +762,6 @@ def train_only_tilted_erm_with_mask(train_tilted_params:TrainParameters):
     return epoch_metric_tracker, loss, global_weight, global_loss
 
 
-
 def train_only_tilted_erm_with_weights_on_loss(train_tilted_params:TrainParameters):
 
     global_weight = train_tilted_params.other_params['global_weight']
@@ -825,7 +822,6 @@ def train_only_tilted_erm_with_weights_on_loss(train_tilted_params:TrainParamete
 
 
     return epoch_metric_tracker, loss, global_weight, global_loss
-
 
 
 def train_only_tilted_dro(train_tilted_params:TrainParameters):
@@ -932,7 +928,6 @@ def train_weighted_sample_erm(train_tilted_params:TrainParameters):
     return epoch_metric_tracker, loss, global_weight, global_loss
 
 
-
 def test(train_parameters: TrainParameters):
     """Trains the model for one epoch"""
     model, optimizer, device, criterion, mode = \
@@ -964,9 +959,6 @@ def test(train_parameters: TrainParameters):
                                                                    train_parameters.iterator,
                                                                    train_parameters.fairness_function)
     return epoch_metric_tracker, loss
-
-
-
 
 
 
@@ -1054,7 +1046,6 @@ def create_group_to_lambda_weight(iterator, s_aux_to_s_flat):
     #     group_to_lambda_weights[s_aux_to_s_flat[key.replace('.','')]] = main()
 
     return group_to_lambda_weights
-
 
 
 def create_group_to_lambda_weight_seperate_positive_negative(iterator, s_aux_to_s_flat):
@@ -1231,6 +1222,7 @@ def training_loop(training_loop_parameters: TrainingLoopParameters):
         training_loop_parameters.other_params['train_iterator'] = training_loop_parameters.iterators[0][
             'train_iterator']
         training_loop_parameters.other_params['group_to_lambda_weight'] = group_to_lambda_weight
+        training_loop_parameters.other_params['group_count'] = counts
 
 
         train_parameters = TrainParameters(
@@ -1271,6 +1263,9 @@ def training_loop(training_loop_parameters: TrainingLoopParameters):
             train_epoch_metric, loss, global_weight, global_loss = train_only_tilted_erm_with_mixup_augmentation(
                 train_parameters)
         elif training_loop_type == 'only_mixup_based_on_distance':
+            train_epoch_metric, loss, global_weight, global_loss = train_only_mixup_based_on_distance(
+                train_parameters)
+        elif training_loop_type == 'only_mixup_based_on_distance_fid':
             train_epoch_metric, loss, global_weight, global_loss = train_only_mixup_based_on_distance(
                 train_parameters)
         elif training_loop_type == 'tilted_erm_with_mixup_based_on_distance':

@@ -14,7 +14,7 @@ level_2_strategy_params = {'relaxation_threshold': 0.02,
 #                           level_2_strategy='relaxation_threshold', level_2_strategy_params=level_2_strategy_params))
 
 
-def temp_table_generator():
+def temp_table_generator(dataset_name, fairness_function):
     # methods = ['unconstrained', 'unconstrained_with_fairness_loss',
     #            'adversarial_group', 'adversarial_group_with_fairness_loss',
     #            'only_titled_erm', 'only_mixup', 'tilted_erm_with_mixup',
@@ -39,7 +39,7 @@ def temp_table_generator():
                'only_tilted_erm_with_weights_on_loss',
                'train_with_mixup_only_one_group_based_distance_v2',
                'train_with_mixup_only_one_group_based_distance_v3',
-               'only_titled_erm_with_mask', 'train_only_group_dro'
+               'only_titled_erm_with_mask', 'train_only_group_dro', 'train_only_group_dro_with_weighted_sampling'
                ]
 
     # methods = [ 'unconstrained_with_fairness_loss', 'tilted_erm_with_mixup_only_one_group'
@@ -47,14 +47,14 @@ def temp_table_generator():
 
 
 
-    dataset_names = ['adult_multi_group']
+    dataset_names = [dataset_name]
     # dataset_names = ['twitter_hate_speech']
     # dataset_names = ['celeb_multigroup_v3']
     models = ['simple_non_linear']
     seeds = [10,20,30,40,50]
     # seeds = [50]
     # fairness_function = 'equal_odds'
-    fairness_function = 'equal_opportunity'
+    # fairness_function = 'equal_opportunity'
     k = 2
 
     level_1_strategy_params = {'keep_last_k': 100.0}
@@ -101,10 +101,39 @@ def temp_table_generator():
 
     t = Texttable()
     t.add_rows(rows)
-    print(t.draw())
+    # print(t.draw())
 
     t = Texttable()
     t.add_rows(average_rows)
-    print(t.draw())
+    # print(t.draw())
+    return t
 
-temp_table_generator()
+adult_multi_group_equal_odds = temp_table_generator('adult_multi_group', 'equal_odds')
+adult_multi_group_equal_opportunity = temp_table_generator('adult_multi_group', 'equal_opportunity')
+
+twitter_hate_speech_equal_odds = temp_table_generator('twitter_hate_speech', 'equal_odds')
+twitter_hate_speech_equal_opportunity = temp_table_generator('twitter_hate_speech', 'equal_opportunity')
+
+celeb_multigroup_v3_equal_odds = temp_table_generator('celeb_multigroup_v3', 'equal_odds')
+celeb_multigroup_v3_equal_opportunity = temp_table_generator('celeb_multigroup_v3', 'equal_opportunity')
+
+
+print("Adult Multi Group - Equal Odds")
+print(adult_multi_group_equal_odds.draw())
+
+print("Adult Multi Group - Equal Opportunity")
+print(adult_multi_group_equal_opportunity.draw())
+
+print("Twitter Hate Speech equal odds")
+print(twitter_hate_speech_equal_odds.draw())
+
+
+print("Twitter Hate Speech equal opportunity")
+print(twitter_hate_speech_equal_opportunity.draw())
+
+
+print("Celeb MultiGroup V3 equal odds")
+print(celeb_multigroup_v3_equal_odds.draw())
+
+print("Celeb MultiGroup V3 equal opportunity")
+print(celeb_multigroup_v3_equal_opportunity.draw())
