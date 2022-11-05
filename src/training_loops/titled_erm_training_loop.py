@@ -22,7 +22,7 @@ from .titled_erm_with_abstract import  train_only_tilted_erm_with_mixup_augmenta
 train_only_tilted_erm_with_mixup_augmentation_lambda_weights_v3, \
 train_only_tilted_erm_with_mixup_augmentation_lambda_weights_v4
 
-from .train_titled_erm_v2 import train_only_tilted_erm_generic, train_only_group_dro
+from .train_titled_erm_v2 import train_only_tilted_erm_generic, train_only_group_dro, train_only_group_dro_with_mixup
 
 
 def train_only_mixup(train_tilted_params:TrainParameters):
@@ -962,24 +962,7 @@ def test(train_parameters: TrainParameters):
 
 
 
-def sample_batch_sen_idx_with_y(all_input, all_label, all_aux, all_aux_flatten, batch_size, s):
-    """
-        This will sample batch size number of elements from input with given s!
-    """
-    index_s_0 = np.where(np.logical_and(all_aux_flatten==s, all_label==0) == True)[0]
-    index_s_1 = np.where(np.logical_and(all_aux_flatten==s, all_label==1) == True)[0]
-    relevant_index = np.random.choice(index_s_0, size=int(batch_size/2), replace=True).tolist()
-    relevant_index = relevant_index + np.random.choice(index_s_1,size=int(batch_size/2), replace=True).tolist()
 
-    # THIS IS DIFFERENT. IN ORIGINAL VERSION IT IS REPLACEMENT TRUE
-    batch_input = {
-        'labels': torch.LongTensor(all_label[relevant_index]),
-        'input': torch.FloatTensor(all_input[relevant_index]),
-        'aux': torch.LongTensor(all_aux[relevant_index]),
-        'aux_flattened': torch.LongTensor(all_aux_flatten[relevant_index])
-    }
-
-    return batch_input
 
 def get_all_representation(df, s):
     s_abstract = generate_combinations(list(s))
@@ -1167,7 +1150,9 @@ def training_loop(training_loop_parameters: TrainingLoopParameters):
         global_loss = np.full((total_no_groups, total_no_groups), 1.0/(total_no_groups*total_no_groups))
         groups_matrix = np.asarray([ [str((i,j)) for i in range(total_no_groups)] for j in range(total_no_groups)])
         training_loop_parameters.other_params['groups_matrix'] = groups_matrix
-    elif training_loop_type == 'train_only_group_dro':
+    elif training_loop_type in  ['train_only_group_dro',
+                                 'train_only_group_dro_with_mixup_with_random',
+                                 'train_only_group_dro_with_mixup_with_distance'] :
         size_of_each_group = np.asarray([1/counts[i] for i in range(total_no_groups)])
         weights = np.asarray([1 / total_no_groups for i in range(total_no_groups)])
 
@@ -1175,7 +1160,10 @@ def training_loop(training_loop_parameters: TrainingLoopParameters):
         # global_weight = size_of_each_group / (np.linalg.norm(size_of_each_group, 1))
         global_weight = weights / (np.linalg.norm(weights, 1))
         global_loss = torch.tensor(weights / np.linalg.norm(weights, 1))
-    elif training_loop_type == 'train_only_group_dro_with_weighted_sampling':
+    elif training_loop_type in ['train_only_group_dro_with_weighted_sampling',
+                                'train_only_group_dro_with_mixup_with_random_with_weighted_sampling',
+                                'train_only_group_dro_with_mixup_with_distance_with_weighted_sampling'
+                                ]:
         size_of_each_group = np.asarray([1 / counts[i] for i in range(total_no_groups)])
         weights = np.asarray([1 / total_no_groups for i in range(total_no_groups)])
 
@@ -1295,6 +1283,13 @@ def training_loop(training_loop_parameters: TrainingLoopParameters):
                                     'only_tilted_erm_with_weighted_loss_via_global_weight',
                                     'only_tilted_erm_with_mask_on_tpr_and_weighted_loss_via_global_weight']:
             train_epoch_metric, loss, global_weight, global_loss = train_only_tilted_erm_generic(train_parameters)
+        elif training_loop_type in ['train_only_group_dro_with_mixup_with_distance',
+                                    'train_only_group_dro_with_mixup_with_random',
+                                    'train_only_group_dro_with_mixup_with_random_with_weighted_sampling',
+                                    'train_only_group_dro_with_mixup_with_distance_with_weighted_sampling'
+
+                                    ]:
+            train_epoch_metric, loss, global_weight, global_loss = train_only_group_dro_with_mixup(train_parameters)
         else:
             raise NotImplementedError
 

@@ -39,11 +39,14 @@ def temp_table_generator(dataset_name, fairness_function):
                'only_tilted_erm_with_weights_on_loss',
                'train_with_mixup_only_one_group_based_distance_v2',
                'train_with_mixup_only_one_group_based_distance_v3',
-               'only_titled_erm_with_mask', 'train_only_group_dro', 'train_only_group_dro_with_weighted_sampling'
+               'only_titled_erm_with_mask', 'train_only_group_dro', 'train_only_group_dro_with_weighted_sampling',
+               'only_mixup_based_on_distance_fid'
                ]
 
-    # methods = [ 'unconstrained_with_fairness_loss', 'tilted_erm_with_mixup_only_one_group'
-    #            ]
+
+
+    methods = [ 'train_only_group_dro'
+               ]
 
 
 

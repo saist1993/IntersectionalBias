@@ -30,44 +30,7 @@ def titled_sample_batch_sen_idx_with_y(all_input, all_label, all_aux, all_aux_fl
     return batch_input
 
 
-def sample_batch_sen_idx_with_y(all_input, all_label, all_aux, all_aux_flatten, batch_size, s0, s1):
-    """
-        This will sample batch size number of elements from input with given s!
-    """
 
-    all_unique_s0_combination, all_unique_s1_combination = generate_possible_patterns(s0, s1)
-    mask_s0 = np.logical_or.reduce([generate_mask(all_aux, mask_pattern) for mask_pattern in all_unique_s0_combination])
-    mask_s1 = np.logical_or.reduce([generate_mask(all_aux, mask_pattern) for mask_pattern in all_unique_s1_combination])
-
-    index_s0_0 = np.where(np.logical_and(mask_s0, all_label==0) == True)[0]
-    index_s0_1 = np.where(np.logical_and(mask_s0, all_label==1) == True)[0]
-
-    index_s1_0 = np.where(np.logical_and(mask_s1, all_label == 0) == True)[0]
-    index_s1_1 = np.where(np.logical_and(mask_s1, all_label == 1) == True)[0]
-
-
-    relevant_index_s0 = np.random.choice(index_s0_0, size=int(batch_size/2), replace=True).tolist()
-    relevant_index_s0 = relevant_index_s0 + np.random.choice(index_s0_1,size=int(batch_size/2), replace=True).tolist()
-
-    relevant_index_s1 = np.random.choice(index_s1_0,size=int(batch_size/2), replace=True).tolist()
-    relevant_index_s1 = relevant_index_s1 + np.random.choice(index_s1_1,size=int(batch_size/2), replace=True).tolist()
-
-    # THIS IS DIFFERENT. IN ORIGINAL VERSION IT IS REPLACEMENT TRUE
-    batch_input_s0 = {
-        'labels': torch.LongTensor(all_label[relevant_index_s0]),
-        'input': torch.FloatTensor(all_input[relevant_index_s0]),
-        'aux': torch.LongTensor(all_aux[relevant_index_s0]),
-        'aux_flattened': torch.LongTensor(all_aux_flatten[relevant_index_s0])
-    }
-
-    batch_input_s1 = {
-        'labels': torch.LongTensor(all_label[relevant_index_s1]),
-        'input': torch.FloatTensor(all_input[relevant_index_s1]),
-        'aux': torch.LongTensor(all_aux[relevant_index_s1]),
-        'aux_flattened': torch.LongTensor(all_aux_flatten[relevant_index_s1])
-    }
-
-    return batch_input_s0, batch_input_s1
 
 def sample_batch_sen_idx(all_input, all_label, all_aux, all_aux_flatten, batch_size, s):
     all_extra_combinations = generate_combinations(s, k=1)

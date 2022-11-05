@@ -137,7 +137,10 @@ def get_model(method:str, model_name:str, other_meta_data:Dict, device:torch.dev
                       'only_tilted_erm_with_mask_on_tpr_and_weighted_loss_via_global_weight',
                       'train_only_group_dro',
                       'train_only_group_dro_with_weighted_sampling',
-                      'only_mixup_based_on_distance_fid'
+                      'only_mixup_based_on_distance_fid',
+                      'train_only_group_dro_with_mixup_with_distance', 'train_only_group_dro_with_mixup_with_random',
+                      'train_only_group_dro_with_mixup_with_random_with_weighted_sampling',
+                      'train_only_group_dro_with_mixup_with_distance_with_weighted_sampling'
                       ]:
             model = simple_model.SimpleNonLinear(model_params)
         elif method == 'adversarial_single':
@@ -297,7 +300,11 @@ def runner(runner_arguments:RunnerArguments):
                                      'only_tilted_erm_with_mask_on_tpr_and_weighted_loss_via_global_weight',
                                      'train_only_group_dro',
                                      'train_only_group_dro_with_weighted_sampling',
-                                     'only_mixup_based_on_distance_fid'
+                                     'only_mixup_based_on_distance_fid',
+                                     'train_only_group_dro_with_mixup_with_distance',
+                                     'train_only_group_dro_with_mixup_with_random',
+                                     'train_only_group_dro_with_mixup_with_random_with_weighted_sampling',
+                                     'train_only_group_dro_with_mixup_with_distance_with_weighted_sampling'
                                      ]:
         output = titled_erm_training_loop.training_loop(training_loop_params)
     else:
@@ -332,7 +339,7 @@ if __name__ == '__main__':
     parser.add_argument('--fairness_lambda', '-fairness_lambda', help="the lambda in the fairness loss equation", type=float,
                         default=0.0)
     parser.add_argument('--method', '-method', help="unconstrained/adversarial_single/adversarial_group", type=str,
-                        default='only_mixup_based_on_distance_fid')
+                        default='train_only_group_dro_with_mixup_with_random_with_weighted_sampling')
     parser.add_argument('--save_model_as', '-save_model_as', help="unconstrained/adversarial_single/adversarial_group", type=str,
                         default=None)
     parser.add_argument('--dataset_name', '-dataset_name', help="twitter_hate_speech/adult_multi_group/celeb_multigroup_v3",
