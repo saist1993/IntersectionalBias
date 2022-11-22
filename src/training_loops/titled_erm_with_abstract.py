@@ -65,8 +65,10 @@ def sample_batch_sen_idx_with_augmentation_with_lambda_custom_with_positive_and_
     # now comes the augmentations
 
 
-
-    augmented_input_positive =  torch.FloatTensor(np.sum([lambda_weight[0] * all_input[group] for group, lambda_weight in zip(all_group_examples_positive, group_weight_lambda)],axis=0))
+    try:
+        augmented_input_positive =  torch.FloatTensor(np.sum([lambda_weight[0] * all_input[group] for group, lambda_weight in zip(all_group_examples_positive, group_weight_lambda)],axis=0))
+    except IndexError:
+        print("here")
     augmented_input_negative =  torch.FloatTensor(np.sum([lambda_weight[1] * all_input[group] for group, lambda_weight in zip(all_group_examples_negative, group_weight_lambda)],axis=0))
 
     augmented_output_positive = [torch.LongTensor(all_label[group]) for group in all_group_examples_positive]

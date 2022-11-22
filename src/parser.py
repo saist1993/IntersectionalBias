@@ -40,13 +40,26 @@ def temp_table_generator(dataset_name, fairness_function):
                'train_with_mixup_only_one_group_based_distance_v2',
                'train_with_mixup_only_one_group_based_distance_v3',
                'only_titled_erm_with_mask', 'train_only_group_dro', 'train_only_group_dro_with_weighted_sampling',
-               'only_mixup_based_on_distance_fid'
+               'only_mixup_based_on_distance_fid',
+               'train_only_group_dro_with_mixup_with_distance',
+               'train_only_group_dro_with_mixup_with_random',
+               'train_only_group_dro_with_mixup_with_random_with_weighted_sampling',
+               'train_only_group_dro_with_mixup_with_distance_with_weighted_sampling'
+               ]
+
+    methods = ['unconstrained','only_mixup',
+               'only_mixup_based_on_distance',
+               'train_only_group_dro', 'train_only_group_dro_with_weighted_sampling',
+               'train_only_group_dro_with_mixup_with_distance',
+               'train_only_group_dro_with_mixup_with_random',
+               'train_only_group_dro_with_mixup_with_random_with_weighted_sampling',
+               'train_only_group_dro_with_mixup_with_distance_with_weighted_sampling'
                ]
 
 
 
-    methods = [ 'train_only_group_dro'
-               ]
+    # methods = [ 'train_only_group_dro'
+    #            ]
 
 
 

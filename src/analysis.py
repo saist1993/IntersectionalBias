@@ -112,7 +112,9 @@ def calculate_equal_odds(all_prediction, all_label, all_s, all_unique_aux, use_t
 
 
 def run_equal_odds(model, iterators, criterion, mode):
-    all_prediction, all_label, all_s, all_s_flatten, all_input = generate_flat_outputs(model, iterators[0][mode], criterion)
+    if mode != None:
+        iterators  = iterators[0][mode]
+    all_prediction, all_label, all_s, all_s_flatten, all_input = generate_flat_outputs(model, iterators, criterion)
 
     eps_tpr, eps_fpr = 0.0, 0.0
     eps_tpr_prob, eps_fpr_prob = [], []

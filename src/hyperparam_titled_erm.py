@@ -82,7 +82,7 @@ if __name__ == '__main__':
             raise NotImplementedError
 
 
-    if args.method == 'only_tilted_dro':
+    if args.method in ['only_tilted_dro', 'train_only_group_dro_with_augmentation_static_positive_and_negative_weights']:
         mixup_scales = [0.0]
         if args.version == 0:
             titled_scales = [0.1, 0.5, 0.01, 0.05, 0.8, 0.3, 0.08, 0.03]

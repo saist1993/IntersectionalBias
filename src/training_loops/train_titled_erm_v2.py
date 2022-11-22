@@ -2,14 +2,17 @@
 import math
 import torch
 import pandas as pd
+from analysis import *
+from pprint import pprint
 from scipy import optimize
 from tqdm.auto import tqdm
 from numpy.random import beta
 import torch.nn.functional as F
 from collections import Counter
-from .common_functionality import *
 from metrics import fairness_utils
+from .common_functionality import *
 from .mixup_training_loop import generate_similarity_matrix
+from .titled_erm_with_abstract import sample_batch_sen_idx_with_augmentation_with_lambda_custom_with_positive_and_negative_seperate
 
 def train_only_tilted_erm_generic(train_tilted_params:TrainParameters):
     """
@@ -143,6 +146,81 @@ def train_only_group_dro(train_tilted_params:TrainParameters):
     print(global_loss)
     print(global_weight)
     print(group_tracker)
+    # pprint(run_equal_odds(model=model,iterators=train_tilted_params.iterator,criterion=criterion,mode=None))
+
+    return epoch_metric_tracker, loss, global_weight, global_loss
+
+
+def train_only_group_dro_with_augmentation_static_positive_and_negative_weights(train_tilted_params:TrainParameters):
+    global_loss = train_tilted_params.other_params['global_loss'] # This tracks the actual loss
+    global_weight = train_tilted_params.other_params['global_weight'] # Weights of each examples based on simple count
+    # global_weight never gets updated.
+    tilt_t = train_tilted_params.other_params['titled_t'] # This should be small. In order of magnitude of 0.01
+
+    model, optimizer, device, criterion = \
+        train_tilted_params.model, train_tilted_params.optimizer, train_tilted_params.device, train_tilted_params.criterion
+    model.train()
+    track_output = []
+    track_input = []
+    group_tracker = [0 for _ in range(len(train_tilted_params.other_params['groups']))]
+    flattened_s_to_s = {value: key for key, value in train_tilted_params.other_params['s_to_flattened_s'].items()}
+    group_to_lambda_weight = train_tilted_params.other_params['group_to_lambda_weight']
+
+    for i in tqdm(range(train_tilted_params.other_params['number_of_iterations'])):
+        s = np.random.choice(train_tilted_params.other_params['groups'], 1, p=global_weight)[0]
+        s_flat = flattened_s_to_s[s]
+
+
+        _items = sample_batch_sen_idx(train_tilted_params.other_params['all_input'],
+                                     train_tilted_params.other_params['all_label'],
+                                     train_tilted_params.other_params['all_aux'],
+                                     train_tilted_params.other_params['all_aux_flatten'],
+                                     train_tilted_params.other_params['batch_size'],
+                                     s)
+
+        items, size_of_s = sample_batch_sen_idx_with_augmentation_with_lambda_custom_with_positive_and_negative_seperate(
+            train_tilted_params.other_params['all_input'],
+            train_tilted_params.other_params['all_label'],
+            train_tilted_params.other_params['all_aux'],
+            train_tilted_params.other_params['all_aux_flatten'],
+            train_tilted_params.other_params['batch_size'],
+            s_flat,
+            group_to_lambda_weight[s],
+            train_tilted_params.other_params['scalar'],
+            _items)
+
+        group_tracker[s] += 1
+
+
+        for key in items.keys():
+            try:
+                items[key] = items[key].to(train_tilted_params.device)
+            except AttributeError:
+                continue
+
+        optimizer.zero_grad()
+        output = model(items)
+        loss = torch.mean(criterion(output['prediction'], items['labels']))
+        # loss = loss + 2/np.sqrt(train_tilted_params.other_params['group_count'][s])
+        global_loss[s] = global_loss[s] * torch.exp(tilt_t*loss.data)
+        global_loss = global_loss/(global_loss.sum())
+        loss = loss*global_loss[s]
+
+        loss.backward()
+        optimizer.step()
+
+        output['loss_batch'] = loss.item()
+        track_output.append(output)
+        track_input.append(items)
+
+    epoch_metric_tracker, loss = train_tilted_params.per_epoch_metric(track_output,
+                                                                      track_input,
+                                                                      train_tilted_params.fairness_function)
+
+    print(global_loss)
+    print(global_weight)
+    print(group_tracker)
+    # pprint(run_equal_odds(model=model,iterators=train_tilted_params.iterator,criterion=criterion,mode=None))
 
     return epoch_metric_tracker, loss, global_weight, global_loss
 

@@ -22,7 +22,8 @@ from .titled_erm_with_abstract import  train_only_tilted_erm_with_mixup_augmenta
 train_only_tilted_erm_with_mixup_augmentation_lambda_weights_v3, \
 train_only_tilted_erm_with_mixup_augmentation_lambda_weights_v4
 
-from .train_titled_erm_v2 import train_only_tilted_erm_generic, train_only_group_dro, train_only_group_dro_with_mixup
+from .train_titled_erm_v2 import train_only_tilted_erm_generic, train_only_group_dro, train_only_group_dro_with_mixup,\
+    train_only_group_dro_with_augmentation_static_positive_and_negative_weights
 
 
 def train_only_mixup(train_tilted_params:TrainParameters):
@@ -1152,7 +1153,8 @@ def training_loop(training_loop_parameters: TrainingLoopParameters):
         training_loop_parameters.other_params['groups_matrix'] = groups_matrix
     elif training_loop_type in  ['train_only_group_dro',
                                  'train_only_group_dro_with_mixup_with_random',
-                                 'train_only_group_dro_with_mixup_with_distance'] :
+                                 'train_only_group_dro_with_mixup_with_distance',
+                                 'train_only_group_dro_with_augmentation_static_positive_and_negative_weights'] :
         size_of_each_group = np.asarray([1/counts[i] for i in range(total_no_groups)])
         weights = np.asarray([1 / total_no_groups for i in range(total_no_groups)])
 
@@ -1183,7 +1185,7 @@ def training_loop(training_loop_parameters: TrainingLoopParameters):
 
     # models = []
 
-    if training_loop_type == 'only_tilted_erm_with_mixup_augmentation_lambda_weights_v4':
+    if training_loop_type in ['only_tilted_erm_with_mixup_augmentation_lambda_weights_v4', 'train_only_group_dro_with_augmentation_static_positive_and_negative_weights']:
         group_to_lambda_weight = create_group_to_lambda_weight_seperate_positive_negative(training_loop_parameters.iterators[0]['valid_iterator'],
                                                                                           training_loop_parameters.other_params['s_to_flattened_s'])
     else:
@@ -1290,6 +1292,8 @@ def training_loop(training_loop_parameters: TrainingLoopParameters):
 
                                     ]:
             train_epoch_metric, loss, global_weight, global_loss = train_only_group_dro_with_mixup(train_parameters)
+        elif training_loop_type in ['train_only_group_dro_with_augmentation_static_positive_and_negative_weights']:
+            train_epoch_metric, loss, global_weight, global_loss = train_only_group_dro_with_augmentation_static_positive_and_negative_weights(train_parameters)
         else:
             raise NotImplementedError
 

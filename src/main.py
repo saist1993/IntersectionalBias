@@ -140,7 +140,8 @@ def get_model(method:str, model_name:str, other_meta_data:Dict, device:torch.dev
                       'only_mixup_based_on_distance_fid',
                       'train_only_group_dro_with_mixup_with_distance', 'train_only_group_dro_with_mixup_with_random',
                       'train_only_group_dro_with_mixup_with_random_with_weighted_sampling',
-                      'train_only_group_dro_with_mixup_with_distance_with_weighted_sampling'
+                      'train_only_group_dro_with_mixup_with_distance_with_weighted_sampling',
+                      'train_only_group_dro_with_augmentation_static_positive_and_negative_weights'
                       ]:
             model = simple_model.SimpleNonLinear(model_params)
         elif method == 'adversarial_single':
@@ -304,7 +305,9 @@ def runner(runner_arguments:RunnerArguments):
                                      'train_only_group_dro_with_mixup_with_distance',
                                      'train_only_group_dro_with_mixup_with_random',
                                      'train_only_group_dro_with_mixup_with_random_with_weighted_sampling',
-                                     'train_only_group_dro_with_mixup_with_distance_with_weighted_sampling'
+                                     'train_only_group_dro_with_mixup_with_distance_with_weighted_sampling',
+                                     'train_only_group_dro_with_augmentation_static_positive_and_negative_weights'
+
                                      ]:
         output = titled_erm_training_loop.training_loop(training_loop_params)
     else:
@@ -339,12 +342,12 @@ if __name__ == '__main__':
     parser.add_argument('--fairness_lambda', '-fairness_lambda', help="the lambda in the fairness loss equation", type=float,
                         default=0.0)
     parser.add_argument('--method', '-method', help="unconstrained/adversarial_single/adversarial_group", type=str,
-                        default='train_only_group_dro_with_mixup_with_random_with_weighted_sampling')
+                        default='train_only_group_dro_with_augmentation_static_positive_and_negative_weights')
     parser.add_argument('--save_model_as', '-save_model_as', help="unconstrained/adversarial_single/adversarial_group", type=str,
                         default=None)
     parser.add_argument('--dataset_name', '-dataset_name', help="twitter_hate_speech/adult_multi_group/celeb_multigroup_v3",
                         type=str,
-                        default='twitter_hate_speech')
+                        default='adult_multi_group')
 
     parser.add_argument('--log_file_name', '-log_file_name', help="the name of the log file",
                         type=str,
@@ -353,11 +356,11 @@ if __name__ == '__main__':
 
     parser.add_argument('--fairness_function', '-fairness_function', help="fairness function to concern with",
                         type=str,
-                        default='equal_opportunity')
+                        default='equal_odds')
 
     parser.add_argument('--titled_t', '-titled_t', help="fairness function to concern with",
                         type=float,
-                        default=0.1)
+                        default=0.01)
 
     parser.add_argument('--mixup_rg', '-mixup_rg', help="fairness function to concern with",
                         type=float,
