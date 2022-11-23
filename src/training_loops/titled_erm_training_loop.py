@@ -25,7 +25,7 @@ train_only_tilted_erm_with_mixup_augmentation_lambda_weights_v4
 from .train_titled_erm_v2 import train_only_tilted_erm_generic, train_only_group_dro, train_only_group_dro_with_mixup,\
     train_only_group_dro_with_augmentation_static_positive_and_negative_weights
 
-from .data_augmentation import train_simple_mixup_data_augmentation
+from .data_augmentation import train_simple_mixup_data_augmentation, train_lisa_based_mixup
 
 def train_only_mixup(train_tilted_params:TrainParameters):
 
@@ -1298,6 +1298,8 @@ def training_loop(training_loop_parameters: TrainingLoopParameters):
             train_epoch_metric, loss, global_weight, global_loss = train_only_group_dro_with_augmentation_static_positive_and_negative_weights(train_parameters)
         elif training_loop_type in ['simple_mixup_data_augmentation']:
             train_epoch_metric, loss, global_weight, global_loss = train_simple_mixup_data_augmentation(train_parameters)
+        elif training_loop_type in ['lisa_based_mixup']:
+            train_epoch_metric, loss, global_weight, global_loss = train_lisa_based_mixup(train_parameters)
         else:
             raise NotImplementedError
 

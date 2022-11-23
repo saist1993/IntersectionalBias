@@ -58,6 +58,8 @@ def temp_table_generator(dataset_name, fairness_function):
                'simple_mixup_data_augmentation'
                ]
 
+    methods = ['simple_mixup_data_augmentation']
+
 
 
     # methods = [ 'train_only_group_dro'
