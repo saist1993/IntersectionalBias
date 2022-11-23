@@ -10,7 +10,7 @@ import torch.nn.functional as F
 from collections import Counter
 from metrics import fairness_utils
 from .common_functionality import *
-from .train_titled_erm_v2 import mixup_sub_routine
+from .train_titled_erm_v2 import mixup_sub_routine, sample_data
 
 def train_simple_mixup_data_augmentation(train_tilted_params: TrainParameters):
     global_loss = train_tilted_params.other_params['global_loss']  # This tracks the actual loss
@@ -25,29 +25,32 @@ def train_simple_mixup_data_augmentation(train_tilted_params: TrainParameters):
     track_output = []
     track_input = []
     group_tracker = [0 for _ in range(len(train_tilted_params.other_params['groups']))]
-    alpha = 1.0
-    gamma = beta(alpha, alpha)
+
 
 
     for i in tqdm(range(train_tilted_params.other_params['number_of_iterations'])):
+        alpha = 1.0
+        gamma = beta(alpha, alpha)
         s1, s2 = np.random.choice(train_tilted_params.other_params['groups'], 2, p=global_weight)
 
-        items_s1 = sample_batch_sen_idx(train_tilted_params.other_params['all_input'],
-                                     train_tilted_params.other_params['all_label'],
-                                     train_tilted_params.other_params['all_aux'],
-                                     train_tilted_params.other_params['all_aux_flatten'],
-                                     train_tilted_params.other_params['batch_size'],
-                                     s1)
-
-
-        items_s2 = sample_batch_sen_idx(train_tilted_params.other_params['all_input'],
-                                     train_tilted_params.other_params['all_label'],
-                                     train_tilted_params.other_params['all_aux'],
-                                     train_tilted_params.other_params['all_aux_flatten'],
-                                     train_tilted_params.other_params['batch_size'],
-                                     s1)
+        # items_s1 = sample_batch_sen_idx(train_tilted_params.other_params['all_input'],
+        #                              train_tilted_params.other_params['all_label'],
+        #                              train_tilted_params.other_params['all_aux'],
+        #                              train_tilted_params.other_params['all_aux_flatten'],
+        #                              train_tilted_params.other_params['batch_size'],
+        #                              s1)
+        #
+        #
+        # items_s2 = sample_batch_sen_idx(train_tilted_params.other_params['all_input'],
+        #                              train_tilted_params.other_params['all_label'],
+        #                              train_tilted_params.other_params['all_aux'],
+        #                              train_tilted_params.other_params['all_aux_flatten'],
+        #                              train_tilted_params.other_params['batch_size'],
+        #                              s2)
 
         # do the mixup
+
+        items_s1, items_s2 = sample_data(train_tilted_params, s1, s2)
 
         items = {}
 
@@ -65,8 +68,8 @@ def train_simple_mixup_data_augmentation(train_tilted_params: TrainParameters):
 
         optimizer.zero_grad()
         output = model(items)
-        loss = torch.mean(criterion(output['prediction'], items['labels']))
-               # + mixup_sub_routine(train_tilted_params, items_s1, items_s2, model)
+        loss = torch.mean(criterion(output['prediction'], items['labels'])) \
+               + mixup_sub_routine(train_tilted_params, items_s1, items_s2, model, gamma)
         loss.backward()
         optimizer.step()
 

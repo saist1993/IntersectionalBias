@@ -226,9 +226,10 @@ def train_only_group_dro_with_augmentation_static_positive_and_negative_weights(
     return epoch_metric_tracker, loss, global_weight, global_loss
 
 
-def mixup_sub_routine(train_tilted_params:TrainParameters, items_group_0, items_group_1, model):
+def mixup_sub_routine(train_tilted_params:TrainParameters, items_group_0, items_group_1, model, gamma=None):
     alpha = 1.0
-    gamma = beta(alpha, alpha)
+    if not gamma:
+        gamma = beta(alpha, alpha)
 
     if train_tilted_params.fairness_function == 'demographic_parity':
         batch_x_mix = items_group_0['input'] * gamma + items_group_1['input'] * (1 - gamma)
