@@ -108,6 +108,7 @@ def train_only_group_dro(train_tilted_params:TrainParameters):
     track_input = []
     group_tracker = [0 for _ in range(len(train_tilted_params.other_params['groups']))]
 
+
     for i in tqdm(range(train_tilted_params.other_params['number_of_iterations'])):
         s = np.random.choice(train_tilted_params.other_params['groups'], 1, p=global_weight)[0]
 

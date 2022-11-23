@@ -110,6 +110,10 @@ if __name__ == '__main__':
         titled_scales = [0.05, 0.01, 0.1, 0.5]
         mixup_scales = [0.0]
 
+    if args.method == 'simple_mixup_data_augmentation':
+        titled_scales = [0.0]
+        mixup_scales = [0.0]
+
     for seed in args.seeds:
         for titled_scale in titled_scales:
             for mixup_scale in mixup_scales:

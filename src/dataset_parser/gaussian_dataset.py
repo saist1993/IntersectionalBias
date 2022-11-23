@@ -17,6 +17,8 @@ class GaussianInfo:
     sigma: List
     nv: multivariate_normal
 
+
+
 class GaussianDataset:
 
     def __init__(self, dataset_name, **params):
@@ -27,7 +29,6 @@ class GaussianDataset:
 
         self.train_split = 0.80
         self.valid_split = 0.25
-
 
 
     def generate_dataset(self):
@@ -86,11 +87,44 @@ class GaussianDataset:
 
         return all_x, all_y, all_s
 
+    def generate_dataset_v2(self):
+        labels = [0,1] # -ve, +ve
+        group = [[0], [1]] # female, male
+        cov = [[1, 0], [0, 1]]
+
+
+        groups_mean = {
+                    (1,1): [1, 1],
+                    (0,1): [-1, -1],
+                   (1,0): [0.5, 0.5],
+                   (0,0): [-0.5, -0.5]
+        }
+
+        all_x, all_y, all_group_info = [], [], []
+        k = 10000
+        for l in labels:
+            for g in group:
+                if g == [0] and l == 0:
+                    k = 1000
+                else:
+                    k = 10000
+                x = np.random.default_rng().multivariate_normal(groups_mean[(l,g[0])], cov, k)
+                y = [l for _ in range(k)]
+                group_info = [g for _ in range(k)]
+                all_x.append(x)
+                all_y.append(y)
+                all_group_info = all_group_info + group_info
+
+        all_x = np.vstack(all_x)
+        all_y = np.hstack(all_y)
+        all_group_info = np.vstack(all_group_info)
+
+        return all_x, all_y, all_group_info
 
 
     def run(self):
         """Orchestrates the whole process"""
-        X,y,s = self.generate_dataset()
+        X,y,s = self.generate_dataset_v2()
 
         # the dataset is shuffled so as to get a unique test set for each seed.
         index, test_index, dev_index = split_data(X.shape[0], train_split=self.train_split, valid_split=self.valid_split)
@@ -137,9 +171,4 @@ class GaussianDataset:
             other_meta_data['raw_data'] = raw_data
 
         return iterators, other_meta_data
-
-
-
-
-
 
