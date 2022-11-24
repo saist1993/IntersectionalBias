@@ -1298,7 +1298,10 @@ def training_loop(training_loop_parameters: TrainingLoopParameters):
             train_epoch_metric, loss, global_weight, global_loss = train_only_group_dro_with_augmentation_static_positive_and_negative_weights(train_parameters)
         elif training_loop_type in ['simple_mixup_data_augmentation']:
             train_epoch_metric, loss, global_weight, global_loss = train_simple_mixup_data_augmentation(train_parameters)
-        elif training_loop_type in ['lisa_based_mixup']:
+        elif training_loop_type in ['lisa_based_mixup',
+                                    'lisa_based_mixup_with_mixup_regularizer',
+                                    'lisa_based_mixup_with_distance',
+                                    'lisa_based_mixup_with_mixup_regularizer_and_with_distance']:
             train_epoch_metric, loss, global_weight, global_loss = train_lisa_based_mixup(train_parameters)
         else:
             raise NotImplementedError

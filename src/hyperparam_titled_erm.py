@@ -110,7 +110,9 @@ if __name__ == '__main__':
         titled_scales = [0.05, 0.01, 0.1, 0.5]
         mixup_scales = [0.0]
 
-    if args.method in ['simple_mixup_data_augmentation', 'lisa_based_mixup']:
+    if args.method in ['simple_mixup_data_augmentation', 'lisa_based_mixup', 'lisa_based_mixup_with_mixup_regularizer',
+                                     'lisa_based_mixup_with_distance',
+                                     'lisa_based_mixup_with_mixup_regularizer_and_with_distance']:
         titled_scales = [0.0]
         mixup_scales = [0.0]
 
