@@ -25,7 +25,8 @@ train_only_tilted_erm_with_mixup_augmentation_lambda_weights_v4
 from .train_titled_erm_v2 import train_only_tilted_erm_generic, train_only_group_dro, train_only_group_dro_with_mixup,\
     train_only_group_dro_with_augmentation_static_positive_and_negative_weights, train_only_group_dro_with_mixup_regularizer_super_group
 
-from .data_augmentation import train_simple_mixup_data_augmentation, train_lisa_based_mixup
+from .data_augmentation import train_simple_mixup_data_augmentation, train_lisa_based_mixup, \
+    train_only_group_dro_with_mixup_regularizer_super_group_data_augmentation
 
 def train_only_mixup(train_tilted_params:TrainParameters):
 
@@ -1148,7 +1149,7 @@ def training_loop(training_loop_parameters: TrainingLoopParameters):
         global_weight = torch.tensor(weights / np.linalg.norm(weights, 1))
         global_loss = torch.tensor(weights / np.linalg.norm(weights, 1))
     elif training_loop_type in ['train_with_mixup_only_one_group_based_distance_v3', 'train_only_group_dro_with_mixup_regularizer_super_group',
-                       'train_only_group_dro_with_super_group']:
+                       'train_only_group_dro_with_super_group'] or 'super_group' in training_loop_type:
         global_weight = np.full((total_no_groups, total_no_groups), 1.0/(total_no_groups*total_no_groups))
         global_loss = np.full((total_no_groups, total_no_groups), 1.0/(total_no_groups*total_no_groups))
         groups_matrix = np.asarray([ [str((i,j)) for i in range(total_no_groups)] for j in range(total_no_groups)])
@@ -1306,6 +1307,8 @@ def training_loop(training_loop_parameters: TrainingLoopParameters):
             train_epoch_metric, loss, global_weight, global_loss = train_lisa_based_mixup(train_parameters)
         elif training_loop_type in ['train_only_group_dro_with_mixup_regularizer_super_group', 'train_only_group_dro_with_super_group']:
             train_epoch_metric, loss, global_weight, global_loss = train_only_group_dro_with_mixup_regularizer_super_group(train_parameters)
+        elif training_loop_type in ['train_only_group_dro_with_mixup_regularizer_super_group_data_augmentation', 'train_only_group_dro_with_super_group_data_augmentation']:
+            train_epoch_metric, loss, global_weight, global_loss = train_only_group_dro_with_mixup_regularizer_super_group_data_augmentation(train_parameters)
         else:
             raise NotImplementedError
 
