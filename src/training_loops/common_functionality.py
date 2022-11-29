@@ -207,6 +207,24 @@ def generate_combinations(s, k =1):
 
     return all_s_combinations
 
+#
+# def generate_combinations(s, k=1):
+#     def flip_bit(bit):
+#         if bit == 1:
+#             return 0
+#         else:
+#             return 1
+#
+#     all_s_combinations = []
+#
+#     for index, i in enumerate(s):
+#         temp = list(copy.deepcopy(s))
+#         temp[index] = flip_bit(i)
+#         all_s_combinations.append(tuple(temp))
+#
+#     return all_s_combinations
+
+
 
 def sample_batch_sen_idx(all_input, all_label, all_aux, all_aux_flatten, batch_size, s):
     """

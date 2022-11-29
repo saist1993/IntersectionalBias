@@ -151,7 +151,9 @@ def get_model(method:str, model_name:str, other_meta_data:Dict, device:torch.dev
                       'train_only_group_dro_with_mixup_regularizer_super_group',
                       'train_only_group_dro_with_super_group',
                       'train_only_group_dro_with_mixup_regularizer_super_group_data_augmentation',
-                      'train_only_group_dro_with_super_group_data_augmentation'
+                      'train_only_group_dro_with_super_group_data_augmentation',
+                      'take_2_train_lisa_based_mixup',
+                      'take_2_train_lisa_based_mixup_with_mixup_regularizer'
                       ]:
             model = simple_model.SimpleNonLinear(model_params)
         elif method == 'adversarial_single':
@@ -326,7 +328,9 @@ def runner(runner_arguments:RunnerArguments):
                                      'train_only_group_dro_with_mixup_regularizer_super_group',
                                      'train_only_group_dro_with_super_group',
                                      'train_only_group_dro_with_mixup_regularizer_super_group_data_augmentation',
-                                     'train_only_group_dro_with_super_group_data_augmentation'
+                                     'train_only_group_dro_with_super_group_data_augmentation',
+                                     'take_2_train_lisa_based_mixup',
+                                     'take_2_train_lisa_based_mixup_with_mixup_regularizer'
                                      ]:
         output = titled_erm_training_loop.training_loop(training_loop_params)
     else:
@@ -361,12 +365,12 @@ if __name__ == '__main__':
     parser.add_argument('--fairness_lambda', '-fairness_lambda', help="the lambda in the fairness loss equation", type=float,
                         default=0.0)
     parser.add_argument('--method', '-method', help="unconstrained/adversarial_single/adversarial_group", type=str,
-                        default='train_only_group_dro')
+                        default='take_2_train_lisa_based_mixup_with_mixup_regularizer')
     parser.add_argument('--save_model_as', '-save_model_as', help="unconstrained/adversarial_single/adversarial_group", type=str,
                         default=None)
     parser.add_argument('--dataset_name', '-dataset_name', help="twitter_hate_speech/adult_multi_group/celeb_multigroup_v3",
                         type=str,
-                        default='celeb_multigroup_v3')
+                        default='adult_multi_group')
 
     parser.add_argument('--log_file_name', '-log_file_name', help="the name of the log file",
                         type=str,
