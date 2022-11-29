@@ -35,7 +35,7 @@ class SimpleClassificationDataset:
         elif self.dataset_name == 'adult':
             self.X, self.y, self.s = get_adult_data()
         elif 'celeb_multigroup_v' in self.dataset_name:
-            k = int(self.dataset_name[-1])
+            k = int(self.dataset_name[len('celeb_multigroup_v')])
             self.X, self.y, self.s = get_celeb_multigroups_data_with_varying_protected_group(k=k)
 
         if len(self.s.shape) == 1:
@@ -43,6 +43,10 @@ class SimpleClassificationDataset:
 
         self.train_split = 0.80
         self.valid_split = 0.25
+
+        if "larger_test_split" in self.dataset_name:
+            self.train_split = 0.40
+            self.valid_split = 0.15
 
         self.y = (self.y + 1) / 2
 
