@@ -60,7 +60,12 @@ def temp_table_generator(dataset_name, fairness_function):
 
     methods = [
                 'train_only_group_dro',
-        'train_only_group_dro_with_augmentation_static_positive_and_negative_weights'
+        'train_only_group_dro_with_augmentation_static_positive_and_negative_weights',
+        'take_2_train_lisa_based_mixup_with_mixup_regularizer',
+        'lisa_based_mixup',
+        'lisa_based_mixup_with_mixup_regularizer',
+        'lisa_based_mixup_with_distance',
+        'lisa_based_mixup_with_mixup_regularizer_and_with_distance'
                ]
 
 

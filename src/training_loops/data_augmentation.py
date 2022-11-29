@@ -239,6 +239,7 @@ def generate_combinations_take_2(s, inverse_dict):
 
 
 
+
 def generate_combinations_take_3(s, inverse_dict):
     def flip_bit(bit):
         if bit == 1:

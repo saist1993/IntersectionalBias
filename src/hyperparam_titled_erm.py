@@ -119,6 +119,13 @@ if __name__ == '__main__':
         titled_scales = [0.0]
         mixup_scales = [0.0]
 
+
+    if args.method in ['train_only_group_dro_with_data_augmentation_via_mixup_super_group',
+                                    'train_only_group_dro_with_data_augmentation_via_mixup_super_group_with_mixup_regularizer']:
+        titled_scales = [0.01, 0.05, 0.1]
+        mixup_scales = [0.25, 0.50, 0.75]
+
+
     for seed in args.seeds:
         for titled_scale in titled_scales:
             for mixup_scale in mixup_scales:
