@@ -121,7 +121,10 @@ if __name__ == '__main__':
 
 
     if args.method in ['train_only_group_dro_with_data_augmentation_via_mixup_super_group',
-                                    'train_only_group_dro_with_data_augmentation_via_mixup_super_group_with_mixup_regularizer']:
+                                    'train_only_group_dro_with_data_augmentation_via_mixup_super_group_with_mixup_regularizer',
+                       'train_only_group_dro_with_data_augmentation_via_mixup_super_group_and_example_similarity_v1',
+                       'train_only_group_dro_with_data_augmentation_via_mixup_super_group_and_example_similarity_v2'
+                       ]:
         titled_scales = [0.01, 0.05, 0.1]
         mixup_scales = [0.25, 0.50, 0.75]
 

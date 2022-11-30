@@ -11,6 +11,7 @@ import torch.nn.functional as F
 from collections import Counter
 from metrics import fairness_utils
 from .common_functionality import *
+from scipy.spatial.distance import cdist
 from .mixup_training_loop import generate_similarity_matrix
 from .titled_erm_with_abstract import sample_batch_sen_idx_with_augmentation_with_lambda_custom_with_positive_and_negative_seperate
 
@@ -543,6 +544,152 @@ def train_only_group_dro_with_data_augmentation_via_mixup_super_group(train_tilt
 
         if "mixup_regularizer" in method:
             loss = loss + regulizer
+
+        global_loss[s_group_0, s_group_1] = global_loss[s_group_0, s_group_1] * torch.exp(tilt_t*loss.data)
+        global_loss = global_loss/(global_loss.sum())
+        loss = global_loss[s_group_0, s_group_1]*loss
+        loss.backward()
+        optimizer.step()
+
+        with torch.no_grad():
+            output = model(items_group_0)
+            track_output.append(output)
+            track_input.append(items_group_0)
+        output['loss_batch'] = loss.item()
+        track_output.append(output)
+        track_input.append(items_group_0)
+
+    epoch_metric_tracker, loss = train_tilted_params.per_epoch_metric(track_output,
+                                                                      track_input,
+                                                                      train_tilted_params.fairness_function)
+
+    print(global_loss)
+    print(global_weight)
+    print(group_tracker)
+
+    return epoch_metric_tracker, loss, global_weight, global_loss
+
+
+def maximum_distance(group1, group2, maximize_similarity):
+    '''
+    Assumed to be same label
+    :param group1: number_of_examples*dimension_of_each_example
+    :param group2:
+    :return: index which changes group2
+    '''
+    cosine_distance =  cdist(group1, group2, 'cosine')
+    if maximize_similarity:
+        index = np.argmin(cosine_distance, 1)
+    else:
+        index = np.argmax(cosine_distance, 1)
+    return index
+
+
+def reshuffle_group(group1, group2, model, split_index, maximize_similarity=False):
+    # Step 1: break it into positve and negative lables
+    # with torch.no_grad():
+    #     input_group_1 = torch.clone(model(group1)['hidden']).detach().cpu()
+    #     input_group_2 = torch.clone(model(group2)['hidden']).detach().cpu()
+
+    input_group_1 = torch.clone(group1['input']).detach().cpu()
+    input_group_2 = torch.clone(group2['input']).detach().cpu()
+
+    for i in ['positive', 'negative']:
+        if i == 'positive':
+            positive_index = maximum_distance(input_group_1[:split_index], input_group_2[:split_index], maximize_similarity=maximize_similarity)
+            group2['input'][:split_index] = group2['input'][:split_index][positive_index]
+            group2['aux'][:split_index] = group2['aux'][:split_index][positive_index]
+            group2['labels'][:split_index] = group2['labels'][:split_index][positive_index]
+            group2['aux_flattened'][:split_index] = group2['aux_flattened'][:split_index][positive_index]
+        else:
+            negative_index = maximum_distance(input_group_1[split_index:], input_group_2[split_index:], maximize_similarity=maximize_similarity)
+            group2['input'][split_index:] = group2['input'][split_index:][negative_index]
+            group2['aux'][split_index:] = group2['aux'][split_index:][negative_index]
+            group2['labels'][split_index:] = group2['labels'][split_index:][negative_index]
+            group2['aux_flattened'][split_index:] = group2['aux_flattened'][split_index:][negative_index]
+    # Step 4: Shuffle group2 based ont this index
+
+    return group2
+
+
+
+def train_only_group_dro_with_data_augmentation_via_mixup_super_group_and_example_similarity(train_tilted_params:TrainParameters):
+    global_loss = train_tilted_params.other_params['global_loss'] # This tracks the actual loss
+    global_weight = train_tilted_params.other_params['global_weight'] # Weights of each examples based on simple count
+    # global_weight never gets updated.
+    tilt_t = train_tilted_params.other_params['titled_t'] # This should be small. In order of magnitude of 0.01
+    mixup_rg = train_tilted_params.other_params['mixup_rg'] # This should be small. In order of magnitude of 0.01
+    method = train_tilted_params.other_params['method'] # This should be small. In order of magnitude of 0.01
+
+    model, optimizer, device, criterion = \
+        train_tilted_params.model, train_tilted_params.optimizer, train_tilted_params.device, train_tilted_params.criterion
+    model.train()
+    track_output = []
+    track_input = []
+    group_tracker = [0 for _ in range(len(train_tilted_params.other_params['groups']))]
+    flattened_s_to_s = {value: key for key, value in train_tilted_params.other_params['s_to_flattened_s'].items()}
+    similarity_matrix = generate_similarity_matrix(train_tilted_params.other_params['valid_iterator'], model,
+                                                   train_tilted_params.other_params['groups'], flattened_s_to_s)
+
+    for i in tqdm(range(train_tilted_params.other_params['number_of_iterations'])):
+        alpha = 1.0
+        gamma = beta(alpha, alpha)
+
+        s_group_0, s_group_1 = eval(
+            np.random.choice(train_tilted_params.other_params['groups_matrix'].reshape(1, -1)[0], 1, replace=False,
+                             p=global_weight.reshape(1, -1)[0])[0])
+
+        items_group_0, items_group_1 = sample_data(train_tilted_params, s_group_0, s_group_1)
+
+        group_tracker[s_group_0] += 1
+        group_tracker[s_group_1] += 1
+
+        ps = np.random.uniform(0, 1)
+        split_index = int(train_tilted_params.other_params['batch_size'] / 2)
+
+        if ps > mixup_rg:
+            if 'v1' in method:
+                items_group_1 = reshuffle_group(items_group_0, items_group_1, model, split_index, maximize_similarity=False)
+            elif 'v2' in method:
+                items_group_1 = reshuffle_group(items_group_0, items_group_1, model, split_index,
+                                                maximize_similarity=True)
+            regulizer = mixup_sub_routine(train_tilted_params, items_group_0, items_group_1, model, gamma)
+            items_group_0['input'] = torch.vstack([items_group_0['input'][split_index:], items_group_0['input'][:split_index]])
+            items_group_0['aux'] = torch.vstack([items_group_0['aux'][split_index:], items_group_0['aux'][:split_index]])
+            items_group_0['labels'] = torch.hstack([items_group_0['labels'][split_index:], items_group_0['labels'][:split_index]])
+            items_group_0['aux_flattened'] = torch.hstack(
+                [items_group_0['aux_flattened'][split_index:], items_group_0['aux_flattened'][:split_index]])
+
+        else:
+            items_group_1 = reshuffle_group(items_group_0, items_group_1, model, split_index, maximize_similarity=False)
+            regulizer = mixup_sub_routine(train_tilted_params, items_group_0, items_group_1, model, gamma)
+
+            # here we are going to implement the maximum distance mixup as the label space is the same
+
+
+
+        items = {}
+
+        items['input'] = items_group_0['input'] * gamma + items_group_1['input'] * (1 - gamma)
+        # items['labels'] = items_s1['labels']*gamma + items_s2['labels']*(1-gamma)
+        items['labels'] = torch.nn.functional.one_hot(
+            items_group_0['labels']) * gamma + torch.nn.functional.one_hot(
+            items_group_1['labels']) * (1 - gamma)
+        items['aux'] = items_group_0['aux']  # this is a hack
+        items['aux_flattened'] = items_group_0['aux_flattened']
+
+        for key in items.keys():
+            try:
+                items[key] = items[key].to(train_tilted_params.device)
+            except AttributeError:
+                continue
+
+
+        optimizer.zero_grad()
+        output = model(items)
+        loss = torch.mean(criterion(output['prediction'], items['labels']))
+
+        loss = loss + regulizer
 
         global_loss[s_group_0, s_group_1] = global_loss[s_group_0, s_group_1] * torch.exp(tilt_t*loss.data)
         global_loss = global_loss/(global_loss.sum())

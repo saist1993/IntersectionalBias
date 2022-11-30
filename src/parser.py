@@ -65,13 +65,16 @@ def temp_table_generator(dataset_name, fairness_function):
         'lisa_based_mixup',
         'lisa_based_mixup_with_mixup_regularizer',
         'lisa_based_mixup_with_distance',
-        'lisa_based_mixup_with_mixup_regularizer_and_with_distance'
+        'lisa_based_mixup_with_mixup_regularizer_and_with_distance',
+        'train_only_group_dro_with_data_augmentation_via_mixup_super_group',
+        'train_only_group_dro_with_data_augmentation_via_mixup_super_group_with_mixup_regularizer'
                ]
 
 
 
-    # methods = [ 'train_only_group_dro'
-    #            ]
+    methods = [ 'train_only_group_dro_with_data_augmentation_via_mixup_super_group',
+        'train_only_group_dro_with_data_augmentation_via_mixup_super_group_with_mixup_regularizer'
+               ]
 
 
 
@@ -113,7 +116,7 @@ def temp_table_generator(dataset_name, fairness_function):
                                                                      round(confidence_interval[1], k)
                     rows_temp.append([method, round(accuracy,k), round(fairness,k), confidence_interval, seed])
 
-                    if method == 'train_only_group_dro':
+                    if True:
                         print(result.arguments)
                         print(result.test_epoch_metric.epoch_number)
                 # average over seeds
