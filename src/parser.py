@@ -67,14 +67,32 @@ def temp_table_generator(dataset_name, fairness_function):
         'lisa_based_mixup_with_distance',
         'lisa_based_mixup_with_mixup_regularizer_and_with_distance',
         'train_only_group_dro_with_data_augmentation_via_mixup_super_group',
-        'train_only_group_dro_with_data_augmentation_via_mixup_super_group_with_mixup_regularizer'
+        'train_only_group_dro_with_data_augmentation_via_mixup_super_group_with_mixup_regularizer',
+
                ]
 
 
 
     methods = [ 'train_only_group_dro_with_data_augmentation_via_mixup_super_group',
-        'train_only_group_dro_with_data_augmentation_via_mixup_super_group_with_mixup_regularizer'
+        'train_only_group_dro_with_data_augmentation_via_mixup_super_group_with_mixup_regularizer',
+                'train_only_group_dro_with_data_augmentation_via_mixup_super_group_and_example_similarity_v1',
+                'train_only_group_dro_with_data_augmentation_via_mixup_super_group_and_example_similarity_v2'
                ]
+
+    methods = [
+               'lisa_based_mixup',
+               'lisa_based_mixup_with_mixup_regularizer',
+               'train_only_group_dro',
+               'train_only_group_dro_with_super_group',
+               'train_only_group_dro_with_mixup_regularizer_super_group',
+               'train_only_group_dro_with_data_augmentation_via_mixup_super_group_and_example_similarity_v1',
+                'train_only_group_dro_with_data_augmentation_via_mixup_super_group_and_example_similarity_v2'
+               ]
+
+    methods = [
+
+        'train_only_group_dro_with_super_group',
+    ]
 
 
 
@@ -140,31 +158,31 @@ def temp_table_generator(dataset_name, fairness_function):
     return t
 
 adult_multi_group_equal_odds = temp_table_generator('adult_multi_group', 'equal_odds')
-adult_multi_group_equal_opportunity = temp_table_generator('adult_multi_group', 'equal_opportunity')
+# adult_multi_group_equal_opportunity = temp_table_generator('adult_multi_group', 'equal_opportunity')
 
-twitter_hate_speech_equal_odds = temp_table_generator('twitter_hate_speech', 'equal_odds')
-twitter_hate_speech_equal_opportunity = temp_table_generator('twitter_hate_speech', 'equal_opportunity')
-#
-celeb_multigroup_v3_equal_odds = temp_table_generator('celeb_multigroup_v3', 'equal_odds')
-celeb_multigroup_v3_equal_opportunity = temp_table_generator('celeb_multigroup_v3', 'equal_opportunity')
+# twitter_hate_speech_equal_odds = temp_table_generator('twitter_hate_speech', 'equal_odds')
+# twitter_hate_speech_equal_opportunity = temp_table_generator('twitter_hate_speech', 'equal_opportunity')
+# #
+# celeb_multigroup_v3_equal_odds = temp_table_generator('celeb_multigroup_v3', 'equal_odds')
+# celeb_multigroup_v3_equal_opportunity = temp_table_generator('celeb_multigroup_v3', 'equal_opportunity')
 
 
 print("Adult Multi Group - Equal Odds")
 print(adult_multi_group_equal_odds.draw())
 
-print("Adult Multi Group - Equal Opportunity")
-print(adult_multi_group_equal_opportunity.draw())
+# print("Adult Multi Group - Equal Opportunity")
+# print(adult_multi_group_equal_opportunity.draw())
 #
-print("Twitter Hate Speech equal odds")
-print(twitter_hate_speech_equal_odds.draw())
-#
-#
-print("Twitter Hate Speech equal opportunity")
-print(twitter_hate_speech_equal_opportunity.draw())
-#
-#
-print("Celeb MultiGroup V3 equal odds")
-print(celeb_multigroup_v3_equal_odds.draw())
-#
-print("Celeb MultiGroup V3 equal opportunity")
-print(celeb_multigroup_v3_equal_opportunity.draw())
+# print("Twitter Hate Speech equal odds")
+# print(twitter_hate_speech_equal_odds.draw())
+# #
+# #
+# print("Twitter Hate Speech equal opportunity")
+# print(twitter_hate_speech_equal_opportunity.draw())
+# #
+# #
+# print("Celeb MultiGroup V3 equal odds")
+# print(celeb_multigroup_v3_equal_odds.draw())
+# #
+# print("Celeb MultiGroup V3 equal opportunity")
+# print(celeb_multigroup_v3_equal_opportunity.draw())

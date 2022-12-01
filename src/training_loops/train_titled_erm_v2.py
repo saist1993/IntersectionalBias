@@ -414,6 +414,7 @@ def train_only_group_dro_with_mixup_regularizer_super_group(train_tilted_params:
     global_weight = train_tilted_params.other_params['global_weight'] # Weights of each examples based on simple count
     # global_weight never gets updated.
     tilt_t = train_tilted_params.other_params['titled_t'] # This should be small. In order of magnitude of 0.01
+    mixup_rg = train_tilted_params.other_params['mixup_rg'] # This should be small. In order of magnitude of 0.01
     method = train_tilted_params.other_params['method'] # This should be small. In order of magnitude of 0.01
 
     model, optimizer, device, criterion = \
@@ -425,18 +426,36 @@ def train_only_group_dro_with_mixup_regularizer_super_group(train_tilted_params:
     flattened_s_to_s = {value: key for key, value in train_tilted_params.other_params['s_to_flattened_s'].items()}
     similarity_matrix = generate_similarity_matrix(train_tilted_params.other_params['valid_iterator'], model,
                                                    train_tilted_params.other_params['groups'], flattened_s_to_s)
-
+    total_reg = 0.0
+    total_loss = 0.0
     for i in tqdm(range(train_tilted_params.other_params['number_of_iterations'])):
+        split_index = int(train_tilted_params.other_params['batch_size'] / 2)
         s_group_0, s_group_1 = eval(
             np.random.choice(train_tilted_params.other_params['groups_matrix'].reshape(1, -1)[0], 1, replace=False,
                              p=global_weight.reshape(1, -1)[0])[0])
 
-        items_group_0, items_group_1 = sample_data(train_tilted_params, s_group_0, s_group_1)
+        # items_group_0, items_group_1 = sample_data(train_tilted_params, s_group_0, s_group_1)
+        items_group_0 = sample_batch_sen_idx(train_tilted_params.other_params['all_input'],
+                                     train_tilted_params.other_params['all_label'],
+                                     train_tilted_params.other_params['all_aux'],
+                                     train_tilted_params.other_params['all_aux_flatten'],
+                                     train_tilted_params.other_params['batch_size'],
+                                     s_group_0)
+
+        items_group_1 = sample_batch_sen_idx(train_tilted_params.other_params['all_input'],
+                                             train_tilted_params.other_params['all_label'],
+                                             train_tilted_params.other_params['all_aux'],
+                                             train_tilted_params.other_params['all_aux_flatten'],
+                                             train_tilted_params.other_params['batch_size'],
+                                             s_group_1)
 
         group_tracker[s_group_0] += 1
         group_tracker[s_group_1] += 1
 
         optimizer.zero_grad()
+
+
+
 
         output_group_0 = model(items_group_0)
         output_group_1 = model(items_group_1)
@@ -445,18 +464,25 @@ def train_only_group_dro_with_mixup_regularizer_super_group(train_tilted_params:
 
         loss_group_0 = torch.mean(criterion(output_group_0['prediction'], items_group_0['labels']))
         loss_group_1 = torch.mean(criterion(output_group_1['prediction'], items_group_1['labels']))
-        loss = loss_group_0 + loss_group_1
+        loss = (loss_group_0 + loss_group_1)/2
 
+        loss_reg = None
         if 'mixup_regularizer' in method:
-            loss_reg = mixup_sub_routine(train_tilted_params, items_group_0, items_group_1, model)
-            loss = loss + loss_reg
+            #
+            # loss_reg = mixup_sub_routine(train_tilted_params, items_group_0, reshuffle_group(items_group_0, items_group_1, model, split_index, maximize_similarity=False), model)
+            loss_reg = torch.abs(loss_group_0-loss_group_1)*mixup_rg
 
+        total_loss += loss.item()
+        if loss_reg:
+            loss = loss + loss_reg
 
         global_loss[s_group_0, s_group_1] = global_loss[s_group_0, s_group_1] * torch.exp(tilt_t*loss.data)
         global_loss = global_loss/(global_loss.sum())
         loss = global_loss[s_group_0, s_group_1]*loss
         loss.backward()
         optimizer.step()
+
+        total_reg += loss_reg.item()
 
         output_group_0['loss_batch'] = loss_group_0.item()
         track_output.append(output_group_0)
@@ -466,9 +492,7 @@ def train_only_group_dro_with_mixup_regularizer_super_group(train_tilted_params:
                                                                       track_input,
                                                                       train_tilted_params.fairness_function)
 
-    print(global_loss)
-    print(global_weight)
-    print(group_tracker)
+    print(total_loss, total_reg)
 
     return epoch_metric_tracker, loss, global_weight, global_loss
 
@@ -593,20 +617,27 @@ def reshuffle_group(group1, group2, model, split_index, maximize_similarity=Fals
 
     input_group_1 = torch.clone(group1['input']).detach().cpu()
     input_group_2 = torch.clone(group2['input']).detach().cpu()
+    new_group1, new_group2 = {}, {}
+    new_group2['input'] = torch.clone(group2['input'])
+    new_group2['aux'] = torch.clone(group2['aux'])
+    new_group2['labels'] = torch.clone(group2['labels'])
+    new_group2['aux_flattened'] = torch.clone(group2['aux_flattened'])
 
+
+    # group2 = torch.clone(group2)
     for i in ['positive', 'negative']:
         if i == 'positive':
             positive_index = maximum_distance(input_group_1[:split_index], input_group_2[:split_index], maximize_similarity=maximize_similarity)
-            group2['input'][:split_index] = group2['input'][:split_index][positive_index]
-            group2['aux'][:split_index] = group2['aux'][:split_index][positive_index]
-            group2['labels'][:split_index] = group2['labels'][:split_index][positive_index]
-            group2['aux_flattened'][:split_index] = group2['aux_flattened'][:split_index][positive_index]
+            new_group2['input'][:split_index] = new_group2['input'][:split_index][positive_index]
+            new_group2['aux'][:split_index] = new_group2['aux'][:split_index][positive_index]
+            new_group2['labels'][:split_index] = new_group2['labels'][:split_index][positive_index]
+            new_group2['aux_flattened'][:split_index] = new_group2['aux_flattened'][:split_index][positive_index]
         else:
             negative_index = maximum_distance(input_group_1[split_index:], input_group_2[split_index:], maximize_similarity=maximize_similarity)
-            group2['input'][split_index:] = group2['input'][split_index:][negative_index]
-            group2['aux'][split_index:] = group2['aux'][split_index:][negative_index]
-            group2['labels'][split_index:] = group2['labels'][split_index:][negative_index]
-            group2['aux_flattened'][split_index:] = group2['aux_flattened'][split_index:][negative_index]
+            new_group2['input'][split_index:] = new_group2['input'][split_index:][negative_index]
+            new_group2['aux'][split_index:] = new_group2['aux'][split_index:][negative_index]
+            new_group2['labels'][split_index:] = new_group2['labels'][split_index:][negative_index]
+            new_group2['aux_flattened'][split_index:] = new_group2['aux_flattened'][split_index:][negative_index]
     # Step 4: Shuffle group2 based ont this index
 
     return group2

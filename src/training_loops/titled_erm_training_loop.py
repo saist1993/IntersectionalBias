@@ -1308,7 +1308,7 @@ def training_loop(training_loop_parameters: TrainingLoopParameters):
             train_epoch_metric, loss, global_weight, global_loss = train_lisa_based_mixup(train_parameters)
         elif training_loop_type in ['take_2_train_lisa_based_mixup', 'take_2_train_lisa_based_mixup_with_mixup_regularizer']:
             train_epoch_metric, loss, global_weight, global_loss = train_lisa_based_mixup_take_2(train_parameters)
-        elif training_loop_type in ['train_only_group_dro_with_mixup_regularizer_super_group', 'train_only_group_dro_with_super_group']:
+        elif training_loop_type in ['train_only_group_dro_with_mixup_regularizer_super_group', 'train_only_group_dro_with_super_group', 'train_only_group_dro_with_mixup_regularizer_super_group_v2']:
             train_epoch_metric, loss, global_weight, global_loss = train_only_group_dro_with_mixup_regularizer_super_group(train_parameters)
         elif training_loop_type in ['train_only_group_dro_with_mixup_regularizer_super_group_data_augmentation', 'train_only_group_dro_with_super_group_data_augmentation']:
             train_epoch_metric, loss, global_weight, global_loss = train_only_group_dro_with_mixup_regularizer_super_group_data_augmentation(train_parameters)

@@ -95,6 +95,10 @@ if __name__ == '__main__':
         else:
             raise NotImplementedError
 
+    if args.method == 'train_only_group_dro_with_mixup_regularizer_super_group_v2':
+        titled_scales = [0.1, 0.01, 0.05, 0.8]
+        mixup_scales = [1.0, 3.0, 5.0]
+
     if args.method == 'tilted_erm_with_fairness_loss':
         if args.version == 0:
             titled_scales = [1.0, 5.0, 10.0]
