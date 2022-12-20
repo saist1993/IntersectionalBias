@@ -138,11 +138,14 @@ if __name__ == '__main__':
         mixup_scales = [0.25, 0.50, 0.75]
 
     if args.method == 'erm_super_group_with_simplified_fairness_loss':
-        if args.dataset_name in ['adult_multt_group'] and args.fairness_function in ['equal_odds']:
+        if args.dataset_name in ['adult_multi_group'] and args.fairness_function in ['equal_odds']:
             mixup_scales = [1.0, 1.5, 2.0, 2.5, 3.0, 3.5, 1.25, 1.75, 2.25, 2.75, 3.25]
 
-        if args.dataset_name in ['adult_multt_group', 'celeb_multigroup_v3'] and args.fairness_function in ['equal_opportunity']:
+        if args.dataset_name in ['adult_multi_group', 'celeb_multigroup_v3'] and args.fairness_function in ['equal_opportunity']:
             mixup_scales = [1.0, 5.0, 10.0, 15.0, 20.0, 25.0, 30.0, 35.0, 40.0, 45.0, 50.0]
+
+        if args.dataset_name in ['celeb_multigroup_v3'] and args.fairness_function in ['equal_odds']:
+            mixup_scales = [5.0, 6.0, 7.0, 8.0, 9.0, 10.0, 11.0, 12.0, 13.0, 15.0, ]
 
 
 
