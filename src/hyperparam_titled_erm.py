@@ -138,6 +138,7 @@ if __name__ == '__main__':
         mixup_scales = [0.25, 0.50, 0.75]
 
     if args.method == 'erm_super_group_with_simplified_fairness_loss':
+        titled_scales = [0.0]
         if args.dataset_name in ['adult_multi_group'] and args.fairness_function in ['equal_odds']:
             mixup_scales = [1.0, 1.5, 2.0, 2.5, 3.0, 3.5, 1.25, 1.75, 2.25, 2.75, 3.25]
 
