@@ -50,14 +50,19 @@ if __name__ == '__main__':
             or args.method == 'only_mixup_based_on_distance'\
             or args.method == 'only_mixup_based_on_distance_and_augmentation':
         titled_scales = [0.0]
-        if args.version == 0:
-            mixup_scales = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]
-        elif args.version == 1.0:
-            mixup_scales = [0.1, 0.2, 0.3, 0.4]
-        elif args.version == 2.0:
-            mixup_scales = [0.5, 0.6, 0.7, 0.8, 0.9]
+        # if args.version == 0:
+        #     mixup_scales = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]
+        # elif args.version == 1.0:
+        #     mixup_scales = [0.1, 0.2, 0.3, 0.4]
+        # elif args.version == 2.0:
+        #     mixup_scales = [0.5, 0.6, 0.7, 0.8, 0.9]
+        # else:
+        #     raise NotImplementedError
+        if args.dataset_name in ['adult_multi_group','celeb_multigroup_v3', 'twitter_hate_speech']:
+            mixup_scales = [1.0, 5.0, 10.0, 15.0, 20.0, 25.0, 30.0, 35.0, 40.0, 45.0, 50.0] # approximate scale works for both equal opportunity as well as equal odds.
+        # twitter hate speech equal odds requires slightly less mixup scale
         else:
-            raise NotImplementedError
+            mixup_scales = [1, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50]
 
 
     if args.method == 'only_titled_erm' or args.method == 'only_tilted_erm_with_mixup_augmentation_lambda_weights'\

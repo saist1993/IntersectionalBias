@@ -475,6 +475,7 @@ def train_only_group_dro_with_mixup_regularizer_super_group(train_tilted_params:
         total_loss += loss.item()
         if loss_reg:
             loss = loss + loss_reg
+            total_reg += loss_reg.item()
 
         global_loss[s_group_0, s_group_1] = global_loss[s_group_0, s_group_1] * torch.exp(tilt_t*loss.data)
         global_loss = global_loss/(global_loss.sum())
@@ -482,7 +483,6 @@ def train_only_group_dro_with_mixup_regularizer_super_group(train_tilted_params:
         loss.backward()
         optimizer.step()
 
-        total_reg += loss_reg.item()
 
         output_group_0['loss_batch'] = loss_group_0.item()
         track_output.append(output_group_0)

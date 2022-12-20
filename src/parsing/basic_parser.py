@@ -93,6 +93,8 @@ class BasicLogParser:
             lines = [line for line in f]
             unique_id = lines[0].split("unique id is:")[1]
             arguments = lines[1].split("arguemnts: ")[1]
+        if 'mixup_rg=1.0asdasd' in arguments:
+            return None
         blocks = []
         for l in lines[2:]:
             if "start of epoch block" in l:
@@ -123,7 +125,13 @@ class BasicLogParser:
         # Step 1: Find the correct directory
         log_files_location = Path(f"../server_logs/logs/{dataset_name}/{method}/{model}/{seed}/{fairness_function}")
         all_log_files_names = log_files_location.glob('*')
-        all_log_files_content = [self.core_parser(file_name) for file_name in all_log_files_names]
+        # all_log_files_content = [self.core_parser(file_name) for file_name in all_log_files_names]
+
+        all_log_files_content = []
+        for file_name in all_log_files_names:
+            temp = self.core_parser(file_name)
+            if temp:
+                all_log_files_content.append(temp)
 
         return all_log_files_content
 
