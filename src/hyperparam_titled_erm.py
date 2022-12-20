@@ -145,7 +145,10 @@ if __name__ == '__main__':
             mixup_scales = [1.0, 5.0, 10.0, 15.0, 20.0, 25.0, 30.0, 35.0, 40.0, 45.0, 50.0]
 
         if args.dataset_name in ['celeb_multigroup_v3'] and args.fairness_function in ['equal_odds']:
-            mixup_scales = [5.0, 6.0, 7.0, 8.0, 9.0, 10.0, 11.0, 12.0, 13.0, 15.0, ]
+            mixup_scales = [5.0, 6.0, 7.0, 8.0, 9.0, 10.0, 11.0, 12.0, 13.0, 15.0]
+
+        if args.dataset_name in ['twitter_hate_speech'] and args.fairness_function in ['equal_opportunity']:
+            mixup_scales = [1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0, 15.0]
 
 
 
