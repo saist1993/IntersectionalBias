@@ -150,6 +150,9 @@ if __name__ == '__main__':
         if args.dataset_name in ['twitter_hate_speech'] and args.fairness_function in ['equal_opportunity']:
             mixup_scales = [1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0, 15.0]
 
+        if args.dataset_name in ['twitter_hate_speech'] and args.fairness_function in ['equal_odds']:
+            mixup_scales = [1.0, 2.0, 3.0, 4.0, 5.0, 0.5, 0.25, 2.5, 3.5, 1.5, 4.5]
+
 
 
     for seed in args.seeds:
