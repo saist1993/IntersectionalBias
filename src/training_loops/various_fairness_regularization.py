@@ -28,7 +28,7 @@ def simplified_fairness_loss(fairness_function, loss, preds, aux, group1_pattern
 
         if fairness_function == 'equal_odds':
             # false positive rate
-            numerator_label = 1
+            numerator_label = 0
             preds_mask = torch.logical_and(torch.argmax(preds, 1) == numerator_label, label_mask_0)
             group1_loss = loss[torch.logical_and(preds_mask, group1_mask)]
             group2_loss = loss[torch.logical_and(preds_mask, group2_mask)]
