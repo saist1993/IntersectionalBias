@@ -13,6 +13,7 @@ from metrics import fairness_utils
 from .common_functionality import *
 from scipy.spatial.distance import cdist
 from .mixup_training_loop import generate_similarity_matrix
+from .various_fairness_regularization import simplified_fairness_loss
 from .titled_erm_with_abstract import sample_batch_sen_idx_with_augmentation_with_lambda_custom_with_positive_and_negative_seperate
 
 def train_only_tilted_erm_generic(train_tilted_params:TrainParameters):
@@ -409,7 +410,7 @@ def train_only_group_dro_with_mixup(train_tilted_params:TrainParameters):
 
 
 
-def train_only_group_dro_with_mixup_regularizer_super_group_newer(train_tilted_params:TrainParameters):
+def train_only_group_dro_with_mixup_regularizer_super_group_older(train_tilted_params:TrainParameters):
     global_loss = train_tilted_params.other_params['global_loss'] # This tracks the actual loss
     global_weight = train_tilted_params.other_params['global_weight'] # Weights of each examples based on simple count
     # global_weight never gets updated.
@@ -462,19 +463,29 @@ def train_only_group_dro_with_mixup_regularizer_super_group_newer(train_tilted_p
 
 
 
-        loss_group_0 = torch.mean(criterion(output_group_0['prediction'], items_group_0['labels']))
-        loss_group_1 = torch.mean(criterion(output_group_1['prediction'], items_group_1['labels']))
-        loss = (loss_group_0 + loss_group_1)/2
+        loss_group_0 = criterion(output_group_0['prediction'], items_group_0['labels'])
+        loss_group_1 = criterion(output_group_1['prediction'], items_group_1['labels'])
+
 
         loss_reg = None
         if 'mixup_regularizer' in method:
             #
             # loss_reg = mixup_sub_routine(train_tilted_params, items_group_0, reshuffle_group(items_group_0, items_group_1, model, split_index, maximize_similarity=False), model)
-            loss_reg = torch.abs(loss_group_0-loss_group_1)*mixup_rg
+            # loss_reg = torch.abs(loss_group_0-loss_group_1)*mixup_rg
+            loss_reg =  simplified_fairness_loss(fairness_function=train_tilted_params.fairness_function,
+                                                loss=torch.hstack([loss_group_0, loss_group_1]),
+                                                preds=torch.vstack(
+                                                    [output_group_0['prediction'], output_group_1['prediction']]),
+                                                aux=torch.hstack(
+                                                    [items_group_0['aux_flattened'], items_group_1['aux_flattened']]),
+                                                group1_pattern=s_group_0,
+                                                group2_pattern=s_group_1,
+                                                label=torch.hstack([items_group_0['labels'], items_group_1['labels']]))
 
+        loss = (torch.mean(loss_group_0) + torch.mean(loss_group_1)) / 2
         total_loss += loss.item()
         if loss_reg:
-            loss = loss + loss_reg
+            loss = loss + loss_reg*mixup_rg
             total_reg += loss_reg.item()
 
         global_loss[s_group_0, s_group_1] = global_loss[s_group_0, s_group_1] * torch.exp(tilt_t*loss.data)
@@ -484,7 +495,7 @@ def train_only_group_dro_with_mixup_regularizer_super_group_newer(train_tilted_p
         optimizer.step()
 
 
-        output_group_0['loss_batch'] = loss_group_0.item()
+        output_group_0['loss_batch'] = torch.mean(loss_group_0).item()
         track_output.append(output_group_0)
         track_input.append(items_group_0)
 
@@ -492,9 +503,9 @@ def train_only_group_dro_with_mixup_regularizer_super_group_newer(train_tilted_p
                                                                       track_input,
                                                                       train_tilted_params.fairness_function)
 
-    print(total_loss, total_reg)
-    print(global_loss)
-    print(global_weight)
+    # print(total_loss, total_reg)
+    # print(global_loss)
+    # print(global_weight)
 
     return epoch_metric_tracker, loss, global_weight, global_loss
 
@@ -804,9 +815,9 @@ def train_only_group_dro_with_mixup_regularizer_super_group(train_tilted_params:
                                                                       track_input,
                                                                       train_tilted_params.fairness_function)
 
-    print(global_loss)
-    print(global_weight)
-    print(group_tracker)
+    # print(global_loss)
+    # print(global_weight)
+    # print(group_tracker)
 
 
     return epoch_metric_tracker, loss, global_weight, global_loss

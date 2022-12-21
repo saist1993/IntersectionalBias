@@ -88,7 +88,6 @@ if __name__ == '__main__':
 
 
     if args.method in ['only_tilted_dro', 'train_only_group_dro_with_augmentation_static_positive_and_negative_weights',
-                       'train_only_group_dro_with_mixup_regularizer_super_group',
                        'train_only_group_dro_with_super_group']:
         mixup_scales = [0.0]
         if args.version == 0:
@@ -154,6 +153,10 @@ if __name__ == '__main__':
         if args.dataset_name in ['twitter_hate_speech'] and args.fairness_function in ['equal_odds']:
             mixup_scales = [1.0, 2.0, 3.0, 4.0, 5.0, 0.5, 0.25, 2.5, 3.5, 1.5, 4.5]
 
+
+    if args.method == 'train_only_group_dro_with_mixup_regularizer_super_group':
+        mixup_scales = [10.0, 20.0, 30.0, 40.0]
+        titled_scales = [0.5, 0.05, 0.01]
 
 
     for seed in args.seeds:
