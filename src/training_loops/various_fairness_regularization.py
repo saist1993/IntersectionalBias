@@ -1,5 +1,6 @@
 import torch
 from tqdm.auto import tqdm
+from numpy.random import beta
 from .common_functionality import *
 
 def simplified_fairness_loss(fairness_function, loss, preds, aux, group1_pattern, group2_pattern, label):
@@ -101,15 +102,17 @@ def erm_super_group_with_simplified_fairness_loss(train_tilted_params:TrainParam
         # else:
         #     fairness_reg = torch.abs(torch.mean(loss_group_0) - torch.mean(loss_group_1))
 
-        fairness_reg = simplified_fairness_loss(fairness_function=train_tilted_params.fairness_function,
-                                                loss=torch.hstack([loss_group_0, loss_group_1]),
-                                                preds=torch.vstack(
-                                                    [output_group_0['prediction'], output_group_1['prediction']]),
-                                                aux=torch.hstack(
-                                                    [items_group_0['aux_flattened'], items_group_1['aux_flattened']]),
-                                                group1_pattern=s_group_0,
-                                                group2_pattern=s_group_1,
-                                                label=torch.hstack([items_group_0['labels'], items_group_1['labels']]))
+        # fairness_reg = simplified_fairness_loss(fairness_function=train_tilted_params.fairness_function,
+        #                                         loss=torch.hstack([loss_group_0, loss_group_1]),
+        #                                         preds=torch.vstack(
+        #                                             [output_group_0['prediction'], output_group_1['prediction']]),
+        #                                         aux=torch.hstack(
+        #                                             [items_group_0['aux_flattened'], items_group_1['aux_flattened']]),
+        #                                         group1_pattern=s_group_0,
+        #                                         group2_pattern=s_group_1,
+        #                                         label=torch.hstack([items_group_0['labels'], items_group_1['labels']]))
+
+        fairness_reg = new_mixup_sub_routine(train_tilted_params, items_group_0, items_group_1, model)
 
         loss = torch.mean(loss_group_0) + torch.mean(loss_group_1) + mixup_rg*fairness_reg
 
@@ -225,3 +228,46 @@ def train_only_group_dro_super_group_with_simplified_fairness_loss(train_tilted_
 
 
 
+
+
+def new_mixup_sub_routine(train_tilted_params:TrainParameters, items_group_0, items_group_1, model, gamma=None):
+    alpha = 1.0
+    if not gamma:
+        gamma = beta(alpha, alpha)
+
+    if train_tilted_params.fairness_function == 'demographic_parity':
+        raise NotImplementedError
+
+    elif train_tilted_params.fairness_function == 'equal_odds' or \
+            train_tilted_params.fairness_function == 'equal_opportunity':
+        split_index = int(train_tilted_params.other_params['batch_size'] / 2)
+        if train_tilted_params.fairness_function == 'equal_odds':
+            gold_labels = [0, 1]
+        elif train_tilted_params.fairness_function == 'equal_opportunity':
+            gold_labels = [1]
+        else:
+            raise NotImplementedError
+        loss_reg = 0
+        for i in gold_labels:
+            mask_item_group_0 = items_group_0['labels'] == i
+            mask_item_group_1 = items_group_1['labels'] == i
+
+            batch_x_mix = torch.mean(items_group_0['input'][mask_item_group_0], axis=0).unsqueeze(0) * gamma + \
+                          torch.mean(items_group_1['input'][mask_item_group_1], axis=0).unsqueeze(0) * (1 - gamma)    # this is the point wise addition which forces this equal 1s,0s representation
+            batch_x_mix = batch_x_mix.requires_grad_(True)
+            model.eval()
+            output_mixup = model({'input': batch_x_mix})
+            model.train()
+            gradx = torch.autograd.grad(output_mixup['prediction'].sum(), batch_x_mix, create_graph=True)[
+                0]  # may be .sum()
+
+            batch_x_d = torch.mean(items_group_1['input'][mask_item_group_1], axis=0).unsqueeze(0) - torch.mean(items_group_0['input'][mask_item_group_0], axis=0).unsqueeze(0)
+            grad_inn = (gradx * batch_x_d).sum(1)
+            E_grad = grad_inn.mean(0)
+            loss_reg = loss_reg + torch.abs(E_grad)
+
+    else:
+        raise NotImplementedError
+
+
+    return loss_reg
