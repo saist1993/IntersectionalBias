@@ -90,7 +90,7 @@ def temp_table_generator(dataset_name, fairness_function):
                ]
 
     methods = [
-
+        'train_only_group_dro',
         'train_only_group_dro_with_super_group',
         'only_mixup_based_on_distance',
         'erm_super_group_with_simplified_fairness_loss'
