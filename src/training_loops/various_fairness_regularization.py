@@ -164,7 +164,7 @@ def train_only_group_dro_super_group_with_simplified_fairness_loss(train_tilted_
         #                                         group1_pattern=s_group_0,
         #                                         group2_pattern=s_group_1,
         #                                         label=torch.hstack([items_group_0['labels'], items_group_1['labels']]))
-        loss_reg = new_mixup_sub_routine(train_tilted_params, items_group_0, items_group_1)
+        loss_reg = new_mixup_sub_routine(train_tilted_params, items_group_0, items_group_1, model)
 
         loss = (torch.mean(loss_group_0) + torch.mean(loss_group_1)) / 2.0
         total_loss += loss.data
