@@ -352,6 +352,93 @@ def generate_flat_output_custom(input_iterator, attribute_id=None):
     return all_label, all_s, all_s_flatten, all_input
 
 
+def sample_data(train_tilted_params, s_group_0, s_group_1):
+    if train_tilted_params.fairness_function == 'demographic_parity':
+        items_group_0 = sample_batch_sen_idx(train_tilted_params.other_params['all_input'],
+                                             train_tilted_params.other_params['all_label'],
+                                             train_tilted_params.other_params['all_aux'],
+                                             train_tilted_params.other_params['all_aux_flatten'],
+                                             train_tilted_params.other_params['batch_size'],
+                                             s_group_0)
+
+        items_group_1 = sample_batch_sen_idx(train_tilted_params.other_params['all_input'],
+                                             train_tilted_params.other_params['all_label'],
+                                             train_tilted_params.other_params['all_aux'],
+                                             train_tilted_params.other_params['all_aux_flatten'],
+                                             train_tilted_params.other_params['batch_size'],
+                                             s_group_1)
+
+    elif train_tilted_params.fairness_function == 'equal_odds' or \
+            train_tilted_params.fairness_function == 'equal_opportunity':
+        # group splits -
+        # What we want is y=0,g=g0 and y=1,g=g0
+        # here items_group_0 say with batch 500 -> first 250 are 0 label and next (last) 250 are 1 label
+        items_group_0 = sample_batch_sen_idx_with_y(train_tilted_params.other_params['all_input'],
+                                                                   train_tilted_params.other_params['all_label'],
+                                                                   train_tilted_params.other_params['all_aux'],
+                                                                   train_tilted_params.other_params['all_aux_flatten'],
+                                                                   train_tilted_params.other_params['batch_size'],
+                                                                   s_group_0)
+        items_group_1 = sample_batch_sen_idx_with_y(train_tilted_params.other_params['all_input'],
+                                                                   train_tilted_params.other_params['all_label'],
+                                                                   train_tilted_params.other_params['all_aux'],
+                                                                   train_tilted_params.other_params['all_aux_flatten'],
+                                                                   train_tilted_params.other_params['batch_size'],
+                                                                   s_group_1)
+        # group split
+
+        # class split
+
+    else:
+        raise NotImplementedError
+
+    for key in items_group_0.keys():
+        items_group_0[key] = items_group_0[key].to(train_tilted_params.device)
+
+    for key in items_group_1.keys():
+        items_group_1[key] = items_group_1[key].to(train_tilted_params.device)
+
+    return items_group_0, items_group_1
+
+
+def simplified_fairness_loss(fairness_function, loss, preds, aux, group1_pattern, group2_pattern, label):
+    group1_mask = aux == group1_pattern # where group1 exists
+    group2_mask = aux == group2_pattern # where group2 exists
+
+    if fairness_function == 'demographic_parity':
+        preds_mask = torch.argmax(preds,1) == 1 # label does not matter here.
+        group1_loss = loss[torch.logical_and(preds_mask, group1_mask)]
+        group2_loss = loss[torch.logical_and(preds_mask, group2_mask)]
+        return torch.abs(torch.mean(group1_loss)-torch.mean(group2_loss))
+    elif fairness_function == 'equal_odds' or fairness_function == 'equal_opportunity':
+        label_mask_1 = label == 1
+        label_mask_0 = label == 0
+        final_loss = []
+
+
+        # true positive rate
+        # final_loss = torch.tensor(0.0, requires_grad=True)
+        numerator_label = 1
+        preds_mask = torch.logical_and(torch.argmax(preds, 1) == numerator_label, label_mask_1)
+        group1_loss = loss[torch.logical_and(preds_mask, group1_mask)]
+        group2_loss = loss[torch.logical_and(preds_mask, group2_mask)]
+        # final_loss.append(torch.abs(torch.mean(group1_loss) - torch.mean(group2_loss)))
+        reg_loss = torch.abs(torch.mean(group1_loss) - torch.mean(group2_loss))
+
+        if fairness_function == 'equal_odds':
+            # false positive rate
+            numerator_label = 0
+            preds_mask = torch.logical_and(torch.argmax(preds, 1) == numerator_label, label_mask_0)
+            group1_loss = loss[torch.logical_and(preds_mask, group1_mask)]
+            group2_loss = loss[torch.logical_and(preds_mask, group2_mask)]
+            # final_loss.append(torch.abs(torch.mean(group1_loss) - torch.mean(group2_loss)))
+            # reg_loss = torch.max(reg_loss, torch.abs(torch.mean(group1_loss) - torch.mean(group2_loss)))
+            reg_loss +=  torch.abs(torch.mean(group1_loss) - torch.mean(group2_loss))
+
+        return reg_loss
+
+    else:
+        raise NotImplementedError
 
 
 def training_loop_common(training_loop_parameters: TrainingLoopParameters, train_function):

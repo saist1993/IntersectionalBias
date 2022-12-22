@@ -286,53 +286,7 @@ def mixup_sub_routine(train_tilted_params:TrainParameters, items_group_0, items_
     return loss_reg
 
 
-def sample_data(train_tilted_params, s_group_0, s_group_1):
-    if train_tilted_params.fairness_function == 'demographic_parity':
-        items_group_0 = sample_batch_sen_idx(train_tilted_params.other_params['all_input'],
-                                             train_tilted_params.other_params['all_label'],
-                                             train_tilted_params.other_params['all_aux'],
-                                             train_tilted_params.other_params['all_aux_flatten'],
-                                             train_tilted_params.other_params['batch_size'],
-                                             s_group_0)
 
-        items_group_1 = sample_batch_sen_idx(train_tilted_params.other_params['all_input'],
-                                             train_tilted_params.other_params['all_label'],
-                                             train_tilted_params.other_params['all_aux'],
-                                             train_tilted_params.other_params['all_aux_flatten'],
-                                             train_tilted_params.other_params['batch_size'],
-                                             s_group_1)
-
-    elif train_tilted_params.fairness_function == 'equal_odds' or \
-            train_tilted_params.fairness_function == 'equal_opportunity':
-        # group splits -
-        # What we want is y=0,g=g0 and y=1,g=g0
-        # here items_group_0 say with batch 500 -> first 250 are 0 label and next (last) 250 are 1 label
-        items_group_0 = sample_batch_sen_idx_with_y(train_tilted_params.other_params['all_input'],
-                                                                   train_tilted_params.other_params['all_label'],
-                                                                   train_tilted_params.other_params['all_aux'],
-                                                                   train_tilted_params.other_params['all_aux_flatten'],
-                                                                   train_tilted_params.other_params['batch_size'],
-                                                                   s_group_0)
-        items_group_1 = sample_batch_sen_idx_with_y(train_tilted_params.other_params['all_input'],
-                                                                   train_tilted_params.other_params['all_label'],
-                                                                   train_tilted_params.other_params['all_aux'],
-                                                                   train_tilted_params.other_params['all_aux_flatten'],
-                                                                   train_tilted_params.other_params['batch_size'],
-                                                                   s_group_1)
-        # group split
-
-        # class split
-
-    else:
-        raise NotImplementedError
-
-    for key in items_group_0.keys():
-        items_group_0[key] = items_group_0[key].to(train_tilted_params.device)
-
-    for key in items_group_1.keys():
-        items_group_1[key] = items_group_1[key].to(train_tilted_params.device)
-
-    return items_group_0, items_group_1
 
 
 

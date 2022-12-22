@@ -379,7 +379,7 @@ if __name__ == '__main__':
     parser.add_argument('--fairness_lambda', '-fairness_lambda', help="the lambda in the fairness loss equation", type=float,
                         default=0.0)
     parser.add_argument('--method', '-method', help="unconstrained/adversarial_single/adversarial_group", type=str,
-                        default='train_only_group_dro_with_mixup_regularizer_super_group')
+                        default='erm_super_group_with_simplified_fairness_loss')
     parser.add_argument('--save_model_as', '-save_model_as', help="unconstrained/adversarial_single/adversarial_group", type=str,
                         default=None)
     parser.add_argument('--dataset_name', '-dataset_name', help="twitter_hate_speech/adult_multi_group/celeb_multigroup_v3",
@@ -393,7 +393,7 @@ if __name__ == '__main__':
 
     parser.add_argument('--fairness_function', '-fairness_function', help="fairness function to concern with",
                         type=str,
-                        default='equal_odds')
+                        default='equal_opportunity')
 
     parser.add_argument('--titled_t', '-titled_t', help="fairness function to concern with",
                         type=float,
@@ -401,7 +401,7 @@ if __name__ == '__main__':
 
     parser.add_argument('--mixup_rg', '-mixup_rg', help="fairness function to concern with",
                         type=float,
-                        default=2.0)
+                        default=20.0)
 
 
 

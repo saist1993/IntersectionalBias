@@ -3,44 +3,7 @@ from tqdm.auto import tqdm
 from numpy.random import beta
 from .common_functionality import *
 
-def simplified_fairness_loss(fairness_function, loss, preds, aux, group1_pattern, group2_pattern, label):
-    group1_mask = aux == group1_pattern # where group1 exists
-    group2_mask = aux == group2_pattern # where group2 exists
 
-    if fairness_function == 'demographic_parity':
-        preds_mask = torch.argmax(preds,1) == 1 # label does not matter here.
-        group1_loss = loss[torch.logical_and(preds_mask, group1_mask)]
-        group2_loss = loss[torch.logical_and(preds_mask, group2_mask)]
-        return torch.abs(torch.mean(group1_loss)-torch.mean(group2_loss))
-    elif fairness_function == 'equal_odds' or fairness_function == 'equal_opportunity':
-        label_mask_1 = label == 1
-        label_mask_0 = label == 0
-        final_loss = []
-
-
-        # true positive rate
-        # final_loss = torch.tensor(0.0, requires_grad=True)
-        numerator_label = 1
-        preds_mask = torch.logical_and(torch.argmax(preds, 1) == numerator_label, label_mask_1)
-        group1_loss = loss[torch.logical_and(preds_mask, group1_mask)]
-        group2_loss = loss[torch.logical_and(preds_mask, group2_mask)]
-        # final_loss.append(torch.abs(torch.mean(group1_loss) - torch.mean(group2_loss)))
-        reg_loss = torch.abs(torch.mean(group1_loss) - torch.mean(group2_loss))
-
-        if fairness_function == 'equal_odds':
-            # false positive rate
-            numerator_label = 0
-            preds_mask = torch.logical_and(torch.argmax(preds, 1) == numerator_label, label_mask_0)
-            group1_loss = loss[torch.logical_and(preds_mask, group1_mask)]
-            group2_loss = loss[torch.logical_and(preds_mask, group2_mask)]
-            # final_loss.append(torch.abs(torch.mean(group1_loss) - torch.mean(group2_loss)))
-            # reg_loss = torch.max(reg_loss, torch.abs(torch.mean(group1_loss) - torch.mean(group2_loss)))
-            reg_loss +=  torch.abs(torch.mean(group1_loss) - torch.mean(group2_loss))
-
-        return reg_loss
-
-    else:
-        raise NotImplementedError
 
 
 def erm_super_group_with_simplified_fairness_loss(train_tilted_params:TrainParameters):
@@ -62,19 +25,21 @@ def erm_super_group_with_simplified_fairness_loss(train_tilted_params:TrainParam
             if s_group_1 != s_group_0:
                 flag = False
 
-        items_group_0 = sample_batch_sen_idx(train_tilted_params.other_params['all_input'],
-                                             train_tilted_params.other_params['all_label'],
-                                             train_tilted_params.other_params['all_aux'],
-                                             train_tilted_params.other_params['all_aux_flatten'],
-                                             train_tilted_params.other_params['batch_size'],
-                                             s_group_0)
+        # items_group_0 = sample_batch_sen_idx(train_tilted_params.other_params['all_input'],
+        #                                      train_tilted_params.other_params['all_label'],
+        #                                      train_tilted_params.other_params['all_aux'],
+        #                                      train_tilted_params.other_params['all_aux_flatten'],
+        #                                      train_tilted_params.other_params['batch_size'],
+        #                                      s_group_0)
+        #
+        # items_group_1 = sample_batch_sen_idx(train_tilted_params.other_params['all_input'],
+        #                                      train_tilted_params.other_params['all_label'],
+        #                                      train_tilted_params.other_params['all_aux'],
+        #                                      train_tilted_params.other_params['all_aux_flatten'],
+        #                                      train_tilted_params.other_params['batch_size'],
+        #                                      s_group_1)
 
-        items_group_1 = sample_batch_sen_idx(train_tilted_params.other_params['all_input'],
-                                             train_tilted_params.other_params['all_label'],
-                                             train_tilted_params.other_params['all_aux'],
-                                             train_tilted_params.other_params['all_aux_flatten'],
-                                             train_tilted_params.other_params['batch_size'],
-                                             s_group_1)
+        items_group_0, items_group_1 = sample_data(train_tilted_params, s_group_0, s_group_1)
 
         for key in items_group_0.keys():
             items_group_0[key] = items_group_0[key].to(train_tilted_params.device)
@@ -102,17 +67,17 @@ def erm_super_group_with_simplified_fairness_loss(train_tilted_params:TrainParam
         # else:
         #     fairness_reg = torch.abs(torch.mean(loss_group_0) - torch.mean(loss_group_1))
 
-        # fairness_reg = simplified_fairness_loss(fairness_function=train_tilted_params.fairness_function,
-        #                                         loss=torch.hstack([loss_group_0, loss_group_1]),
-        #                                         preds=torch.vstack(
-        #                                             [output_group_0['prediction'], output_group_1['prediction']]),
-        #                                         aux=torch.hstack(
-        #                                             [items_group_0['aux_flattened'], items_group_1['aux_flattened']]),
-        #                                         group1_pattern=s_group_0,
-        #                                         group2_pattern=s_group_1,
-        #                                         label=torch.hstack([items_group_0['labels'], items_group_1['labels']]))
+        fairness_reg = simplified_fairness_loss(fairness_function=train_tilted_params.fairness_function,
+                                                loss=torch.hstack([loss_group_0, loss_group_1]),
+                                                preds=torch.vstack(
+                                                    [output_group_0['prediction'], output_group_1['prediction']]),
+                                                aux=torch.hstack(
+                                                    [items_group_0['aux_flattened'], items_group_1['aux_flattened']]),
+                                                group1_pattern=s_group_0,
+                                                group2_pattern=s_group_1,
+                                                label=torch.hstack([items_group_0['labels'], items_group_1['labels']]))
 
-        fairness_reg = new_mixup_sub_routine(train_tilted_params, items_group_0, items_group_1, model)
+        # fairness_reg = new_mixup_sub_routine(train_tilted_params, items_group_0, items_group_1, model)
 
         loss = torch.mean(loss_group_0) + torch.mean(loss_group_1) + mixup_rg*fairness_reg
 
