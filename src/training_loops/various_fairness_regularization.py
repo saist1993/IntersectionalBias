@@ -155,15 +155,16 @@ def train_only_group_dro_super_group_with_simplified_fairness_loss(train_tilted_
         loss_group_1 = criterion(output_group_1['prediction'], items_group_1['labels'])
 
 
-        loss_reg = simplified_fairness_loss(fairness_function=train_tilted_params.fairness_function,
-                                                loss=torch.hstack([loss_group_0, loss_group_1]),
-                                                preds=torch.vstack(
-                                                    [output_group_0['prediction'], output_group_1['prediction']]),
-                                                aux=torch.hstack(
-                                                    [items_group_0['aux_flattened'], items_group_1['aux_flattened']]),
-                                                group1_pattern=s_group_0,
-                                                group2_pattern=s_group_1,
-                                                label=torch.hstack([items_group_0['labels'], items_group_1['labels']]))
+        # loss_reg = simplified_fairness_loss(fairness_function=train_tilted_params.fairness_function,
+        #                                         loss=torch.hstack([loss_group_0, loss_group_1]),
+        #                                         preds=torch.vstack(
+        #                                             [output_group_0['prediction'], output_group_1['prediction']]),
+        #                                         aux=torch.hstack(
+        #                                             [items_group_0['aux_flattened'], items_group_1['aux_flattened']]),
+        #                                         group1_pattern=s_group_0,
+        #                                         group2_pattern=s_group_1,
+        #                                         label=torch.hstack([items_group_0['labels'], items_group_1['labels']]))
+        loss_reg = new_mixup_sub_routine(train_tilted_params, items_group_0, items_group_1)
 
         loss = (torch.mean(loss_group_0) + torch.mean(loss_group_1)) / 2.0
         total_loss += loss.data
