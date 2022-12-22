@@ -127,32 +127,29 @@ def train_only_group_dro_super_group_with_simplified_fairness_loss(train_tilted_
                              p=global_weight.reshape(1, -1)[0])[0])
 
         # items_group_0, items_group_1 = sample_data(train_tilted_params, s_group_0, s_group_1)
-        items_group_0 = sample_batch_sen_idx(train_tilted_params.other_params['all_input'],
-                                     train_tilted_params.other_params['all_label'],
-                                     train_tilted_params.other_params['all_aux'],
-                                     train_tilted_params.other_params['all_aux_flatten'],
-                                     train_tilted_params.other_params['batch_size'],
-                                     s_group_0)
+        # items_group_0 = sample_batch_sen_idx(train_tilted_params.other_params['all_input'],
+        #                              train_tilted_params.other_params['all_label'],
+        #                              train_tilted_params.other_params['all_aux'],
+        #                              train_tilted_params.other_params['all_aux_flatten'],
+        #                              train_tilted_params.other_params['batch_size'],
+        #                              s_group_0)
+        #
+        # items_group_1 = sample_batch_sen_idx(train_tilted_params.other_params['all_input'],
+        #                                      train_tilted_params.other_params['all_label'],
+        #                                      train_tilted_params.other_params['all_aux'],
+        #                                      train_tilted_params.other_params['all_aux_flatten'],
+        #                                      train_tilted_params.other_params['batch_size'],
+        #                                      s_group_1)
 
-        items_group_1 = sample_batch_sen_idx(train_tilted_params.other_params['all_input'],
-                                             train_tilted_params.other_params['all_label'],
-                                             train_tilted_params.other_params['all_aux'],
-                                             train_tilted_params.other_params['all_aux_flatten'],
-                                             train_tilted_params.other_params['batch_size'],
-                                             s_group_1)
+        items_group_0, items_group_1 = sample_data(train_tilted_params, s_group_0, s_group_1)
 
         group_tracker[s_group_0] += 1
         group_tracker[s_group_1] += 1
 
         optimizer.zero_grad()
 
-
-
-
         output_group_0 = model(items_group_0)
         output_group_1 = model(items_group_1)
-
-
 
         loss_group_0 = criterion(output_group_0['prediction'], items_group_0['labels'])
         loss_group_1 = criterion(output_group_1['prediction'], items_group_1['labels'])
@@ -170,10 +167,10 @@ def train_only_group_dro_super_group_with_simplified_fairness_loss(train_tilted_
 
         loss = (torch.mean(loss_group_0) + torch.mean(loss_group_1)) / 2.0
         total_loss += loss.data
-        loss = loss + mixup_rg * loss_reg
+        # loss = loss
         global_loss[s_group_0, s_group_1] = global_loss[s_group_0, s_group_1] * torch.exp(tilt_t*loss.data)
         global_loss = global_loss/(global_loss.sum())
-        loss = global_loss[s_group_0, s_group_1]*loss
+        loss = global_loss[s_group_0, s_group_1]*loss + mixup_rg * loss_reg
         loss.backward()
         optimizer.step()
 
