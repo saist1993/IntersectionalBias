@@ -159,6 +159,28 @@ if __name__ == '__main__':
         titled_scales = [0.5, 0.05, 0.01]
 
 
+    if args.method == 'train_only_group_dro_super_group_with_symmetric_mixup_regularizer':
+        if args.dataset_name in ['adult_multi_group'] and args.fairness_function in ['equal_odds']:
+            mixup_scales = [1.0,2.0,3.0,4.0]
+            titled_scales = [0.5, 0.05, 0.1]
+        if args.dataset_name in ['adult_multi_group'] and args.fairness_function in ['equal_opportunity']:
+            mixup_scales = [10.0,20.0,30.0]
+            titled_scales = [0.5, 0.05, 0.1, 0.8]
+        if args.dataset_name in ['celeb_multigroup_v3'] and args.fairness_function in ['equal_odds']:
+            mixup_scales = [2.0, 3.0, 4.0, 5.0]
+            titled_scales = [0.05, 0.5, 0.8]
+        if args.dataset_name in ['celeb_multigroup_v3'] and args.fairness_function in ['equal_opportunity']:
+            mixup_scales = [2.0, 5.0, 10.0]
+            titled_scales = [0.05, 0.5, 0.01, 0.8]
+        if args.dataset_name in ['twitter_hate_speech'] and args.fairness_function in ['equal_opportunity']:
+            mixup_scales = [0.01, 0.001, 0.02, 0.005]
+            titled_scales = [0.01, 0.001]
+        if args.dataset_name in ['twitter_hate_speech'] and args.fairness_function in ['equal_odds']:
+            mixup_scales = [0.01, 0.001, 0.02, 0.005]
+            titled_scales = [0.01, 0.001]
+
+
+
     for seed in args.seeds:
         for titled_scale in titled_scales:
             for mixup_scale in mixup_scales:
