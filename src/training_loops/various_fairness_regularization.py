@@ -102,7 +102,7 @@ def erm_super_group_with_simplified_fairness_loss(train_tilted_params:TrainParam
 
 
 
-def train_only_group_dro_super_group_with_simplified_fairness_loss(train_tilted_params:TrainParameters):
+def train_only_group_dro_super_group_with_symmetric_mixup_regularizer(train_tilted_params:TrainParameters):
     global_loss = train_tilted_params.other_params['global_loss'] # This tracks the actual loss
     global_weight = train_tilted_params.other_params['global_weight'] # Weights of each examples based on simple count
     # global_weight never gets updated.
@@ -171,7 +171,7 @@ def train_only_group_dro_super_group_with_simplified_fairness_loss(train_tilted_
         # loss = loss
         global_loss[s_group_0, s_group_1] = global_loss[s_group_0, s_group_1] * torch.exp(tilt_t*loss.data)
         global_loss = global_loss/(global_loss.sum())
-        loss = global_loss[s_group_0, s_group_1]*loss + mixup_rg * loss_reg
+        loss = global_loss[s_group_0, s_group_1]*loss + mixup_rg * (loss_reg + new_mixup_sub_routine(train_tilted_params, items_group_1, items_group_0, model))
         loss.backward()
         optimizer.step()
 
@@ -185,7 +185,7 @@ def train_only_group_dro_super_group_with_simplified_fairness_loss(train_tilted_
                                                                       track_input,
                                                                       train_tilted_params.fairness_function)
 
-    print(total_loss, total_reg)
+    # print(total_loss, total_reg)
 
     return epoch_metric_tracker, loss, global_weight, global_loss
 

@@ -93,8 +93,8 @@ class BasicLogParser:
             lines = [line for line in f]
             unique_id = lines[0].split("unique id is:")[1]
             arguments = lines[1].split("arguemnts: ")[1]
-        if 'mixup_rg=1.0asdasd' in arguments:
-            return None
+        # if 'mixup_rg=10.0' not in arguments  and 'mixup_rg=20.0' not in arguments and 'mixup_rg=30.0' not in arguments and 'mixup_rg=40.0' not in arguments:
+        #     return None
         blocks = []
         for l in lines[2:]:
             if "start of epoch block" in l:
