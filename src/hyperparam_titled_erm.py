@@ -212,7 +212,7 @@ if __name__ == '__main__':
             mixup_scales = [10.0, 20.0, 30.0, 5.0]
             titled_scales = [0.5, 0.05, 0.8]
         if args.dataset_name in ['celeb_multigroup_v3'] and args.fairness_function in ['equal_odds']:
-            mixup_scales = [0.5, 1.0, 2.0, 3.0]
+            mixup_scales = [0.2, 0.5, 0.8, 1.0]
             titled_scales = [0.05, 0.5, 0.8]
         if args.dataset_name in ['celeb_multigroup_v3'] and args.fairness_function in ['equal_opportunity']:
             mixup_scales = [10.0, 20.0, 30.0, 40.0]
