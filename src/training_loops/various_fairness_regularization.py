@@ -126,21 +126,6 @@ def train_only_group_dro_super_group_with_symmetric_mixup_regularizer(train_tilt
             np.random.choice(train_tilted_params.other_params['groups_matrix'].reshape(1, -1)[0], 1, replace=False,
                              p=global_weight.reshape(1, -1)[0])[0])
 
-        # items_group_0, items_group_1 = sample_data(train_tilted_params, s_group_0, s_group_1)
-        # items_group_0 = sample_batch_sen_idx(train_tilted_params.other_params['all_input'],
-        #                              train_tilted_params.other_params['all_label'],
-        #                              train_tilted_params.other_params['all_aux'],
-        #                              train_tilted_params.other_params['all_aux_flatten'],
-        #                              train_tilted_params.other_params['batch_size'],
-        #                              s_group_0)
-        #
-        # items_group_1 = sample_batch_sen_idx(train_tilted_params.other_params['all_input'],
-        #                                      train_tilted_params.other_params['all_label'],
-        #                                      train_tilted_params.other_params['all_aux'],
-        #                                      train_tilted_params.other_params['all_aux_flatten'],
-        #                                      train_tilted_params.other_params['batch_size'],
-        #                                      s_group_1)
-
         items_group_0, items_group_1 = sample_data(train_tilted_params, s_group_0, s_group_1)
 
         group_tracker[s_group_0] += 1
@@ -154,24 +139,19 @@ def train_only_group_dro_super_group_with_symmetric_mixup_regularizer(train_tilt
         loss_group_0 = criterion(output_group_0['prediction'], items_group_0['labels'])
         loss_group_1 = criterion(output_group_1['prediction'], items_group_1['labels'])
 
-
-        # loss_reg = simplified_fairness_loss(fairness_function=train_tilted_params.fairness_function,
-        #                                         loss=torch.hstack([loss_group_0, loss_group_1]),
-        #                                         preds=torch.vstack(
-        #                                             [output_group_0['prediction'], output_group_1['prediction']]),
-        #                                         aux=torch.hstack(
-        #                                             [items_group_0['aux_flattened'], items_group_1['aux_flattened']]),
-        #                                         group1_pattern=s_group_0,
-        #                                         group2_pattern=s_group_1,
-        #                                         label=torch.hstack([items_group_0['labels'], items_group_1['labels']]))
         loss_reg = new_mixup_sub_routine(train_tilted_params, items_group_0, items_group_1, model)
+        loss_reg_2 = new_mixup_sub_routine(train_tilted_params, items_group_1, items_group_0, model)
 
         loss = (torch.mean(loss_group_0) + torch.mean(loss_group_1)) / 2.0
         total_loss += loss.data
-        # loss = loss
-        global_loss[s_group_0, s_group_1] = global_loss[s_group_0, s_group_1] * torch.exp(tilt_t*loss.data)
+
+        if "integrated" in method:
+            global_loss[s_group_0, s_group_1] = global_loss[s_group_0, s_group_1] * \
+                                                torch.exp(tilt_t*(loss.data + mixup_rg*(loss_reg+loss_reg_2).data))
+        else:
+            global_loss[s_group_0, s_group_1] = global_loss[s_group_0, s_group_1] * torch.exp(tilt_t*loss.data)
         global_loss = global_loss/(global_loss.sum())
-        loss = global_loss[s_group_0, s_group_1]*loss + mixup_rg * (loss_reg + new_mixup_sub_routine(train_tilted_params, items_group_1, items_group_0, model))
+        loss = global_loss[s_group_0, s_group_1]*loss + mixup_rg * (loss_reg + loss_reg_2)
         loss.backward()
         optimizer.step()
 
@@ -188,6 +168,74 @@ def train_only_group_dro_super_group_with_symmetric_mixup_regularizer(train_tilt
     # print(total_loss, total_reg)
 
     return epoch_metric_tracker, loss, global_weight, global_loss
+
+
+
+
+def train_only_group_dro_super_group_with_non_symmetric_mixup_regularizer(train_tilted_params:TrainParameters):
+    global_loss = train_tilted_params.other_params['global_loss'] # This tracks the actual loss
+    global_weight = train_tilted_params.other_params['global_weight'] # Weights of each examples based on simple count
+    # global_weight never gets updated.
+    tilt_t = train_tilted_params.other_params['titled_t'] # This should be small. In order of magnitude of 0.01
+    mixup_rg = train_tilted_params.other_params['mixup_rg'] # This should be small. In order of magnitude of 0.01
+    method = train_tilted_params.other_params['method'] # This should be small. In order of magnitude of 0.01
+
+    model, optimizer, device, criterion = \
+        train_tilted_params.model, train_tilted_params.optimizer, train_tilted_params.device, train_tilted_params.criterion
+    model.train()
+    track_output = []
+    track_input = []
+    group_tracker = [0 for _ in range(len(train_tilted_params.other_params['groups']))]
+    flattened_s_to_s = {value: key for key, value in train_tilted_params.other_params['s_to_flattened_s'].items()}
+
+    total_reg = 0.0
+    total_loss = 0.0
+    for i in tqdm(range(train_tilted_params.other_params['number_of_iterations'])):
+        split_index = int(train_tilted_params.other_params['batch_size'] / 2)
+        s_group_0, s_group_1 = eval(
+            np.random.choice(train_tilted_params.other_params['groups_matrix'].reshape(1, -1)[0], 1, replace=False,
+                             p=global_weight.reshape(1, -1)[0])[0])
+
+        items_group_0, items_group_1 = sample_data(train_tilted_params, s_group_0, s_group_1)
+
+        group_tracker[s_group_0] += 1
+        group_tracker[s_group_1] += 1
+
+        optimizer.zero_grad()
+
+        output_group_0 = model(items_group_0)
+        output_group_1 = model(items_group_1)
+
+        loss_group_0 = criterion(output_group_0['prediction'], items_group_0['labels'])
+        loss_group_1 = criterion(output_group_1['prediction'], items_group_1['labels'])
+
+        loss_reg = new_mixup_sub_routine(train_tilted_params, items_group_0, items_group_1, model)
+
+        loss = (torch.mean(loss_group_0) + torch.mean(loss_group_1)) / 2.0
+        total_loss += loss.data
+        # loss = loss
+        if "integrated" in method:
+            global_loss[s_group_0, s_group_1] = global_loss[s_group_0, s_group_1] * torch.exp(tilt_t*(loss.data + mixup_rg*loss_reg.data))
+        else:
+            global_loss[s_group_0, s_group_1] = global_loss[s_group_0, s_group_1] * torch.exp(tilt_t*loss.data)
+        global_loss = global_loss/(global_loss.sum())
+        loss = global_loss[s_group_0, s_group_1]*loss + mixup_rg * loss_reg
+        loss.backward()
+        optimizer.step()
+
+        total_reg += loss_reg.item()
+
+        output_group_0['loss_batch'] = torch.mean(loss_group_0).item()
+        track_output.append(output_group_0)
+        track_input.append(items_group_0)
+
+    epoch_metric_tracker, loss = train_tilted_params.per_epoch_metric(track_output,
+                                                                      track_input,
+                                                                      train_tilted_params.fairness_function)
+
+    return epoch_metric_tracker, loss, global_weight, global_loss
+
+
 
 
 

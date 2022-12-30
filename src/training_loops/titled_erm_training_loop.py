@@ -29,7 +29,9 @@ train_only_group_dro_with_data_augmentation_via_mixup_super_group, train_only_gr
 from .data_augmentation import train_simple_mixup_data_augmentation, train_lisa_based_mixup, \
     train_only_group_dro_with_mixup_regularizer_super_group_data_augmentation, train_lisa_based_mixup_take_2
 
-from .various_fairness_regularization import erm_super_group_with_simplified_fairness_loss, train_only_group_dro_super_group_with_symmetric_mixup_regularizer
+from .various_fairness_regularization import erm_super_group_with_simplified_fairness_loss, \
+    train_only_group_dro_super_group_with_symmetric_mixup_regularizer, \
+    train_only_group_dro_super_group_with_non_symmetric_mixup_regularizer
 
 def train_only_mixup(train_tilted_params:TrainParameters):
 
@@ -1323,7 +1325,11 @@ def training_loop(training_loop_parameters: TrainingLoopParameters):
             train_epoch_metric, loss, global_weight, global_loss = train_only_group_dro_with_data_augmentation_via_mixup_super_group_and_example_similarity(train_parameters)
         elif training_loop_type in ['erm_super_group_with_simplified_fairness_loss']:
             train_epoch_metric, loss, global_weight, global_loss = erm_super_group_with_simplified_fairness_loss(train_parameters)
-        elif training_loop_type in ['train_only_group_dro_super_group_with_symmetric_mixup_regularizer']:
+        elif training_loop_type in ['train_only_group_dro_super_group_with_symmetric_mixup_regularizer',
+                                    'train_only_group_dro_super_group_with_symmetric_mixup_regularizer_integrated']:
+            train_epoch_metric, loss, global_weight, global_loss = train_only_group_dro_super_group_with_symmetric_mixup_regularizer(train_parameters)
+        elif training_loop_type in ['train_only_group_dro_super_group_with_non_symmetric_mixup_regularizer',
+                                    'train_only_group_dro_super_group_with_non_symmetric_mixup_regularizer_integrated']:
             train_epoch_metric, loss, global_weight, global_loss = train_only_group_dro_super_group_with_symmetric_mixup_regularizer(train_parameters)
         else:
             raise NotImplementedError
