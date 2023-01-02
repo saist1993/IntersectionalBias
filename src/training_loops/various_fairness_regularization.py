@@ -139,8 +139,8 @@ def train_only_group_dro_super_group_with_symmetric_mixup_regularizer(train_tilt
         loss_group_0 = criterion(output_group_0['prediction'], items_group_0['labels'])
         loss_group_1 = criterion(output_group_1['prediction'], items_group_1['labels'])
 
-        loss_reg = new_mixup_sub_routine(train_tilted_params, items_group_0, items_group_1, model)
-        loss_reg_2 = new_mixup_sub_routine(train_tilted_params, items_group_1, items_group_0, model)
+        loss_reg = mixup_sub_routine(train_tilted_params, items_group_0, items_group_1, model)
+        loss_reg_2 = mixup_sub_routine(train_tilted_params, items_group_1, items_group_0, model)
 
         loss = (torch.mean(loss_group_0) + torch.mean(loss_group_1)) / 2.0
         total_loss += loss.data
@@ -168,8 +168,6 @@ def train_only_group_dro_super_group_with_symmetric_mixup_regularizer(train_tilt
     # print(total_loss, total_reg)
 
     return epoch_metric_tracker, loss, global_weight, global_loss
-
-
 
 
 def train_only_group_dro_super_group_with_non_symmetric_mixup_regularizer(train_tilted_params:TrainParameters):
@@ -209,7 +207,7 @@ def train_only_group_dro_super_group_with_non_symmetric_mixup_regularizer(train_
         loss_group_0 = criterion(output_group_0['prediction'], items_group_0['labels'])
         loss_group_1 = criterion(output_group_1['prediction'], items_group_1['labels'])
 
-        loss_reg = new_mixup_sub_routine(train_tilted_params, items_group_0, items_group_1, model)
+        loss_reg = mixup_sub_routine(train_tilted_params, items_group_0, items_group_1, model)
 
         loss = (torch.mean(loss_group_0) + torch.mean(loss_group_1)) / 2.0
         total_loss += loss.data
@@ -234,10 +232,6 @@ def train_only_group_dro_super_group_with_non_symmetric_mixup_regularizer(train_
                                                                       train_tilted_params.fairness_function)
 
     return epoch_metric_tracker, loss, global_weight, global_loss
-
-
-
-
 
 
 
@@ -273,6 +267,64 @@ def new_mixup_sub_routine(train_tilted_params:TrainParameters, items_group_0, it
                 0]  # may be .sum()
 
             batch_x_d = torch.mean(items_group_1['input'][mask_item_group_1], axis=0).unsqueeze(0) - torch.mean(items_group_0['input'][mask_item_group_0], axis=0).unsqueeze(0)
+            grad_inn = (gradx * batch_x_d).sum(1)
+            E_grad = grad_inn.mean(0)
+            loss_reg = loss_reg + torch.abs(E_grad)
+
+    else:
+        raise NotImplementedError
+
+
+    return loss_reg
+
+
+def mixup_sub_routine(train_tilted_params:TrainParameters, items_group_0, items_group_1, model, gamma=None):
+    alpha = 1.0
+    if not gamma:
+        gamma = beta(alpha, alpha)
+
+    if train_tilted_params.fairness_function == 'demographic_parity':
+        batch_x_mix = items_group_0['input'] * gamma + items_group_1['input'] * (1 - gamma)
+        batch_x_mix = batch_x_mix.requires_grad_(True)
+        output_mixup = model({'input': batch_x_mix})
+        gradx = torch.autograd.grad(output_mixup['prediction'].sum(), batch_x_mix, create_graph=True)[
+            0]  # may be .sum()
+
+        batch_x_d = items_group_1['input'] - items_group_0['input']
+        grad_inn = (gradx * batch_x_d).sum(1)
+        E_grad = grad_inn.mean(0)
+        loss_reg = torch.abs(E_grad)
+
+    elif train_tilted_params.fairness_function == 'equal_odds' or \
+            train_tilted_params.fairness_function == 'equal_opportunity':
+        split_index = int(train_tilted_params.other_params['batch_size'] / 2)
+        if train_tilted_params.fairness_function == 'equal_odds':
+            gold_labels = [0, 1]
+        elif train_tilted_params.fairness_function == 'equal_opportunity':
+            gold_labels = [1]
+        else:
+            raise NotImplementedError
+        loss_reg = 0
+        for i in gold_labels:
+            if i == 0:
+                index_start = 0
+                index_end = split_index
+            elif i == 1:
+                index_start = split_index
+                index_end = -1
+            else:
+                raise NotImplementedError("only support binary labels!")
+
+            batch_x_mix = items_group_0['input'][index_start:index_end] * gamma + items_group_1['input'][
+                                                                                  index_start:index_end] * (
+                                  1 - gamma)    # this is the point wise addition which forces this equal 1s,0s representation
+            batch_x_mix = batch_x_mix.requires_grad_(True)
+            output_mixup = model({'input': batch_x_mix})
+            gradx = torch.autograd.grad(output_mixup['prediction'].sum(), batch_x_mix, create_graph=True)[
+                0]  # may be .sum()
+
+            batch_x_d = items_group_1['input'][index_start:index_end] - items_group_0['input'][
+                                                                        index_start:index_end]
             grad_inn = (gradx * batch_x_d).sum(1)
             E_grad = grad_inn.mean(0)
             loss_reg = loss_reg + torch.abs(E_grad)

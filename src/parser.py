@@ -90,9 +90,13 @@ def temp_table_generator(dataset_name, fairness_function):
                ]
 
     methods = [
-        # 'train_only_group_dro',
+        'train_only_group_dro',
+        'train_only_group_dro_super_group_with_non_symmetric_mixup_regularizer',
+        'train_only_group_dro_super_group_with_non_symmetric_mixup_regularizer_integrated',
+        # 'train_only_group_dro_with_augmentation_static_positive_and_negative_weights',
         'train_only_group_dro_with_super_group',
-        'only_mixup_based_on_distance',
+        'only_mixup',
+
         # 'erm_super_group_with_simplified_fairness_loss',
         # 'train_only_group_dro_with_mixup_regularizer_super_group'
     ]
@@ -103,7 +107,7 @@ def temp_table_generator(dataset_name, fairness_function):
     # dataset_names = ['twitter_hate_speech']
     # dataset_names = ['celeb_multigroup_v3']
     models = ['simple_non_linear']
-    seeds = [50]
+    seeds = [10, 20, 30, 40, 50]
     # seeds = [50]
     # fairness_function = 'equal_odds'
     # fairness_function = 'equal_opportunity'

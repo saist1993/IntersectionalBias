@@ -409,7 +409,7 @@ if __name__ == '__main__':
 
     parser.add_argument('--mixup_rg', '-mixup_rg', help="fairness function to concern with",
                         type=float,
-                        default=2.0)
+                        default=5.0)
 
 
 

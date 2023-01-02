@@ -206,7 +206,7 @@ if __name__ == '__main__':
 
     if args.method == 'train_only_group_dro_super_group_with_non_symmetric_mixup_regularizer_integrated':
         if args.dataset_name in ['adult_multi_group'] and args.fairness_function in ['equal_odds']:
-            mixup_scales = [1.0, 0.5, 0.2, 0.05]
+            mixup_scales = [1.0, 0.5, 0.2, 2.0]
             titled_scales = [0.5, 0.05, 0.1]
         if args.dataset_name in ['adult_multi_group'] and args.fairness_function in ['equal_opportunity']:
             mixup_scales = [10.0, 20.0, 30.0, 5.0]
