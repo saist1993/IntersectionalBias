@@ -64,6 +64,7 @@ class SimpleClassificationDataset:
         valid_X, valid_y, valid_s = X[dev_index:test_index, :], y[dev_index:test_index], s[dev_index:test_index]
         test_X, test_y, test_s = X[test_index:, :], y[test_index:], s[test_index:]
 
+        # this is where the data augmentation can take place.
 
         create_iterator = CreateIterators()
         iterator_data = IteratorData(

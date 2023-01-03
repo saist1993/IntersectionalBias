@@ -401,6 +401,79 @@ def sample_data(train_tilted_params, s_group_0, s_group_1):
     return items_group_0, items_group_1
 
 
+
+def sample_batch_sen_idx_with_augmentation_with_lambda_custom_with_positive_and_negative_seperate\
+                (all_input, all_label, all_aux, all_aux_flatten, batch_size, s, group_weight_lambda, scalar, input_s):
+    all_extra_combinations = generate_combinations(s, k=1)
+    extra_mask_s = [generate_mask(all_aux, mask_pattern) for mask_pattern in all_extra_combinations] # this stores all the combinations
+    mask_s = generate_mask(all_aux,s)
+
+    # positive and negative examples in input_s
+    number_of_positive_examples = torch.sum(input_s['labels']).item()
+    number_of_negative_examples = input_s['labels'].shape[0] - number_of_positive_examples
+
+    all_group_examples_positive = []
+    all_group_examples_negative = []
+
+    for mask in extra_mask_s:
+        mask_positive = np.logical_and(all_label == 1, mask == True)
+        mask_negative = np.logical_and(all_label == 0, mask == True)
+        positive_examples =  np.random.choice(np.where(mask_positive == True)[0], size=number_of_positive_examples, replace=True) # find somehow only positive example
+        negative_examples =  np.random.choice(np.where(mask_negative == True)[0], size=number_of_negative_examples, replace=True) # find somehow only positive example
+        all_group_examples_positive.append(positive_examples)
+        all_group_examples_negative.append(negative_examples)
+        # stack them
+    # now comes the augmentations
+
+
+    try:
+        augmented_input_positive =  torch.FloatTensor(np.sum([lambda_weight[0] * all_input[group] for group, lambda_weight in zip(all_group_examples_positive, group_weight_lambda)],axis=0))
+    except IndexError:
+        print("here")
+    augmented_input_negative =  torch.FloatTensor(np.sum([lambda_weight[1] * all_input[group] for group, lambda_weight in zip(all_group_examples_negative, group_weight_lambda)],axis=0))
+
+    augmented_output_positive = [torch.LongTensor(all_label[group]) for group in all_group_examples_positive]
+    augmented_output_negative = [torch.LongTensor(all_label[group]) for group in all_group_examples_negative]
+
+
+    augmented_aux_flattened_positive = [torch.LongTensor(all_aux_flatten[group]) for group in all_group_examples_positive]
+    augmented_aux_flattened_negative = [torch.LongTensor(all_aux_flatten[group]) for group in all_group_examples_negative]
+
+
+    augmented_aux_positive = [torch.LongTensor(all_aux[group]) for group in all_group_examples_positive]
+    augmented_aux_negative = [torch.LongTensor(all_aux[group]) for group in all_group_examples_negative]
+
+    augmented_input = torch.vstack([augmented_input_positive, augmented_input_negative])
+    augmented_aux = torch.vstack([augmented_aux_positive[0], augmented_aux_negative[0]])
+    augmented_output = torch.hstack([augmented_output_positive[0], augmented_output_negative[0]])
+    augmented_aux_flat = torch.hstack([augmented_aux_flattened_positive[0], augmented_aux_flattened_negative[0]])
+
+    shuffle_index = torch.randperm(augmented_input.shape[0])
+
+    batch_input = {
+        'augmented_labels': torch.LongTensor(augmented_output)[shuffle_index],
+        'input': torch.FloatTensor(augmented_input)[shuffle_index],
+        'labels': torch.LongTensor(augmented_output)[shuffle_index],
+        'aux': torch.LongTensor(augmented_aux)[shuffle_index],
+        'aux_flattened': torch.LongTensor(augmented_aux_flat)[shuffle_index],
+        'group_weight_lambda': group_weight_lambda
+    }
+
+
+
+    return batch_input, np.sum(mask_s)
+
+
+
+
+
+
+
+
+
+
+
+
 def simplified_fairness_loss(fairness_function, loss, preds, aux, group1_pattern, group2_pattern, label):
     group1_mask = aux == group1_pattern # where group1 exists
     group2_mask = aux == group2_pattern # where group2 exists
