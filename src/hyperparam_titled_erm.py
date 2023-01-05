@@ -64,7 +64,9 @@ if __name__ == '__main__':
         if args.dataset_name in ['adult_multi_group','celeb_multigroup_v3', 'twitter_hate_speech']:
             mixup_scales = [1.0, 5.0, 10.0, 15.0, 20.0, 25.0, 30.0, 35.0, 40.0, 45.0, 50.0] # approximate scale works for both equal opportunity as well as equal odds.
         # twitter hate speech equal odds requires slightly less mixup scale
-
+        elif args.dataset_name == 'adult_multi_group_augmented':
+            mixup_scales = [1, 5, 10, 20, 30, 40]
+            max_number_of_generated_examples = [0.25, 0.50, 0.75, 1.0]
         else:
             mixup_scales = [1, 5, 10, 20, 30, 40]
             max_number_of_generated_examples = [0.25, 0.50, 0.75, 1.0]
