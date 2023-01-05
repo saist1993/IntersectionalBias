@@ -96,6 +96,7 @@ def temp_table_generator(dataset_name, fairness_function):
         # 'train_only_group_dro_with_augmentation_static_positive_and_negative_weights',
         'train_only_group_dro_with_super_group',
         'only_mixup',
+        'only_mixup_based_on_distance'
 
         # 'erm_super_group_with_simplified_fairness_loss',
         # 'train_only_group_dro_with_mixup_regularizer_super_group'
@@ -164,7 +165,7 @@ def temp_table_generator(dataset_name, fairness_function):
     # print(t.draw())
     return t
 
-adult_multi_group_equal_odds = temp_table_generator('adult_multi_group_augmented', 'equal_odds')
+adult_multi_group_equal_odds = temp_table_generator('adult_multi_group', 'equal_odds')
 # adult_multi_group_equal_opportunity = temp_table_generator('adult_multi_group', 'equal_opportunity')
 #
 # twitter_hate_speech_equal_odds = temp_table_generator('twitter_hate_speech', 'equal_odds')

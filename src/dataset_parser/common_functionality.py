@@ -358,7 +358,7 @@ class AugmentData:
 
         max_number_of_positive_examples = 1000
         max_number_of_negative_examples = 1000
-        max_ratio_of_generated_examples = 0.25
+        max_ratio_of_generated_examples = 1.0
 
         augmented_train_X, augmented_train_y, augmented_train_s = [], [], []
 
