@@ -1,5 +1,10 @@
+import copy
 import torch
 import numpy as np
+import pandas as pd
+from scipy import optimize
+from metrics import fairness_utils
+from itertools import combinations
 from typing import NamedTuple, List
 from sklearn.preprocessing import StandardScaler
 from utils.iterator import TextClassificationDataset, sequential_transforms
@@ -74,24 +79,21 @@ class CreateIterators:
 
         return TextClassificationDataset(final_data, vocab, transforms)
 
-
-    def flatten_s(self, s:List[List]):
+    def flatten_s(self, s: List[List]):
         for f in s:
             keys = self.s_to_flattened_s.keys()
             if tuple([int(i) for i in f]) not in keys:
                 self.s_to_flattened_s[tuple([int(i) for i in f])] = len(keys)
 
-
-    def get_flatten_s(self, s:List[List]):
+    def get_flatten_s(self, s: List[List]):
         return [self.s_to_flattened_s[tuple([int(j) for j in i])] for i in s]
 
-
-    def get_iterators(self, iterator_data:IteratorData):
+    def get_iterators(self, iterator_data: IteratorData):
         train_X, train_y, train_s, dev_X, \
-        dev_y, dev_s, test_X, test_y, test_s,batch_size,do_standard_scalar_transformation= iterator_data
-        self.flatten_s(train_s) # need to add test as well as valid
-        self.flatten_s(test_s) # need to add test as well as valid
-        self.flatten_s(dev_s) # need to add test as well as valid
+            dev_y, dev_s, test_X, test_y, test_s, batch_size, do_standard_scalar_transformation = iterator_data
+        self.flatten_s(train_s)  # need to add test as well as valid
+        self.flatten_s(test_s)  # need to add test as well as valid
+        self.flatten_s(dev_s)  # need to add test as well as valid
         if do_standard_scalar_transformation:
             scaler = StandardScaler().fit(train_X)
             train_X = scaler.transform(train_X)
@@ -102,12 +104,10 @@ class CreateIterators:
 
         vocab = {'<pad>': 1}  # no need of vocab in these dataset. It is there for code compatibility purposes.
 
-
         # need to add flatten here! And that too in the process itself!
         train_data = self.process_data(train_X, train_y, train_s, vocab=vocab)
         dev_data = self.process_data(dev_X, dev_y, dev_s, vocab=vocab)
         test_data = self.process_data(test_X, test_y, test_s, vocab=vocab)
-
 
         train_iterator = torch.utils.data.DataLoader(train_data,
                                                      batch_size,
@@ -127,7 +127,6 @@ class CreateIterators:
                                                     collate_fn=self.collate
                                                     )
 
-
         iterator_set = {
             'train_iterator': train_iterator,
             'valid_iterator': dev_iterator,
@@ -136,3 +135,246 @@ class CreateIterators:
         }
 
         return iterator_set, vocab, self.s_to_flattened_s
+
+
+class AugmentDataCommonFunctionality:
+    @staticmethod
+    def generate_combinations_only_leaf_node(s, k=1):
+        all_s_combinations = []
+
+        for i in combinations(range(len(s)), k):
+            _temp = list(copy.deepcopy(s))
+            for j in i:
+                if _temp[j] == 1:
+                    _temp[j] = 0.0
+                else:
+                    _temp[j] = 1.0
+            all_s_combinations.append(tuple(_temp))
+
+        return all_s_combinations
+
+    @staticmethod
+    def get_all_representation_positive_negative_seperate_only_leaf_node(df, s):
+        s_abstract = AugmentDataCommonFunctionality.generate_combinations_only_leaf_node(list(s))
+        s = tuple(s)
+        s_abstract.insert(0, s)
+        all_representation_positive = [df.loc[df['group_pattern'] == _s]['average_representation_positive'].item() for
+                                       _s in s_abstract]
+        all_representation_negative = [df.loc[df['group_pattern'] == _s]['average_representation_negative'].item() for
+                                       _s in s_abstract]
+        return all_representation_positive, all_representation_negative
+
+    @staticmethod
+    def get_all_representation(df, s):
+        s_abstract = AugmentDataCommonFunctionality.get_all_representation_positive_negative_seperate_only_leaf_node(df,
+                                                                                                                     list(
+                                                                                                                         s))
+        s_abstract.insert(0, s)
+        print(s_abstract)
+        all_representation = [df.loc[df['group_pattern'] == _s]['average_representation'].item() for _s in s_abstract]
+        return all_representation
+
+    @staticmethod
+    def generate_mask(all_s, mask_pattern):
+        keep_indices = []
+
+        for index, i in enumerate(mask_pattern):
+            if i != 'x':
+                keep_indices.append(i == all_s[:, index])
+            else:
+                keep_indices.append(np.ones_like(all_s[:, 0], dtype='bool'))
+
+        mask = np.ones_like(all_s[:, 0], dtype='bool')
+
+        # mask = [np.logical_and(mask, i) for i in keep_indices]
+
+        for i in keep_indices:
+            mask = np.logical_and(mask, i)
+        return mask
+
+    @staticmethod
+    def create_group_to_lambda_weight_seperate_positive_negative(other_meta_data):
+        all_label, all_s, all_input = other_meta_data['raw_data']['train_y'], other_meta_data['raw_data']['train_s'], \
+            other_meta_data['raw_data']['train_X']
+        # all_possible_groups = fairness_utils.create_all_possible_groups(
+        #     attributes=[list(np.unique(all_s[:, i])) for i in range(all_s.shape[1])])
+        # all_leaf_group = [i for i in all_possible_groups if "x" not in i]
+        all_unique_groups = np.unique(all_s, axis=0)
+        all_leaf_group = np.unique(all_s, axis=0)
+
+        row_header = ['group_pattern', 'size', 'label==1', 'label==0', 'average_representation',
+                      'average_representation_positive', 'average_representation_negative']
+
+        rows = []
+
+        for unique_group in all_leaf_group:
+            mask = AugmentDataCommonFunctionality.generate_mask(all_s, unique_group)
+            size = np.sum(mask)
+            train_1 = np.sum(all_label[mask] == 1)
+            train_0 = np.sum(all_label[mask] == 0)
+            positive_mask = np.logical_and(mask, all_label == 1)
+            negative_mask = np.logical_and(mask, all_label == 0)
+            average_representation_positive = np.mean(all_input[positive_mask], axis=0)
+            average_representation_negative = np.mean(all_input[negative_mask], axis=0)
+            average_representation = np.mean(all_input[mask], axis=0)
+            rows.append([tuple(unique_group), size, train_1, train_0, average_representation,
+                         average_representation_positive, average_representation_negative])
+
+        df = pd.DataFrame(rows, columns=row_header)
+
+        group_to_lambda_weights = {}
+
+        for unique_group in all_unique_groups:
+            unique_group = tuple(list(unique_group))
+            all_representation_positive, all_representation_negative = \
+                AugmentDataCommonFunctionality.get_all_representation_positive_negative_seperate_only_leaf_node(
+                    df, unique_group)
+
+            def find_weights(all_representation):
+                P = np.matrix([all_representation[1], all_representation[2], all_representation[3]])
+                P = np.matrix(all_representation[1:])
+                Ps = np.array(all_representation[0])
+
+                def objective(x):
+                    x = np.array([x])
+                    res = Ps - np.dot(x, P)
+                    return np.asarray(res).flatten()
+
+                def main():
+                    x = np.array([1 for i in range(len(unique_group))] / np.sum([1 for i in range(len(unique_group))]))
+                    final_lambda_weights = optimize.least_squares(objective, x).x
+                    return final_lambda_weights
+
+                return main()
+
+            key = tuple([int(i) for i in list(unique_group)])
+            group_to_lambda_weights[key] = [find_weights(all_representation_positive),
+                                            find_weights(all_representation_negative)]
+
+        return group_to_lambda_weights
+
+    @staticmethod
+    def generate_examples(s, group_to_lambda_weights, number_of_examples, other_meta_data):
+        positive_weights, negative_weights = group_to_lambda_weights[s]
+        all_input = other_meta_data['raw_data']['train_X']
+        neighbouring_leaf_nodes = AugmentDataCommonFunctionality.generate_combinations_only_leaf_node(s)
+
+        all_group_examples_label_1 = []
+        all_group_examples_label_0 = []
+
+        for leaf_node in neighbouring_leaf_nodes:
+            group_mask = AugmentDataCommonFunctionality.generate_mask(other_meta_data['raw_data']['train_s'], leaf_node)
+            label_1_group_mask = np.logical_and(group_mask, other_meta_data['raw_data']['train_y'] == 1)
+            label_0_group_mask = np.logical_and(group_mask, other_meta_data['raw_data']['train_y'] == 0)
+            label_1_examples = np.random.choice(np.where(label_1_group_mask == True)[0], size=number_of_examples,
+                                                replace=True)
+            label_0_examples = np.random.choice(np.where(label_0_group_mask == True)[0], size=number_of_examples,
+                                                replace=True)
+            all_group_examples_label_1.append(label_1_examples)
+            all_group_examples_label_0.append(label_0_examples)
+
+        augmented_input_positive = np.sum(
+            [lambda_weight * all_input[group] for group, lambda_weight in
+             zip(all_group_examples_label_1, positive_weights)], axis=0)
+        augmented_input_negative = np.sum(
+            [lambda_weight * all_input[group] for group, lambda_weight in
+             zip(all_group_examples_label_0, negative_weights)], axis=0)
+
+        return augmented_input_positive, augmented_input_negative
+
+
+class AugmentData:
+    """A static data augmentation mechanism. Currently not very general purpose"""
+
+    def __init__(self, dataset_name, X, y, s):
+        self.dataset_name = dataset_name
+        self.X, self.y, self.s = X, y, s
+
+        # formating data in a specific way for legacy purpose!
+        self.other_meta_data = {
+            'raw_data': {
+                'train_X': self.X,
+                'train_y': self.y,
+                'train_s': self.s
+            }
+        }
+
+        self.common_func = AugmentDataCommonFunctionality()
+
+    def run(self):
+        if 'adult_multi_group' in self.dataset_name:
+            train_X, train_y, train_s = self.data_augmentation_for_adult_multi_group()
+        else:
+            raise NotImplementedError
+
+        return train_X, train_y, train_s
+
+
+    def data_augmentation_for_adult_multi_group(self):
+        group_to_lambda_weights = self.common_func.create_group_to_lambda_weight_seperate_positive_negative(
+            self.other_meta_data)
+        all_unique_groups = np.unique(self.other_meta_data['raw_data']['train_s'], axis=0)
+
+        max_number_of_positive_examples = 200
+        max_number_of_negative_examples = 200
+        max_ratio_of_generated_examples = 0.25
+
+        augmented_train_X, augmented_train_y, augmented_train_s = [], [], []
+
+        for group in all_unique_groups:
+            group_mask = self.common_func.generate_mask(self.other_meta_data['raw_data']['train_s'], group)
+            label_1_group_mask = np.logical_and(group_mask, self.other_meta_data['raw_data']['train_y'] == 1)
+            label_0_group_mask = np.logical_and(group_mask, self.other_meta_data['raw_data']['train_y'] == 0)
+            total_positive_examples = np.sum(label_1_group_mask)
+            total_negative_examples = np.sum(group_mask) - total_positive_examples
+
+
+            def sub_routine(label_mask, total_examples, max_number_of_examples, example_type):
+                if total_examples > max_number_of_examples:
+                    index_of_selected_examples = np.random.choice(np.where(label_mask == True)[0],
+                                                                  size=max_number_of_examples,
+                                                                  replace=False)  # sample max number of positive examples
+
+                    augmented_train_X.append(self.other_meta_data['raw_data']['train_X'][index_of_selected_examples])
+                    augmented_train_y.append(self.other_meta_data['raw_data']['train_y'][index_of_selected_examples])
+                    augmented_train_s.append(self.other_meta_data['raw_data']['train_s'][index_of_selected_examples])
+                else:
+                    number_of_examples_to_generate = int(min(max_number_of_examples - total_examples,
+                                                         max_ratio_of_generated_examples * total_examples))
+                    index_of_selected_examples = np.random.choice(np.where(label_mask == True)[0],
+                                                                  size=max_number_of_examples - number_of_examples_to_generate,
+                                                                  replace=True)  # sample remaining
+                    # now generate remaining examples!
+                    if example_type == 'positive':
+                        augmented_input, _ = self.common_func.generate_examples(tuple(group), group_to_lambda_weights,
+                                                                                         number_of_examples_to_generate,
+                                                                                         self.other_meta_data)
+                    elif example_type == 'negative':
+                        _, augmented_input = self.common_func.generate_examples(tuple(group), group_to_lambda_weights,
+                                                                                number_of_examples_to_generate,
+                                                                                self.other_meta_data)
+                    else:
+                        raise NotImplementedError
+
+                    augmented_train_X.append(np.vstack((self.other_meta_data['raw_data']['train_X'][index_of_selected_examples],
+                                                        augmented_input)))
+
+                    # this is a hack. All examples for this group would have same y and s and thus it works
+                    index_of_selected_examples = np.random.choice(np.where(label_mask == True)[0],
+                                                                  size=max_number_of_examples,
+                                                                  replace=True)
+                    augmented_train_y.append(self.other_meta_data['raw_data']['train_y'][index_of_selected_examples])
+                    augmented_train_s.append(self.other_meta_data['raw_data']['train_s'][index_of_selected_examples])
+
+            sub_routine(label_mask=label_1_group_mask, total_examples=total_positive_examples,
+                        max_number_of_examples=max_number_of_positive_examples, example_type="positive")
+
+            sub_routine(label_mask=label_0_group_mask, total_examples=total_negative_examples,
+                        max_number_of_examples=max_number_of_negative_examples, example_type='negative')
+
+
+        augmented_train_X = np.vstack(augmented_train_X)
+        augmented_train_s = np.vstack(augmented_train_s)
+        augmented_train_y = np.hstack(augmented_train_y)
+
+        return augmented_train_X, augmented_train_y, augmented_train_s

@@ -401,6 +401,36 @@ def sample_data(train_tilted_params, s_group_0, s_group_1):
     return items_group_0, items_group_1
 
 
+def augmented_sampling(train_tilted_params, s_group_0, s_group_1):
+    flattened_s_to_s = {value: key for key, value in train_tilted_params.other_params['s_to_flattened_s'].items()}
+    input_group_0, input_group_1 = sample_data(train_tilted_params, s_group_0, s_group_1)
+    group_weight_lambda = train_tilted_params.other_params['group_to_lambda_weight']
+
+    augmented_input_group_0, _ = sample_batch_sen_idx_with_augmentation_with_lambda_custom_with_positive_and_negative_seperate(
+        train_tilted_params.other_params['all_input'],
+        train_tilted_params.other_params['all_label'],
+        train_tilted_params.other_params['all_aux'],
+        train_tilted_params.other_params['all_aux_flatten'],
+        train_tilted_params.other_params['batch_size'],
+        flattened_s_to_s[s_group_0],
+        group_weight_lambda[s_group_0],
+        train_tilted_params.other_params['scalar'],
+        input_group_0
+    )
+
+    augmented_input_group_1, _ = sample_batch_sen_idx_with_augmentation_with_lambda_custom_with_positive_and_negative_seperate(
+        train_tilted_params.other_params['all_input'],
+        train_tilted_params.other_params['all_label'],
+        train_tilted_params.other_params['all_aux'],
+        train_tilted_params.other_params['all_aux_flatten'],
+        train_tilted_params.other_params['batch_size'],
+        flattened_s_to_s[s_group_1],
+        group_weight_lambda[s_group_1],
+        train_tilted_params.other_params['scalar'],
+        input_group_1
+    )
+
+    return augmented_input_group_0, augmented_input_group_1
 
 def sample_batch_sen_idx_with_augmentation_with_lambda_custom_with_positive_and_negative_seperate\
                 (all_input, all_label, all_aux, all_aux_flatten, batch_size, s, group_weight_lambda, scalar, input_s):
@@ -462,15 +492,6 @@ def sample_batch_sen_idx_with_augmentation_with_lambda_custom_with_positive_and_
 
 
     return batch_input, np.sum(mask_s)
-
-
-
-
-
-
-
-
-
 
 
 

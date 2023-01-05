@@ -164,7 +164,8 @@ def get_model(method:str, model_name:str, other_meta_data:Dict, device:torch.dev
                       'train_only_group_dro_super_group_with_symmetric_mixup_regularizer',
                       'train_only_group_dro_super_group_with_symmetric_mixup_regularizer_integrated',
                       'train_only_group_dro_super_group_with_non_symmetric_mixup_regularizer',
-                      'train_only_group_dro_super_group_with_non_symmetric_mixup_regularizer_integrated'
+                      'train_only_group_dro_super_group_with_non_symmetric_mixup_regularizer_integrated',
+                      'train_only_group_dro_with_mixup_regularizer_super_group_and_data_augmentation'
                       ]:
             model = simple_model.SimpleNonLinear(model_params)
         elif method == 'adversarial_single':
@@ -352,7 +353,8 @@ def runner(runner_arguments:RunnerArguments):
                                      'train_only_group_dro_super_group_with_symmetric_mixup_regularizer',
                                      'train_only_group_dro_super_group_with_symmetric_mixup_regularizer_integrated',
                                      'train_only_group_dro_super_group_with_non_symmetric_mixup_regularizer',
-                                     'train_only_group_dro_super_group_with_non_symmetric_mixup_regularizer_integrated'
+                                     'train_only_group_dro_super_group_with_non_symmetric_mixup_regularizer_integrated',
+                                     'train_only_group_dro_with_mixup_regularizer_super_group_and_data_augmentation'
                                      ]:
         output = titled_erm_training_loop.training_loop(training_loop_params)
     else:
@@ -387,12 +389,12 @@ if __name__ == '__main__':
     parser.add_argument('--fairness_lambda', '-fairness_lambda', help="the lambda in the fairness loss equation", type=float,
                         default=0.0)
     parser.add_argument('--method', '-method', help="unconstrained/adversarial_single/adversarial_group", type=str,
-                        default='train_only_group_dro_super_group_with_non_symmetric_mixup_regularizer_integrated')
+                        default='train_only_group_dro_super_group_with_non_symmetric_mixup_regularizer')
     parser.add_argument('--save_model_as', '-save_model_as', help="unconstrained/adversarial_single/adversarial_group", type=str,
                         default=None)
     parser.add_argument('--dataset_name', '-dataset_name', help="twitter_hate_speech/adult_multi_group/celeb_multigroup_v3",
                         type=str,
-                        default='adult_multi_group')
+                        default='adult_multi_group_augmented')
 
     parser.add_argument('--log_file_name', '-log_file_name', help="the name of the log file",
                         type=str,
@@ -405,11 +407,11 @@ if __name__ == '__main__':
 
     parser.add_argument('--titled_t', '-titled_t', help="fairness function to concern with",
                         type=float,
-                        default=0.3)
+                        default=0.5)
 
     parser.add_argument('--mixup_rg', '-mixup_rg', help="fairness function to concern with",
                         type=float,
-                        default=5.0)
+                        default=3.0)
 
 
 

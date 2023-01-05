@@ -362,8 +362,8 @@ def train_only_group_dro_with_mixup_regularizer_super_group_and_data_augmentatio
             np.random.choice(train_tilted_params.other_params['groups_matrix'].reshape(1, -1)[0], 1, replace=False,
                              p=global_weight.reshape(1, -1)[0])[0])
 
-        items_group_0, items_group_1 = sample_data(train_tilted_params, s_group_0, s_group_1)
-
+        # items_group_0, items_group_1 = sample_data(train_tilted_params, s_group_0, s_group_1)
+        items_group_0, items_group_1 = augmented_sampling(train_tilted_params, s_group_0, s_group_1)
         group_tracker[s_group_0] += 1
         group_tracker[s_group_1] += 1
 

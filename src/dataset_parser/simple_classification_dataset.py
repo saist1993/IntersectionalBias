@@ -7,7 +7,7 @@ import matplotlib.colors as mcolors
 from random import seed, shuffle, sample
 from scipy.stats import multivariate_normal
 from scipy.stats import norm as univariate_normal
-from .common_functionality import CreateIterators, IteratorData, split_data
+from .common_functionality import CreateIterators, IteratorData, AugmentData, split_data
 from .simple_classification_dataset_helper import get_adult_multigroups_data, get_adult_data, \
     get_celeb_multigroups_data_with_varying_protected_group
 
@@ -61,6 +61,11 @@ class SimpleClassificationDataset:
         index, test_index, dev_index = split_data(X.shape[0], train_split=self.train_split, valid_split=self.valid_split)
         X, y, s = X[index], y[index], s[index]
         train_X, train_y, train_s = X[:dev_index, :], y[:dev_index], s[:dev_index]
+
+        if "augmented" in self.dataset_name:
+            augment_data = AugmentData(self.dataset_name, train_X, train_y, train_s)
+            train_X, train_y, train_s = augment_data.run()
+
         valid_X, valid_y, valid_s = X[dev_index:test_index, :], y[dev_index:test_index], s[dev_index:test_index]
         test_X, test_y, test_s = X[test_index:, :], y[test_index:], s[test_index:]
 
