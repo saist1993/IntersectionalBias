@@ -231,7 +231,71 @@ class AugmentDataCommonFunctionality:
                     df, unique_group)
 
             def find_weights(all_representation):
-                P = np.matrix([all_representation[1], all_representation[2], all_representation[3]])
+                # P = np.matrix([all_representation[1], all_representation[2], all_representation[3]])
+                P = np.matrix(all_representation[1:])
+                Ps = np.array(all_representation[0])
+
+                def objective(x):
+                    x = np.array([x])
+                    res = Ps - np.dot(x, P)
+                    return np.asarray(res).flatten()
+
+                def main():
+                    x = np.array([1 for i in range(len(unique_group))] / np.sum([1 for i in range(len(unique_group))]))
+                    final_lambda_weights = optimize.least_squares(objective, x).x
+                    return final_lambda_weights
+
+                return main()
+
+            key = tuple([int(i) for i in list(unique_group)])
+            group_to_lambda_weights[key] = [find_weights(all_representation_positive),
+                                            find_weights(all_representation_negative)]
+
+        return group_to_lambda_weights
+
+
+
+
+
+    def create_group_to_lambda_weight_seperate_positive_negative(other_meta_data):
+        all_label, all_s, all_input = other_meta_data['raw_data']['train_y'], other_meta_data['raw_data']['train_s'], \
+            other_meta_data['raw_data']['train_X']
+        # all_possible_groups = fairness_utils.create_all_possible_groups(
+        #     attributes=[list(np.unique(all_s[:, i])) for i in range(all_s.shape[1])])
+        # all_leaf_group = [i for i in all_possible_groups if "x" not in i]
+        all_unique_groups = np.unique(all_s, axis=0)
+        all_leaf_group = np.unique(all_s, axis=0)
+
+        row_header = ['group_pattern', 'size', 'label==1', 'label==0', 'average_representation',
+                      'average_representation_positive', 'average_representation_negative']
+
+        rows = []
+
+        for unique_group in all_leaf_group:
+            mask = AugmentDataCommonFunctionality.generate_mask(all_s, unique_group)
+            size = np.sum(mask)
+            train_1 = np.sum(all_label[mask] == 1)
+            train_0 = np.sum(all_label[mask] == 0)
+            positive_mask = np.logical_and(mask, all_label == 1)
+            negative_mask = np.logical_and(mask, all_label == 0)
+            average_representation_positive = np.mean(all_input[positive_mask], axis=0)
+            average_representation_negative = np.mean(all_input[negative_mask], axis=0)
+            average_representation = np.mean(all_input[mask], axis=0)
+            rows.append([tuple(unique_group), size, train_1, train_0, average_representation,
+                         average_representation_positive, average_representation_negative])
+
+        df = pd.DataFrame(rows, columns=row_header)
+
+        group_to_lambda_weights = {}
+
+        for unique_group in all_unique_groups:
+            unique_group = tuple(list(unique_group))
+            all_representation_positive, all_representation_negative = \
+                AugmentDataCommonFunctionality.get_all_representation_positive_negative_seperate_only_leaf_node(
+                    df, unique_group)
+
+            def find_weights(all_representation):
+                # P = np.matrix([all_representation[1], all_representation[2], all_representation[3]])
                 P = np.matrix(all_representation[1:])
                 Ps = np.array(all_representation[0])
 
