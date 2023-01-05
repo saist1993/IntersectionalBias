@@ -45,8 +45,9 @@ class RunnerArguments(NamedTuple):
     fairness_lambda: float = 0.0
     log_file_name: Optional[str] = None
     fairness_function: str = 'equal_opportunity'
-    titled_t:float = 5.0
-    mixup_rg:float = 0.5
+    titled_t: float = 5.0
+    mixup_rg: float = 0.5
+    max_number_of_generated_examples: float = 0.75
 
 
 def get_fairness_related_meta_dict(train_iterator, fairness_measure, fairness_rate, epsilon):
@@ -248,7 +249,8 @@ def runner(runner_arguments:RunnerArguments):
         'lm_encoder_type': 'bert-base-uncased',
         'lm_encoding_to_use': 'use_cls',
         'return_numpy_array': True,
-        'dataset_size': 1000
+        'dataset_size': 1000,
+        'max_number_of_generated_examples': runner_arguments.max_number_of_generated_examples
     }
     iterators, other_meta_data = generate_data_iterators(dataset_name=runner_arguments.dataset_name, **iterator_params)
 
@@ -413,6 +415,10 @@ if __name__ == '__main__':
                         type=float,
                         default=30.0)
 
+    parser.add_argument('--max_number_of_generated_examples', '-max_number_of_generated_examples', help="fairness function to concern with",
+                        type=float,
+                        default=0.4)
+
 
 
     args = parser.parse_args()
@@ -444,7 +450,8 @@ if __name__ == '__main__':
         log_file_name=args.log_file_name,
         fairness_function=args.fairness_function,
         titled_t=args.titled_t,
-        mixup_rg=args.mixup_rg
+        mixup_rg=args.mixup_rg,
+        max_number_of_generated_examples=args.max_number_of_generated_examples
     )
 
 

@@ -34,6 +34,9 @@ if __name__ == '__main__':
     if type(args.seeds) is int:
         args.seeds = [args.seeds]
 
+    max_number_of_generated_examples = [0.0]
+
+
     if args.method == 'tilted_erm_with_mixup' or args.method == 'tilted_erm_with_mixup_only_one_group' \
             or args.method == 'tilted_erm_with_mixup_based_on_distance' \
             or args.method == 'train_with_mixup_only_one_group_based_distance_v2' \
@@ -61,8 +64,10 @@ if __name__ == '__main__':
         if args.dataset_name in ['adult_multi_group','celeb_multigroup_v3', 'twitter_hate_speech']:
             mixup_scales = [1.0, 5.0, 10.0, 15.0, 20.0, 25.0, 30.0, 35.0, 40.0, 45.0, 50.0] # approximate scale works for both equal opportunity as well as equal odds.
         # twitter hate speech equal odds requires slightly less mixup scale
+
         else:
-            mixup_scales = [1, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50]
+            mixup_scales = [1, 5, 10, 20, 30, 40]
+            max_number_of_generated_examples = [0.25, 0.50, 0.75, 1.0]
 
 
     if args.method == 'only_titled_erm' or args.method == 'only_tilted_erm_with_mixup_augmentation_lambda_weights'\
@@ -224,34 +229,35 @@ if __name__ == '__main__':
             mixup_scales = [0.01, 0.001, 0.02, 0.005]
             titled_scales = [0.01, 0.001]
 
-
-    for seed in args.seeds:
-        for titled_scale in titled_scales:
-            for mixup_scale in mixup_scales:
-                try:
-                    print(f"*************************{seed}, {titled_scale}, {mixup_scale}*************************")
-                    runner_arguments = RunnerArguments(
-                        seed=seed,
-                        dataset_name=args.dataset_name,  # twitter_hate_speech
-                        batch_size=args.batch_size,
-                        model=args.model,
-                        epochs=args.epochs,
-                        save_model_as=args.save_model_as,
-                        method=args.method,  # unconstrained, adversarial_single
-                        optimizer_name=args.optimizer_name,
-                        lr=args.lr,
-                        use_wandb=args.use_wandb,
-                        adversarial_lambda=0.0,
-                        dataset_size=args.dataset_size,
-                        attribute_id=args.attribute_id,  # which attribute to care about!
-                        fairness_lambda=0.0,
-                        log_file_name=args.log_file_name,
-                        fairness_function=args.fairness_function,
-                        titled_t=titled_scale,
-                        mixup_rg=mixup_scale
-                    )
-                    output = runner(runner_arguments=runner_arguments)
-                except KeyboardInterrupt:
-                    raise IOError
+    for examples_to_generate in max_number_of_generated_examples:
+        for seed in args.seeds:
+            for titled_scale in titled_scales:
+                for mixup_scale in mixup_scales:
+                    try:
+                        print(f"*************************{seed}, {titled_scale}, {mixup_scale}*************************")
+                        runner_arguments = RunnerArguments(
+                            seed=seed,
+                            dataset_name=args.dataset_name,  # twitter_hate_speech
+                            batch_size=args.batch_size,
+                            model=args.model,
+                            epochs=args.epochs,
+                            save_model_as=args.save_model_as,
+                            method=args.method,  # unconstrained, adversarial_single
+                            optimizer_name=args.optimizer_name,
+                            lr=args.lr,
+                            use_wandb=args.use_wandb,
+                            adversarial_lambda=0.0,
+                            dataset_size=args.dataset_size,
+                            attribute_id=args.attribute_id,  # which attribute to care about!
+                            fairness_lambda=0.0,
+                            log_file_name=args.log_file_name,
+                            fairness_function=args.fairness_function,
+                            titled_t=titled_scale,
+                            mixup_rg=mixup_scale,
+                            max_number_of_generated_examples=examples_to_generate
+                        )
+                        output = runner(runner_arguments=runner_arguments)
+                    except KeyboardInterrupt:
+                        raise IOError
 
 # generic runner: cd ~/codes/IntersectionalBias/src/; python hyperparam_runner -seeds 10 20 -dataset_name adult_multi_group -batch_size 64 -model simple_non_linear -epochs 5 -method unconstrained -fairness_lambda_start 0.05 -fairness_lambda_end 0.5 -fairness_function equal_opportunity

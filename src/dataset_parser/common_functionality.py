@@ -265,7 +265,7 @@ class AugmentDataCommonFunctionality:
                 new_all_representation_negative = []
 
                 for i,representation in zip(s_abstract[1:],all_representation_positive[1:]):
-                    if np.sum(all_label[AugmentDataCommonFunctionality.generate_mask(all_s, i)] == 1) > 183:
+                    if np.sum(all_label[AugmentDataCommonFunctionality.generate_mask(all_s, i)] == 1) > 150:
                         new_all_representation_positive.append(representation)
                         s_abstract_positive.append(i)
 
@@ -326,9 +326,10 @@ class AugmentDataCommonFunctionality:
 class AugmentData:
     """A static data augmentation mechanism. Currently not very general purpose"""
 
-    def __init__(self, dataset_name, X, y, s):
+    def __init__(self, dataset_name, X, y, s, max_number_of_generated_examples=0.75):
         self.dataset_name = dataset_name
         self.X, self.y, self.s = X, y, s
+        self.max_number_of_generated_examples = max_number_of_generated_examples
 
         # formating data in a specific way for legacy purpose!
         self.other_meta_data = {
@@ -358,7 +359,7 @@ class AugmentData:
 
         max_number_of_positive_examples = 1000
         max_number_of_negative_examples = 1000
-        max_ratio_of_generated_examples = 1.0
+        max_ratio_of_generated_examples = self.max_number_of_generated_examples
 
         augmented_train_X, augmented_train_y, augmented_train_s = [], [], []
 

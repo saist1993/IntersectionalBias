@@ -25,6 +25,7 @@ class SimpleClassificationDataset:
         self.batch_size = params['batch_size']
         self.dataset_name = dataset_name
         self.return_numpy_array = params['return_numpy_array']
+        self.max_number_of_generated_examples = params['max_number_of_generated_examples']
 
         if 'adult_multi_group' in self.dataset_name:
             self.X, self.y, self.s = get_adult_multigroups_data()
@@ -63,7 +64,7 @@ class SimpleClassificationDataset:
         train_X, train_y, train_s = X[:dev_index, :], y[:dev_index], s[:dev_index]
 
         if "augmented" in self.dataset_name:
-            augment_data = AugmentData(self.dataset_name, train_X, train_y, train_s)
+            augment_data = AugmentData(self.dataset_name, train_X, train_y, train_s, self.max_number_of_generated_examples)
             train_X, train_y, train_s = augment_data.run()
 
         valid_X, valid_y, valid_s = X[dev_index:test_index, :], y[dev_index:test_index], s[dev_index:test_index]
