@@ -228,67 +228,6 @@ def train_only_group_dro_with_augmentation_static_positive_and_negative_weights(
     return epoch_metric_tracker, loss, global_weight, global_loss
 
 
-def mixup_sub_routine(train_tilted_params:TrainParameters, items_group_0, items_group_1, model, gamma=None):
-    alpha = 1.0
-    if not gamma:
-        gamma = beta(alpha, alpha)
-
-    if train_tilted_params.fairness_function == 'demographic_parity':
-        batch_x_mix = items_group_0['input'] * gamma + items_group_1['input'] * (1 - gamma)
-        batch_x_mix = batch_x_mix.requires_grad_(True)
-        output_mixup = model({'input': batch_x_mix})
-        gradx = torch.autograd.grad(output_mixup['prediction'].sum(), batch_x_mix, create_graph=True)[
-            0]  # may be .sum()
-
-        batch_x_d = items_group_1['input'] - items_group_0['input']
-        grad_inn = (gradx * batch_x_d).sum(1)
-        E_grad = grad_inn.mean(0)
-        loss_reg = torch.abs(E_grad)
-
-    elif train_tilted_params.fairness_function == 'equal_odds' or \
-            train_tilted_params.fairness_function == 'equal_opportunity':
-        split_index = int(train_tilted_params.other_params['batch_size'] / 2)
-        if train_tilted_params.fairness_function == 'equal_odds':
-            gold_labels = [0, 1]
-        elif train_tilted_params.fairness_function == 'equal_opportunity':
-            gold_labels = [1]
-        else:
-            raise NotImplementedError
-        loss_reg = 0
-        for i in gold_labels:
-            if i == 0:
-                index_start = 0
-                index_end = split_index
-            elif i == 1:
-                index_start = split_index
-                index_end = -1
-            else:
-                raise NotImplementedError("only support binary labels!")
-
-            batch_x_mix = items_group_0['input'][index_start:index_end] * gamma + items_group_1['input'][
-                                                                                  index_start:index_end] * (
-                                  1 - gamma)    # this is the point wise addition which forces this equal 1s,0s representation
-            batch_x_mix = batch_x_mix.requires_grad_(True)
-            output_mixup = model({'input': batch_x_mix})
-            gradx = torch.autograd.grad(output_mixup['prediction'].sum(), batch_x_mix, create_graph=True)[
-                0]  # may be .sum()
-
-            batch_x_d = items_group_1['input'][index_start:index_end] - items_group_0['input'][
-                                                                        index_start:index_end]
-            grad_inn = (gradx * batch_x_d).sum(1)
-            E_grad = grad_inn.mean(0)
-            loss_reg = loss_reg + torch.abs(E_grad)
-
-    else:
-        raise NotImplementedError
-
-
-    return loss_reg
-
-
-
-
-
 
 def train_only_group_dro_with_mixup(train_tilted_params:TrainParameters):
     global_loss = train_tilted_params.other_params['global_loss'] # This tracks the actual loss

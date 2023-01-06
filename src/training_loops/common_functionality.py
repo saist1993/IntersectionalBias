@@ -5,11 +5,12 @@ import wandb
 import logging
 import numpy as np
 from pathlib import Path
+from numpy.random import beta
 from dataclasses import dataclass
 from itertools import combinations
 from metrics import calculate_epoch_metric
 from typing import Dict, Callable, Optional
-
+from sklearn.metrics.pairwise import cosine_distances
 
 
 @dataclass
@@ -242,6 +243,25 @@ def sample_batch_sen_idx(all_input, all_label, all_aux, all_aux_flatten, batch_s
     return batch_input
 
 
+
+def randomly_sample_data(train_tilted_params, s_group_0, s_group_1):
+    items_group_0 = sample_batch_sen_idx(train_tilted_params.other_params['all_input'],
+                                        train_tilted_params.other_params['all_label'],
+                                        train_tilted_params.other_params['all_aux'],
+                                        train_tilted_params.other_params['all_aux_flatten'],
+                                        train_tilted_params.other_params['batch_size'],
+                                        s_group_0)
+
+    items_group_1 = sample_batch_sen_idx(train_tilted_params.other_params['all_input'],
+                                         train_tilted_params.other_params['all_label'],
+                                         train_tilted_params.other_params['all_aux'],
+                                         train_tilted_params.other_params['all_aux_flatten'],
+                                         train_tilted_params.other_params['batch_size'],
+                                         s_group_1)
+
+    return items_group_0, items_group_1
+
+
 def sample_batch_sen_idx_with_y_abstract(all_input, all_label, all_aux, all_aux_flatten, batch_size, s0, s1):
     """
         This will sample batch size number of elements from input with given s!
@@ -352,6 +372,65 @@ def generate_flat_output_custom(input_iterator, attribute_id=None):
     return all_label, all_s, all_s_flatten, all_input
 
 
+
+def mixup_sub_routine(train_tilted_params:TrainParameters, items_group_0, items_group_1, model, gamma=None):
+    alpha = 1.0
+    if not gamma:
+        gamma = beta(alpha, alpha)
+
+    if train_tilted_params.fairness_function == 'demographic_parity':
+        batch_x_mix = items_group_0['input'] * gamma + items_group_1['input'] * (1 - gamma)
+        batch_x_mix = batch_x_mix.requires_grad_(True)
+        output_mixup = model({'input': batch_x_mix})
+        gradx = torch.autograd.grad(output_mixup['prediction'].sum(), batch_x_mix, create_graph=True)[
+            0]  # may be .sum()
+
+        batch_x_d = items_group_1['input'] - items_group_0['input']
+        grad_inn = (gradx * batch_x_d).sum(1)
+        E_grad = grad_inn.mean(0)
+        loss_reg = torch.abs(E_grad)
+
+    elif train_tilted_params.fairness_function == 'equal_odds' or \
+            train_tilted_params.fairness_function == 'equal_opportunity':
+        split_index = int(train_tilted_params.other_params['batch_size'] / 2)
+        if train_tilted_params.fairness_function == 'equal_odds':
+            gold_labels = [0, 1]
+        elif train_tilted_params.fairness_function == 'equal_opportunity':
+            gold_labels = [1]
+        else:
+            raise NotImplementedError
+        loss_reg = 0
+        for i in gold_labels:
+            if i == 0:
+                index_start = 0
+                index_end = split_index
+            elif i == 1:
+                index_start = split_index
+                index_end = -1
+            else:
+                raise NotImplementedError("only support binary labels!")
+
+            batch_x_mix = items_group_0['input'][index_start:index_end] * gamma + items_group_1['input'][
+                                                                                  index_start:index_end] * (
+                                  1 - gamma)    # this is the point wise addition which forces this equal 1s,0s representation
+            batch_x_mix = batch_x_mix.requires_grad_(True)
+            output_mixup = model({'input': batch_x_mix})
+            gradx = torch.autograd.grad(output_mixup['prediction'].sum(), batch_x_mix, create_graph=True)[
+                0]  # may be .sum()
+
+            batch_x_d = items_group_1['input'][index_start:index_end] - items_group_0['input'][
+                                                                        index_start:index_end]
+            grad_inn = (gradx * batch_x_d).sum(1)
+            E_grad = grad_inn.mean(0)
+            loss_reg = loss_reg + torch.abs(E_grad)
+
+    else:
+        raise NotImplementedError
+
+
+    return loss_reg
+
+
 def sample_data(train_tilted_params, s_group_0, s_group_1):
     if train_tilted_params.fairness_function == 'demographic_parity':
         items_group_0 = sample_batch_sen_idx(train_tilted_params.other_params['all_input'],
@@ -361,12 +440,16 @@ def sample_data(train_tilted_params, s_group_0, s_group_1):
                                              train_tilted_params.other_params['batch_size'],
                                              s_group_0)
 
-        items_group_1 = sample_batch_sen_idx(train_tilted_params.other_params['all_input'],
-                                             train_tilted_params.other_params['all_label'],
-                                             train_tilted_params.other_params['all_aux'],
-                                             train_tilted_params.other_params['all_aux_flatten'],
-                                             train_tilted_params.other_params['batch_size'],
-                                             s_group_1)
+        if s_group_1:
+
+            items_group_1 = sample_batch_sen_idx(train_tilted_params.other_params['all_input'],
+                                                 train_tilted_params.other_params['all_label'],
+                                                 train_tilted_params.other_params['all_aux'],
+                                                 train_tilted_params.other_params['all_aux_flatten'],
+                                                 train_tilted_params.other_params['batch_size'],
+                                                 s_group_1)
+        else:
+            items_group_1 = None
 
     elif train_tilted_params.fairness_function == 'equal_odds' or \
             train_tilted_params.fairness_function == 'equal_opportunity':
@@ -379,12 +462,16 @@ def sample_data(train_tilted_params, s_group_0, s_group_1):
                                                                    train_tilted_params.other_params['all_aux_flatten'],
                                                                    train_tilted_params.other_params['batch_size'],
                                                                    s_group_0)
-        items_group_1 = sample_batch_sen_idx_with_y(train_tilted_params.other_params['all_input'],
-                                                                   train_tilted_params.other_params['all_label'],
-                                                                   train_tilted_params.other_params['all_aux'],
-                                                                   train_tilted_params.other_params['all_aux_flatten'],
-                                                                   train_tilted_params.other_params['batch_size'],
-                                                                   s_group_1)
+
+        if s_group_1:
+            items_group_1 = sample_batch_sen_idx_with_y(train_tilted_params.other_params['all_input'],
+                                                                       train_tilted_params.other_params['all_label'],
+                                                                       train_tilted_params.other_params['all_aux'],
+                                                                       train_tilted_params.other_params['all_aux_flatten'],
+                                                                       train_tilted_params.other_params['batch_size'],
+                                                                       s_group_1)
+        else:
+            s_group_1 = None
         # group split
 
         # class split
@@ -534,6 +621,46 @@ def simplified_fairness_loss(fairness_function, loss, preds, aux, group1_pattern
     else:
         raise NotImplementedError
 
+
+def generate_similarity_matrix(iterator, model, groups, reverse_groups, distance_mechanism='dynamic_distance'):
+    all_train_label, all_train_s, all_train_s_flatten, all_input = generate_flat_output_custom(
+        iterator)
+
+    all_unique_groups = np.unique(all_train_s, axis=0) # unique groups - [[0,0,0], [0,0,1], [0,1,1]]
+    all_average_representation = {}
+
+
+
+    for unique_group in all_unique_groups:
+        mask = generate_mask(all_train_s, unique_group)
+        current_input = all_input[mask]
+
+        if distance_mechanism == 'static_distance':
+            raise Warning("this has not been tested before. Do test it before hand")
+            average_representation = np.mean(current_input, axis=0)
+        elif distance_mechanism == 'dynamic_distance':
+            batch_input = {
+                'input': torch.FloatTensor(current_input),
+            }
+
+            model_hidden = model(batch_input)['hidden']
+
+            average_representation = torch.mean(model_hidden, axis=0).cpu().detach().numpy()
+        else:
+            raise NotImplementedError
+
+        all_average_representation[tuple([int(i) for i in unique_group])] = average_representation
+
+    # average representation = {str([0,0,1]): average_representation, str([0,1,1]): average_representation}
+    distance_lookup = {}
+
+    for unique_group in groups:
+        distance = []
+        unique_group_representation = all_average_representation[reverse_groups[unique_group]]
+        for group in groups:
+            distance.append(cosine_distances([unique_group_representation], [all_average_representation[reverse_groups[group]]])[0][0])
+        distance_lookup[unique_group] = distance
+    return distance_lookup
 
 def training_loop_common(training_loop_parameters: TrainingLoopParameters, train_function):
     logger = logging.getLogger(training_loop_parameters.unique_id_for_run)
