@@ -239,12 +239,12 @@ if __name__ == '__main__':
                        'dro_super_group_random_sampling',
                        'dro_super_group_equal_sampling']:
         mixup_scales = [0.0]
-        titled_scales = [0.1, 0.5, 0.01, 0.05, 0.8, 0.3, 0.08, 0.03]
+        titled_scales = [0.1, 0.5, 0.01, 0.05, 0.8, 0.08, 0.001]
 
     if args.method in ['erm_random_group_equal_sampling_mixup_regularizer',
                        'erm_distance_group_equal_sampling_mixup_regularizer_dynamic_distance',
                        'erm_distance_group_equal_sampling_mixup_regularizer_static_distance']:
-        mixup_scales = [1.0, 5.0, 10.0, 15.0, 20.0, 25.0, 30.0, 35.0, 40.0, 45.0, 50.0]
+        mixup_scales = [1.0, 5.0, 10.0, 20.0, 30.0, 40.0, 50.0]
         titled_scales = [0.0]
 
 
