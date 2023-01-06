@@ -47,7 +47,15 @@ def group_sampling_procedure_func(train_tilted_params, global_weight, similarity
 
     group_sampling_procedure = train_tilted_params.other_params['group_sampling_procedure']
 
-    if group_sampling_procedure == 'super_group':
+    if group_sampling_procedure == 'super_group_and_distance':
+        # This is a hack as the global weight never gets updated. If in the future global
+        # weight gets updated. This will break
+        assert similarity_matrix != None
+        s_group_0 = np.random.choice(train_tilted_params.other_params['groups'], 1, p=global_weight)[0]
+        s_group_distance = similarity_matrix[s_group_0]
+        s_group_1 = np.random.choice(train_tilted_params.other_params['groups'], 1, replace=False,
+                                     p=s_group_distance / np.linalg.norm(s_group_distance, 1))[0]
+    elif group_sampling_procedure == 'super_group':
         # @TODO: write an assert stating that global weight should be of specific kind.
         s_group_0, s_group_1 = eval(
             np.random.choice(train_tilted_params.other_params['groups_matrix'].reshape(1, -1)[0], 1, replace=False,
@@ -63,8 +71,6 @@ def group_sampling_procedure_func(train_tilted_params, global_weight, similarity
         s_group_distance = similarity_matrix[s_group_0]
         s_group_1 = np.random.choice(train_tilted_params.other_params['groups'], 1, replace=False,
                                      p=s_group_distance / np.linalg.norm(s_group_distance, 1))[0]
-    elif group_sampling_procedure == 'super_group_and_distance':
-        raise NotImplementedError
     else:
         raise NotImplementedError("currently supports: supergroup, distance, random, supergroup_and_distance")
 
@@ -110,7 +116,7 @@ def update_loss_and_global_loss_dro(train_tilted_params, s_group_0, s_group_1, l
     group_sampling_procedure = train_tilted_params.other_params['group_sampling_procedure']
     tilt_t = train_tilted_params.other_params['titled_t']
     integrate_reg_loss = train_tilted_params.other_params['integrate_reg_loss']
-    loss_rg_weight = train_tilted_params.other_params['loss_rg_weight']
+    loss_rg_weight = train_tilted_params.other_params['mixup_rg']
 
     if group_sampling_procedure == 'super_group' or group_sampling_procedure == 'super_group_and_distance':
         loss = torch.mean(loss_group_0) + torch.mean(loss_group_1)  # calculate the total loss
@@ -216,12 +222,15 @@ def dro_optimization_procedure(train_tilted_params):
         if group_sampling_procedure == 'random_single_group':
             assert s_group_1 is None
             assert items_group_1 is None
+        else:
+            assert s_group_1 is not None
+            assert items_group_1 is not None
 
         optimizer.zero_grad()
         output_group_0 = model(items_group_0)
         loss_group_0 = criterion(output_group_0['prediction'], items_group_0['labels'])
 
-        if s_group_1:
+        if s_group_1 is not None:
             output_group_1 = model(items_group_1)
             loss_group_1 = criterion(output_group_1['prediction'], items_group_1['labels'])
         else:
@@ -244,7 +253,7 @@ def dro_optimization_procedure(train_tilted_params):
         loss.backward()
         optimizer.step()
 
-        output_group_0['loss_batch'] = loss_group_0.item()  # handel this better!
+        output_group_0['loss_batch'] = torch.mean(loss_group_0).item()  # handel this better!
         track_output.append(output_group_0)
         track_input.append(items_group_0)
 
@@ -312,16 +321,16 @@ def erm_optimization_procedure(train_tilted_params):
                                                          other_params={'gamma': None})
 
         loss = torch.mean(loss_group_0)
-        if loss_group_1:
+        if loss_group_1 is not None:
             loss = loss + torch.mean(loss_group_1)
 
         if loss_rg:
-            loss = loss + loss_rg * train_tilted_params.other_params['loss_rg_weight']
+            loss = loss + loss_rg * train_tilted_params.other_params['mixup_rg']
 
         loss.backward()
         optimizer.step()
 
-        output_group_0['loss_batch'] = loss_group_0.item()  # handel this better!
+        output_group_0['loss_batch'] = torch.mean(loss_group_0).item()  # handel this better!
         track_output.append(output_group_0)
         track_input.append(items_group_0)
 
@@ -336,19 +345,25 @@ def create_group(total_no_groups, method="super_group"):
     if method == "super_group":
         global_weight = np.full((total_no_groups, total_no_groups), 1.0 / (total_no_groups * total_no_groups))
         global_loss = np.full((total_no_groups, total_no_groups), 1.0 / (total_no_groups * total_no_groups))
-        return global_weight, global_loss
+        groups_matrix = np.asarray([[str((i, j)) for i in range(total_no_groups)] for j in range(total_no_groups)])
+        return groups_matrix, global_weight, global_loss
     elif method == 'single_group':
         weights = np.asarray([1 / total_no_groups for i in range(total_no_groups)])
 
         # global_weight = size_of_each_group / (np.linalg.norm(size_of_each_group, 1))
         global_weight = weights / (np.linalg.norm(weights, 1))
         global_loss = torch.tensor(weights / np.linalg.norm(weights, 1))
-        return global_weight, global_loss
+        return None, global_weight, global_loss
     else:
         raise NotImplementedError
 
 
 def orchestrator(training_loop_parameters: TrainingLoopParameters):
+    """
+    methods
+    baseline - erm_random_single_group_random_sampling
+
+    """
     logger = logging.getLogger(training_loop_parameters.unique_id_for_run)
     output = {}
     all_train_eps_metrics = []
@@ -377,16 +392,21 @@ def orchestrator(training_loop_parameters: TrainingLoopParameters):
     # set group sampling proecdure
     if "super_group_and_distance" in method:
         group_sampling_procedure = "super_group_and_distance"
-        global_weight, global_loss = create_group(total_no_groups, method="super_group")
+        # This is a hack which works because global weight does not get updated.
+        _, _, global_loss = create_group(total_no_groups, method="super_group")
+        groups_matrix, global_weight, _ = create_group(total_no_groups, method="single_group")
     elif "super_group" in method:
         group_sampling_procedure = "super_group"
-        global_weight, global_loss = create_group(total_no_groups, method="super_group")
+        groups_matrix, global_weight, global_loss = create_group(total_no_groups, method="super_group")
+    elif "distance_group" in method:
+        group_sampling_procedure = "distance_group"
+        groups_matrix, global_weight, global_loss = create_group(total_no_groups, method="single_group")
     elif "random_group" in method:
         group_sampling_procedure = "random_group"
-        global_weight, global_loss = create_group(total_no_groups, method="single_group")
+        groups_matrix, global_weight, global_loss = create_group(total_no_groups, method="single_group")
     elif "random_single_group" in method:
         group_sampling_procedure = "random_single_group"
-        global_weight, global_loss = create_group(total_no_groups, method="single_group")
+        groups_matrix, global_weight, global_loss = create_group(total_no_groups, method="single_group")
     else:
         raise NotImplementedError("no group sampling procedure specified")
 
@@ -404,7 +424,7 @@ def orchestrator(training_loop_parameters: TrainingLoopParameters):
     elif "dynamic_distance" in method:
         distance_mechanism = "dynamic_distance"
     else:
-        raise NotImplementedError("no distance based procedure specified")
+        distance_mechanism = None
 
     # set fairness regularizer
     if "mixup_regularizer" in method:
@@ -421,10 +441,17 @@ def orchestrator(training_loop_parameters: TrainingLoopParameters):
     else:
         raise NotImplementedError("no optimization procedure specified")
 
-    training_loop_parameters.other_params['optimization_procedure'] = optimization_procedure
+    if "integrate_reg_loss" in method:
+        integrate_reg_loss = True
+    else:
+        integrate_reg_loss = False
+
+    training_loop_parameters.other_params['groups_matrix'] = groups_matrix
     training_loop_parameters.other_params['distance_mechanism'] = distance_mechanism
-    training_loop_parameters.other_params['example_sampling_procedure'] = example_sampling_procedure
+    training_loop_parameters.other_params['integrate_reg_loss'] = integrate_reg_loss
+    training_loop_parameters.other_params['optimization_procedure'] = optimization_procedure
     training_loop_parameters.other_params['group_sampling_procedure'] = group_sampling_procedure
+    training_loop_parameters.other_params['example_sampling_procedure'] = example_sampling_procedure
     training_loop_parameters.other_params['fairness_regularization_procedure'] = fairness_regularization_procedure
 
     for ep in range(training_loop_parameters.n_epochs):
@@ -444,6 +471,8 @@ def orchestrator(training_loop_parameters: TrainingLoopParameters):
         training_loop_parameters.other_params['scalar'] = training_loop_parameters.iterators[0]['scalar']
         training_loop_parameters.other_params['train_iterator'] = training_loop_parameters.iterators[0][
             'train_iterator']
+        training_loop_parameters.other_params['groups'] = [i for i in range(total_no_groups)]
+
 
         train_parameters = TrainParameters(
             model=training_loop_parameters.model,

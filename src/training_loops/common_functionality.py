@@ -252,12 +252,16 @@ def randomly_sample_data(train_tilted_params, s_group_0, s_group_1):
                                         train_tilted_params.other_params['batch_size'],
                                         s_group_0)
 
-    items_group_1 = sample_batch_sen_idx(train_tilted_params.other_params['all_input'],
-                                         train_tilted_params.other_params['all_label'],
-                                         train_tilted_params.other_params['all_aux'],
-                                         train_tilted_params.other_params['all_aux_flatten'],
-                                         train_tilted_params.other_params['batch_size'],
-                                         s_group_1)
+    if s_group_1 is not None:
+
+        items_group_1 = sample_batch_sen_idx(train_tilted_params.other_params['all_input'],
+                                             train_tilted_params.other_params['all_label'],
+                                             train_tilted_params.other_params['all_aux'],
+                                             train_tilted_params.other_params['all_aux_flatten'],
+                                             train_tilted_params.other_params['batch_size'],
+                                             s_group_1)
+    else:
+        items_group_1 = None
 
     return items_group_0, items_group_1
 
@@ -440,7 +444,7 @@ def sample_data(train_tilted_params, s_group_0, s_group_1):
                                              train_tilted_params.other_params['batch_size'],
                                              s_group_0)
 
-        if s_group_1:
+        if s_group_1 is not None:
 
             items_group_1 = sample_batch_sen_idx(train_tilted_params.other_params['all_input'],
                                                  train_tilted_params.other_params['all_label'],
@@ -463,7 +467,7 @@ def sample_data(train_tilted_params, s_group_0, s_group_1):
                                                                    train_tilted_params.other_params['batch_size'],
                                                                    s_group_0)
 
-        if s_group_1:
+        if s_group_1 is not None:
             items_group_1 = sample_batch_sen_idx_with_y(train_tilted_params.other_params['all_input'],
                                                                        train_tilted_params.other_params['all_label'],
                                                                        train_tilted_params.other_params['all_aux'],
@@ -471,7 +475,7 @@ def sample_data(train_tilted_params, s_group_0, s_group_1):
                                                                        train_tilted_params.other_params['batch_size'],
                                                                        s_group_1)
         else:
-            s_group_1 = None
+            items_group_1 = None
         # group split
 
         # class split
@@ -482,8 +486,10 @@ def sample_data(train_tilted_params, s_group_0, s_group_1):
     for key in items_group_0.keys():
         items_group_0[key] = items_group_0[key].to(train_tilted_params.device)
 
-    for key in items_group_1.keys():
-        items_group_1[key] = items_group_1[key].to(train_tilted_params.device)
+    if items_group_1 is not None:
+
+        for key in items_group_1.keys():
+            items_group_1[key] = items_group_1[key].to(train_tilted_params.device)
 
     return items_group_0, items_group_1
 
