@@ -116,60 +116,7 @@ def get_model(method:str, model_name:str, other_meta_data:Dict, device:torch.dev
             'device': device
         }
 
-        if method in ['unconstrained', 'unconstrained_with_fairness_loss',
-                      'only_titled_erm', 'only_mixup', 'tilted_erm_with_mixup',
-                      'tilted_erm_with_fairness_loss', 'fairgrad', 'only_mixup_with_loss_group',
-                      'tilted_erm_with_mixup_only_one_group',
-                      'only_mixup_with_abstract_group', 'weighted_sample_erm',
-                      'only_titled_erm_with_weights', 'only_tilted_erm_with_abstract_group',
-                      'tilted_erm_with_mixup_augmentation',
-                      'only_mixup_based_on_distance', 'tilted_erm_with_mixup_based_on_distance',
-                      'only_mixup_based_on_distance_and_augmentation',
-                      'only_tilted_dro', 'only_tilted_erm_with_mixup_augmentation_lambda_weights',
-                      'only_tilted_erm_with_mixup_augmentation_lambda_weights_v2',
-                      'only_tilted_erm_with_mixup_augmentation_lambda_weights_v3',
-                      'only_tilted_erm_with_mixup_augmentation_lambda_weights_v4',
-                      'only_tilted_erm_with_weights_on_loss',
-                      'train_with_mixup_only_one_group_based_distance_v2',
-                      'train_with_mixup_only_one_group_based_distance_v3',
-                      'only_titled_erm_with_mask',
-                      'only_tilted_erm_generic', 'only_tilted_erm_with_mask_on_tpr',
-                      'only_tilted_erm_with_weighted_loss_via_global_weight',
-                      'only_tilted_erm_with_mask_on_tpr_and_weighted_loss_via_global_weight',
-                      'train_only_group_dro',
-                      'train_only_group_dro_with_weighted_sampling',
-                      'only_mixup_based_on_distance_fid',
-                      'train_only_group_dro_with_mixup_with_distance', 'train_only_group_dro_with_mixup_with_random',
-                      'train_only_group_dro_with_mixup_with_random_with_weighted_sampling',
-                      'train_only_group_dro_with_mixup_with_distance_with_weighted_sampling',
-                      'train_only_group_dro_with_augmentation_static_positive_and_negative_weights',
-                      'simple_mixup_data_augmentation',
-                      'lisa_based_mixup',
-                      'lisa_based_mixup_with_mixup_regularizer',
-                      'lisa_based_mixup_with_distance',
-                      'lisa_based_mixup_with_mixup_regularizer_and_with_distance',
-                      'train_only_group_dro_with_mixup_super_group',
-                      'train_only_group_dro_with_mixup_regularizer_super_group',
-                      'train_only_group_dro_with_super_group',
-                      'train_only_group_dro_with_mixup_regularizer_super_group_data_augmentation',
-                      'train_only_group_dro_with_super_group_data_augmentation',
-                      'take_2_train_lisa_based_mixup',
-                      'take_2_train_lisa_based_mixup_with_mixup_regularizer',
-                      'train_only_group_dro_with_data_augmentation_via_mixup_super_group',
-                      'train_only_group_dro_with_data_augmentation_via_mixup_super_group_with_mixup_regularizer',
-                      'train_only_group_dro_with_data_augmentation_via_mixup_super_group_and_example_similarity_v1',
-                      'train_only_group_dro_with_data_augmentation_via_mixup_super_group_and_example_similarity_v2',
-                      'train_only_group_dro_with_mixup_regularizer_super_group_v2',
-                      'erm_super_group_with_simplified_fairness_loss',
-                      'train_only_group_dro_super_group_with_simplified_fairness_loss',
-                      'train_only_group_dro_super_group_with_symmetric_mixup_regularizer',
-                      'train_only_group_dro_super_group_with_symmetric_mixup_regularizer_integrated',
-                      'train_only_group_dro_super_group_with_non_symmetric_mixup_regularizer',
-                      'train_only_group_dro_super_group_with_non_symmetric_mixup_regularizer_integrated',
-                      'train_only_group_dro_with_mixup_regularizer_super_group_and_data_augmentation'
-                      ]:
-            model = simple_model.SimpleNonLinear(model_params)
-        elif method == 'adversarial_single':
+        if method == 'adversarial_single':
             total_adv_dim = len(other_meta_data['s_flatten_lookup'])
             model_params['model_arch']['adv'] = {'output_dim': [total_adv_dim]}
             model = adversarial.SimpleNonLinear(model_params)
@@ -179,6 +126,8 @@ def get_model(method:str, model_name:str, other_meta_data:Dict, device:torch.dev
         elif method == 'adversarial_moe':
             model_params['model_arch']['adv'] = {'output_dim': number_of_aux_label_per_attribute}
             model = adversarial_moe.SimpleNonLinear(model_params)
+        else:
+            model = simple_model.SimpleNonLinear(model_params)
     else:
         raise NotImplementedError
 
@@ -306,61 +255,9 @@ def runner(runner_arguments:RunnerArguments):
         output = adversarial_training_loop.training_loop(training_loop_params)
     elif runner_arguments.method in ['adversarial_moe']:
         output = adversarial_moe_training_loop.training_loop(training_loop_params)
-    elif runner_arguments.method in ['only_titled_erm', 'only_mixup', 'only_mixup_with_loss_group',
-                                     'tilted_erm_with_mixup', 'tilted_erm_with_fairness_loss',
-                                     'tilted_erm_with_mixup_only_one_group', 'only_mixup_with_abstract_group',
-                                     'weighted_sample_erm', 'only_titled_erm_with_weights',
-                                     'only_tilted_erm_with_abstract_group', 'tilted_erm_with_mixup_augmentation',
-                                     'only_mixup_based_on_distance', 'tilted_erm_with_mixup_based_on_distance',
-                                     'only_mixup_based_on_distance_and_augmentation',
-                                     'only_tilted_dro',
-                                     'only_tilted_erm_with_mixup_augmentation_lambda_weights',
-                                     'only_tilted_erm_with_mixup_augmentation_lambda_weights_v2',
-                                     'only_tilted_erm_with_mixup_augmentation_lambda_weights_v3',
-                                     'only_tilted_erm_with_mixup_augmentation_lambda_weights_v4',
-                                     'only_tilted_erm_with_weights_on_loss',
-                                     'train_with_mixup_only_one_group_based_distance_v2',
-                                     'train_with_mixup_only_one_group_based_distance_v3',
-                                     'only_titled_erm_with_mask',
-                                     'only_tilted_erm_generic', 'only_tilted_erm_with_mask_on_tpr',
-                                     'only_tilted_erm_with_weighted_loss_via_global_weight',
-                                     'only_tilted_erm_with_mask_on_tpr_and_weighted_loss_via_global_weight',
-                                     'train_only_group_dro',
-                                     'train_only_group_dro_with_weighted_sampling',
-                                     'only_mixup_based_on_distance_fid',
-                                     'train_only_group_dro_with_mixup_with_distance',
-                                     'train_only_group_dro_with_mixup_with_random',
-                                     'train_only_group_dro_with_mixup_with_random_with_weighted_sampling',
-                                     'train_only_group_dro_with_mixup_with_distance_with_weighted_sampling',
-                                     'train_only_group_dro_with_augmentation_static_positive_and_negative_weights',
-                                     'simple_mixup_data_augmentation',
-                                     'lisa_based_mixup',
-                                     'lisa_based_mixup_with_mixup_regularizer',
-                                     'lisa_based_mixup_with_distance',
-                                     'lisa_based_mixup_with_mixup_regularizer_and_with_distance',
-                                     'train_only_group_dro_with_mixup_super_group',
-                                     'train_only_group_dro_with_mixup_regularizer_super_group',
-                                     'train_only_group_dro_with_super_group',
-                                     'train_only_group_dro_with_mixup_regularizer_super_group_data_augmentation',
-                                     'train_only_group_dro_with_super_group_data_augmentation',
-                                     'take_2_train_lisa_based_mixup',
-                                     'take_2_train_lisa_based_mixup_with_mixup_regularizer',
-                                     'train_only_group_dro_with_data_augmentation_via_mixup_super_group',
-                                     'train_only_group_dro_with_data_augmentation_via_mixup_super_group_with_mixup_regularizer',
-                                     'train_only_group_dro_with_data_augmentation_via_mixup_super_group_and_example_similarity_v1',
-                                     'train_only_group_dro_with_data_augmentation_via_mixup_super_group_and_example_similarity_v2',
-                                     'train_only_group_dro_with_mixup_regularizer_super_group_v2',
-                                     'erm_super_group_with_simplified_fairness_loss',
-                                     'train_only_group_dro_super_group_with_simplified_fairness_loss',
-                                     'train_only_group_dro_super_group_with_symmetric_mixup_regularizer',
-                                     'train_only_group_dro_super_group_with_symmetric_mixup_regularizer_integrated',
-                                     'train_only_group_dro_super_group_with_non_symmetric_mixup_regularizer',
-                                     'train_only_group_dro_super_group_with_non_symmetric_mixup_regularizer_integrated',
-                                     'train_only_group_dro_with_mixup_regularizer_super_group_and_data_augmentation'
-                                     ]:
-        output = titled_erm_training_loop.training_loop(training_loop_params)
     else:
-        raise NotImplementedError
+        output = titled_erm_training_loop.training_loop(training_loop_params)
+
 
     output['raw_data'] = other_meta_data['raw_data']
     logging.shutdown()
