@@ -642,7 +642,7 @@ def generate_similarity_matrix(iterator, model, groups, reverse_groups, distance
         current_input = all_input[mask]
 
         if distance_mechanism == 'static_distance':
-            raise Warning("this has not been tested before. Do test it before hand")
+            # raise Warning("this has not been tested before. Do test it before hand")
             average_representation = np.mean(current_input, axis=0)
         elif distance_mechanism == 'dynamic_distance':
             batch_input = {
