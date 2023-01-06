@@ -90,12 +90,12 @@ def temp_table_generator(dataset_name, fairness_function):
                ]
 
     methods = [
-        'train_only_group_dro',
+        # 'train_only_group_dro',
         # 'train_only_group_dro_super_group_with_non_symmetric_mixup_regularizer',
         # 'train_only_group_dro_super_group_with_non_symmetric_mixup_regularizer_integrated',
         # 'train_only_group_dro_with_augmentation_static_positive_and_negative_weights',
-        'train_only_group_dro_with_super_group',
-        'only_mixup',
+        # 'train_only_group_dro_with_super_group',
+        # 'only_mixup',
         'only_mixup_based_on_distance'
 
         # 'erm_super_group_with_simplified_fairness_loss',
@@ -108,8 +108,8 @@ def temp_table_generator(dataset_name, fairness_function):
     # dataset_names = ['twitter_hate_speech']
     # dataset_names = ['celeb_multigroup_v3']
     models = ['simple_non_linear']
-    # seeds = [10, 20, 30, 40, 50]
-    seeds = [50]
+    seeds = [10, 20, 30, 40, 50]
+    # seeds = [50]
     # fairness_function = 'equal_odds'
     # fairness_function = 'equal_opportunity'
     k = 2
@@ -165,8 +165,8 @@ def temp_table_generator(dataset_name, fairness_function):
     # print(t.draw())
     return t
 
-adult_multi_group_equal_odds = temp_table_generator('adult_multi_group', 'equal_odds')
-# adult_multi_group_equal_opportunity = temp_table_generator('adult_multi_group', 'equal_opportunity')
+adult_multi_group_equal_odds = temp_table_generator('adult_multi_group_augmented', 'equal_odds')
+adult_multi_group_equal_opportunity = temp_table_generator('adult_multi_group_augmented', 'equal_opportunity')
 #
 # twitter_hate_speech_equal_odds = temp_table_generator('twitter_hate_speech', 'equal_odds')
 # twitter_hate_speech_equal_opportunity = temp_table_generator('twitter_hate_speech', 'equal_opportunity')
@@ -178,8 +178,8 @@ adult_multi_group_equal_odds = temp_table_generator('adult_multi_group', 'equal_
 print("Adult Multi Group - Equal Odds")
 print(adult_multi_group_equal_odds.draw())
 
-# print("Adult Multi Group - Equal Opportunity")
-# print(adult_multi_group_equal_opportunity.draw())
+print("Adult Multi Group - Equal Opportunity")
+print(adult_multi_group_equal_opportunity.draw())
 #
 # print("Twitter Hate Speech equal odds")
 # print(twitter_hate_speech_equal_odds.draw())
@@ -197,17 +197,15 @@ print(adult_multi_group_equal_odds.draw())
 
 
 '''
-+------------------------------------------+-------------------+---------------+
-|                  method                  | balanced accuracy |   fairness    |
-+==========================================+===================+===============+
-| train_only_group_dro_with_mixup_regulari | 0.75 +/- 0.01     | 0.83 +/- 0.11 |
-| zer_super_group_v2                       |                   |               |
-+------------------------------------------+-------------------+---------------+
++------------------------------+-------------------+--------------+
+|            method            | balanced accuracy |   fairness   |
++==============================+===================+==============+
+| only_mixup_based_on_distance | 0.78 +/- 0.0      | 0.9 +/- 0.14 |
++------------------------------+-------------------+--------------+
 Adult Multi Group - Equal Opportunity
-+------------------------------------------+-------------------+---------------+
-|                  method                  | balanced accuracy |   fairness    |
-+==========================================+===================+===============+
-| train_only_group_dro_with_mixup_regulari | 0.77 +/- 0.01     | 0.54 +/- 0.17 |
-| zer_super_group_v2                       |                   |               |
-+------------------------------------------+-------------------+---------------+
++------------------------------+-------------------+---------------+
+|            method            | balanced accuracy |   fairness    |
++==============================+===================+===============+
+| only_mixup_based_on_distance | 0.79 +/- 0.0      | 0.73 +/- 0.21 |
++------------------------------+-------------------+---------------+
 '''
