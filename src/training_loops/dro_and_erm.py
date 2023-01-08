@@ -222,7 +222,7 @@ def dro_optimization_procedure(train_tilted_params):
 
     model, optimizer, device, criterion = \
         train_tilted_params.model, train_tilted_params.optimizer, train_tilted_params.device, train_tilted_params.criterion
-    # model.train()
+    model.train()
 
     group_sampling_procedure = train_tilted_params.other_params['group_sampling_procedure']
 
@@ -303,7 +303,7 @@ def erm_optimization_procedure(train_tilted_params):
 
     model, optimizer, device, criterion = \
         train_tilted_params.model, train_tilted_params.optimizer, train_tilted_params.device, train_tilted_params.criterion
-    # model.train()
+    model.train()
 
     group_sampling_procedure = train_tilted_params.other_params['group_sampling_procedure']
 

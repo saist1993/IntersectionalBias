@@ -49,6 +49,8 @@ class RunnerArguments(NamedTuple):
     titled_t: float = 5.0
     mixup_rg: float = 0.5
     max_number_of_generated_examples: float = 0.75
+    use_dropout: float = 0.2  # 0.0 corresponds to no dropout being applied
+    use_batch_norm: float = 0.0  # 0.0 corresponds to no batch norm being applied
 
 
 def get_fairness_related_meta_dict(train_iterator, fairness_measure, fairness_rate, epsilon):
@@ -97,7 +99,7 @@ def get_logger(unique_id_for_run, log_file_name:Optional[str], runner_arguments)
     logger.addHandler(fileHandler)
 
 
-def get_model(method:str, model_name:str, other_meta_data:Dict, device:torch.device):
+def get_model(method:str, model_name:str, other_meta_data:Dict, device:torch.device, use_batch_norm:float=0.0, use_dropout:float=0.0):
     number_of_aux_label_per_attribute = other_meta_data['number_of_aux_label_per_attribute']
     attribute_id = other_meta_data['attribute_id']
     if attribute_id is not None:
@@ -114,7 +116,9 @@ def get_model(method:str, model_name:str, other_meta_data:Dict, device:torch.dev
 
         model_params = {
             'model_arch': model_arch,
-            'device': device
+            'device': device,
+            'use_batch_norm': use_batch_norm,
+            'use_dropout': use_dropout
         }
 
         if method == 'adversarial_single':
@@ -207,7 +211,11 @@ def runner(runner_arguments:RunnerArguments):
     other_meta_data['attribute_id'] = runner_arguments.attribute_id
 
     # Create model
-    model = get_model(method=runner_arguments.method, model_name=runner_arguments.model, other_meta_data=other_meta_data, device=device)
+    model = get_model(method=runner_arguments.method, model_name=runner_arguments.model,
+                      other_meta_data=other_meta_data,
+                      device=device,
+                      use_dropout=runner_arguments.use_dropout,
+                      use_batch_norm=runner_arguments.use_batch_norm)
     model = model.to(device)
 
 
@@ -369,6 +377,16 @@ if __name__ == '__main__':
                         type=float,
                         default=0.4)
 
+    parser.add_argument('--use_dropout', '-use_dropout',
+                        help="dropout(p=use_dropout)",
+                        type=float,
+                        default=0.0)
+
+    parser.add_argument('--use_batch_norm', '-use_batch_norm',
+                        help="batch norm of 0.0 means no norm else batch norm is applied",
+                        type=float,
+                        default=0.5)
+
 
 
     args = parser.parse_args()
@@ -401,7 +419,9 @@ if __name__ == '__main__':
         fairness_function=args.fairness_function,
         titled_t=args.titled_t,
         mixup_rg=args.mixup_rg,
-        max_number_of_generated_examples=args.max_number_of_generated_examples
+        max_number_of_generated_examples=args.max_number_of_generated_examples,
+        use_dropout=args.use_dropout,
+        use_batch_norm=args.use_batch_norm
     )
 
 

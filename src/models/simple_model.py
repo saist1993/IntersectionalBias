@@ -10,31 +10,39 @@ class SimpleNonLinear(nn.Module):
         input_dim = params['model_arch']['encoder']['input_dim']
         output_dim = params['model_arch']['encoder']['output_dim']
 
+        self.use_batch_norm = params['use_batch_norm']   # 0.0 means don't use batch norm
+        self.use_dropout = params['use_dropout'] # 0.0 means don't use dropout
+
         self.layer_1 = nn.Linear(input_dim, 128)
         self.layer_2 = nn.Linear(128, 64)
         self.layer_3 = nn.Linear(64, 32)
         self.layer_out = nn.Linear(32, output_dim)
 
         self.relu = nn.ReLU()
-        self.dropout = nn.Dropout(p=0.2)
-        self.batchnorm1 = nn.BatchNorm1d(128)
-        self.batchnorm2 = nn.BatchNorm1d(64)
-        self.batchnorm3 = nn.BatchNorm1d(32)
+        self.dropout = nn.Dropout(p=self.use_dropout)
+
+        if self.use_batch_norm != 0.0:
+            self.batchnorm1 = nn.BatchNorm1d(128)
+            self.batchnorm2 = nn.BatchNorm1d(64)
+            self.batchnorm3 = nn.BatchNorm1d(32)
 
     def forward(self, params):
         x = params['input']
         x = self.layer_1(x)
-        x = self.batchnorm1(x)
+        if self.use_batch_norm:
+            x = self.batchnorm1(x)
         x = self.relu(x)
         x = self.dropout(x)  # This does not exists in Michael.
 
         x = self.layer_2(x)
-        x = self.batchnorm2(x)
+        if self.use_batch_norm:
+            x = self.batchnorm2(x)
         x = self.relu(x)
         x = self.dropout(x)
 
         z = self.layer_3(x)
-        z = self.batchnorm3(z)
+        if self.use_batch_norm:
+            z = self.batchnorm3(z)
         z = self.relu(z)
         z = self.dropout(z)
 
