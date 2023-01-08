@@ -24,6 +24,7 @@ if __name__ == '__main__':
     parser.add_argument('--log_file_name', '-log_file_name', help="log_file_name", type=Optional[str], default=None)
     parser.add_argument('--fairness_function', '-fairness_function', help="fairness_function", type=str, default='equal_opportunity')
     parser.add_argument('--version', '-version', help="version number", type=float, default=0.0)
+    parser.add_argument('--use_dropout', '-use_dropout', help="version number", type=float, default=0.0)
 
 
     torch.set_num_threads(2)
@@ -273,7 +274,8 @@ if __name__ == '__main__':
                             fairness_function=args.fairness_function,
                             titled_t=titled_scale,
                             mixup_rg=mixup_scale,
-                            max_number_of_generated_examples=examples_to_generate
+                            max_number_of_generated_examples=examples_to_generate,
+                            use_dropout=args.use_dropout
                         )
                         output = runner(runner_arguments=runner_arguments)
                     except KeyboardInterrupt:
