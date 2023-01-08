@@ -48,7 +48,7 @@ class RunnerArguments(NamedTuple):
     fairness_function: str = 'equal_opportunity'
     titled_t: float = 5.0
     mixup_rg: float = 0.5
-    max_number_of_generated_examples: float = 0.75
+    max_number_of_generated_examples: float = 1.0
     use_dropout: float = 0.2  # 0.0 corresponds to no dropout being applied
     use_batch_norm: float = 0.0  # 0.0 corresponds to no batch norm being applied
 
