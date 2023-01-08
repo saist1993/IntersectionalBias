@@ -470,12 +470,6 @@ def train_only_mixup_based_on_distance(train_tilted_params:TrainParameters):
     global_weight = train_tilted_params.other_params['global_weight']
     global_loss = train_tilted_params.other_params['global_loss']
 
-    flattened_s_to_s = {value: key for key, value in train_tilted_params.other_params['s_to_flattened_s'].items()}
-
-    # if method == 'only_mixup_based_on_distance':
-    #     similarity_matrix = generate_similarity_matrix(train_tilted_params.other_params['valid_iterator'], model, train_tilted_params.other_params['groups'], flattened_s_to_s)
-    # elif method == 'only_mixup_based_on_distance_fid':
-    #     similarity_matrix = generate_similarity_matrix_fid(train_tilted_params.other_params['valid_iterator'], model, train_tilted_params.other_params['groups'], flattened_s_to_s)
 
     train_tilted_params.other_params['group_sampling_procedure'] = 'distance_group'
     group_sampling_procedure = train_tilted_params.other_params['group_sampling_procedure']

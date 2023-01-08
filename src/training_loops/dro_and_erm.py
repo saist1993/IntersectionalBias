@@ -222,7 +222,7 @@ def dro_optimization_procedure(train_tilted_params):
 
     model, optimizer, device, criterion = \
         train_tilted_params.model, train_tilted_params.optimizer, train_tilted_params.device, train_tilted_params.criterion
-    model.train()
+    # model.train()
 
     group_sampling_procedure = train_tilted_params.other_params['group_sampling_procedure']
 
@@ -303,7 +303,7 @@ def erm_optimization_procedure(train_tilted_params):
 
     model, optimizer, device, criterion = \
         train_tilted_params.model, train_tilted_params.optimizer, train_tilted_params.device, train_tilted_params.criterion
-    model.train()
+    # model.train()
 
     group_sampling_procedure = train_tilted_params.other_params['group_sampling_procedure']
 
@@ -397,6 +397,76 @@ def erm_optimization_procedure(train_tilted_params):
         optimizer.step()
 
         output['loss_batch'] = torch.mean(loss).item()  # handel this better!
+        track_output.append(output)
+        track_input.append(composite_items)
+
+    epoch_metric_tracker, loss = train_tilted_params.per_epoch_metric(track_output,
+                                                                      track_input,
+                                                                      train_tilted_params.fairness_function)
+
+    return epoch_metric_tracker, loss, global_weight, None
+
+def erm_optimization_procedure_olddd(train_tilted_params):
+    # Gives weights to each group. In case of supergroup then two group shares the same weight
+    # Note that global_weight never gets updated.
+    global_weight = train_tilted_params.other_params['global_weight']
+    mixup_rg = train_tilted_params.other_params['mixup_rg']
+
+    model, optimizer, device, criterion = \
+        train_tilted_params.model, train_tilted_params.optimizer, train_tilted_params.device, train_tilted_params.criterion
+    # model.train()
+
+    group_sampling_procedure = train_tilted_params.other_params['group_sampling_procedure']
+
+    if "distance" in group_sampling_procedure:
+        flattened_s_to_s = {value: key for key, value in train_tilted_params.other_params['s_to_flattened_s'].items()}
+        similarity_matrix = generate_similarity_matrix(train_tilted_params.other_params['valid_iterator'], model,
+                                                       train_tilted_params.other_params['groups'], flattened_s_to_s,
+                                                       distance_mechanism=train_tilted_params.other_params[
+                                                           'distance_mechanism'])
+    else:
+        similarity_matrix = None
+
+    track_output = []
+    track_input = []
+
+    for i in tqdm(range(train_tilted_params.other_params['number_of_iterations'])):
+        s_group_0, s_group_1 = group_sampling_procedure_func(train_tilted_params=train_tilted_params,
+                                                             global_weight=global_weight,
+                                                             similarity_matrix=similarity_matrix)
+
+        train_tilted_params.other_params['example_sampling_procedure'] = 'equal_sampling'
+
+        items_group_0, items_group_1 = example_sampling_procedure_func(
+            train_tilted_params=train_tilted_params,
+            group0=s_group_0,
+            group1=s_group_1
+        )
+
+        composite_items = {
+            'input': torch.vstack([items_group_0['input'], items_group_1['input']]),
+            'labels': torch.hstack([items_group_0['labels'], items_group_1['labels']]),
+            'aux': torch.vstack([items_group_0['aux'], items_group_1['aux']]),
+            'aux_flattened': torch.hstack([items_group_0['aux_flattened'], items_group_1['aux_flattened']])
+        }
+
+        optimizer.zero_grad()
+        output = model(composite_items)
+        loss = criterion(output['prediction'], composite_items['labels'])
+        # loss_reg = mixup_sub_routine_original(train_tilted_params, items_group_0, items_group_1, model, gamma=None)
+        train_tilted_params.other_params['fairness_regularization_procedure'] = 'mixup'
+        loss_reg = fairness_regularization_procedure_func(train_tilted_params=train_tilted_params,
+                                                          items_group_0=items_group_0,
+                                                          items_group_1=items_group_1,
+                                                          model=model,
+                                                          other_params={'gamma': None})
+
+        loss = torch.mean(loss)
+        loss = loss + mixup_rg * loss_reg
+        loss.backward()
+        optimizer.step()
+
+        output['loss_batch'] = loss.item()
         track_output.append(output)
         track_input.append(composite_items)
 
