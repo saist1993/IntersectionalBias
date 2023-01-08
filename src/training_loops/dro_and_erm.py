@@ -398,7 +398,7 @@ def erm_optimization_procedure(train_tilted_params):
 
         output_group_0['loss_batch'] = torch.mean(loss).item()  # handel this better!
         track_output.append(output_group_0)
-        track_input.append(items_group_1)
+        track_input.append(items_group_0)
 
     epoch_metric_tracker, loss = train_tilted_params.per_epoch_metric(track_output,
                                                                       track_input,
