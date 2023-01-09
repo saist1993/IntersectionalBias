@@ -101,9 +101,9 @@ def temp_table_generator(dataset_name, fairness_function):
         'erm_random_group_equal_sampling_mixup_regularizer',
         'erm_distance_group_equal_sampling_mixup_regularizer_dynamic_distance',
         'erm_distance_group_equal_sampling_mixup_regularizer_static_distance',
-        'dro_super_group_random_sampling',
-        'dro_super_group_equal_sampling',
-        'dro_random_single_group_random_sampling'
+        # 'dro_super_group_random_sampling',
+        # 'dro_super_group_equal_sampling',
+        # 'dro_random_single_group_random_sampling'
         # 'erm_super_group_with_simplified_fairness_loss',
         # 'train_only_group_dro_with_mixup_regularizer_super_group'
     ]
@@ -114,14 +114,14 @@ def temp_table_generator(dataset_name, fairness_function):
     # dataset_names = ['twitter_hate_speech']
     # dataset_names = ['celeb_multigroup_v3']
     models = ['simple_non_linear']
-    seeds = [10, 20, 30, 40, 50]
+    # seeds = [10, 20, 30, 40, 50]
     seeds = [50]
     # fairness_function = 'equal_odds'
     # fairness_function = 'equal_opportunity'
     k = 2
 
     level_1_strategy_params = {'keep_last_k': 100.0}
-    level_2_strategy_params = {'relaxation_threshold': 0.02,
+    level_2_strategy_params = {'relaxation_threshold': 0.03,
                                'fairness_function': fairness_function}
 
     rows = []

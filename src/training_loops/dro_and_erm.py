@@ -149,13 +149,18 @@ def update_loss_and_global_loss_dro(train_tilted_params, s_group_0, s_group_1, l
     tilt_t = train_tilted_params.other_params['titled_t']
     integrate_reg_loss = train_tilted_params.other_params['integrate_reg_loss']
     loss_rg_weight = train_tilted_params.other_params['mixup_rg']
+    if train_tilted_params.other_params['update_only_via_reg']:
+        update_only_via_reg = 0.0
+    else:
+        update_only_via_reg = 1.0
+
 
     if group_sampling_procedure == 'super_group' or group_sampling_procedure == 'super_group_and_distance':
         loss = torch.mean(loss_group_0) + torch.mean(loss_group_1)  # calculate the total loss
 
         if integrate_reg_loss and (loss_rg is not None):
             global_loss[s_group_0, s_group_1] = global_loss[s_group_0, s_group_1] * torch.exp(
-                tilt_t * (loss + (loss_rg * loss_rg_weight)).data)
+                tilt_t * (loss*update_only_via_reg + (loss_rg * loss_rg_weight)).data)
             global_loss = global_loss / (global_loss.sum())
             loss = (loss + (loss_rg * loss_rg_weight)) * global_loss[s_group_0, s_group_1]
         else:
@@ -170,7 +175,7 @@ def update_loss_and_global_loss_dro(train_tilted_params, s_group_0, s_group_1, l
 
         if integrate_reg_loss and (loss_rg is not None):
             global_loss[s_group_0] = global_loss[s_group_0] * torch.exp(
-                tilt_t * (torch.mean(loss_group_0) + (loss_rg * loss_rg_weight)).data)
+                tilt_t * (torch.mean(loss_group_0)*update_only_via_reg + (loss_rg * loss_rg_weight)).data)
             global_loss = global_loss / (global_loss.sum())
             loss = (torch.mean(loss_group_0) + (loss_rg * loss_rg_weight)) * global_loss[s_group_0]
 
@@ -196,7 +201,7 @@ def update_loss_and_global_loss_dro(train_tilted_params, s_group_0, s_group_1, l
     elif group_sampling_procedure == 'random_single_group':
         if integrate_reg_loss and (loss_rg is not None):
             global_loss[s_group_0] = global_loss[s_group_0] * torch.exp(
-                tilt_t * (torch.mean(loss_group_0) + (loss_rg * loss_rg_weight)).data)
+                tilt_t * (torch.mean(loss_group_0)*update_only_via_reg + (loss_rg * loss_rg_weight)).data)
             global_loss = global_loss / (global_loss.sum())
             loss = (torch.mean(loss_group_0) + (loss_rg * loss_rg_weight)) * global_loss[s_group_0]
         else:
@@ -512,9 +517,15 @@ def orchestrator(training_loop_parameters: TrainingLoopParameters):
     else:
         integrate_reg_loss = False
 
+    if "update_only_via_reg" in method:
+        update_only_via_reg = True
+    else:
+        update_only_via_reg = False
+
     training_loop_parameters.other_params['groups_matrix'] = groups_matrix
     training_loop_parameters.other_params['distance_mechanism'] = distance_mechanism
     training_loop_parameters.other_params['integrate_reg_loss'] = integrate_reg_loss
+    training_loop_parameters.other_params['update_only_via_reg'] = update_only_via_reg
     training_loop_parameters.other_params['optimization_procedure'] = optimization_procedure
     training_loop_parameters.other_params['group_sampling_procedure'] = group_sampling_procedure
     training_loop_parameters.other_params['example_sampling_procedure'] = example_sampling_procedure
