@@ -249,6 +249,11 @@ if __name__ == '__main__':
         titled_scales = [0.0]
 
 
+    if args.method in ['dro_super_group_and_distance_equal_sampling_mixup_regularizer_dynamic_distance_integrate_reg_loss_update_only_via_reg',
+                       'dro_super_group_and_distance_equal_sampling_mixup_regularizer_dynamic_distance_integrate_reg_loss']:
+        mixup_scales = [1.0, 10.0, 20.0, 30.0]
+        titled_scales = [0.1, 0.5]
+
     for examples_to_generate in max_number_of_generated_examples:
         for seed in args.seeds:
             for titled_scale in titled_scales:
