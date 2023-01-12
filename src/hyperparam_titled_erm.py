@@ -238,7 +238,8 @@ if __name__ == '__main__':
 
     if args.method in ['dro_random_single_group_random_sampling',
                        'dro_super_group_random_sampling',
-                       'dro_super_group_equal_sampling']:
+                       'dro_super_group_equal_sampling',
+                       'dro_random_group_equal_sampling']:
         mixup_scales = [0.0]
         titled_scales = [0.1, 0.5, 0.01, 0.05, 0.8, 0.08, 0.001]
 
