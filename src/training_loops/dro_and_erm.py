@@ -186,13 +186,13 @@ def update_loss_and_global_loss_dro(train_tilted_params, s_group_0, s_group_1, l
         else:
             global_loss[s_group_0] = global_loss[s_group_0] * torch.exp(
                 tilt_t * torch.mean(loss_group_0).data)
-            global_loss = global_loss / (global_loss.sum())
-            loss = torch.mean(loss_group_0) * global_loss[s_group_0]
+            # global_loss = global_loss / (global_loss.sum())
+            # loss = torch.mean(loss_group_0) * global_loss[s_group_0]
 
             global_loss[s_group_1] = global_loss[s_group_1] * torch.exp(
                 tilt_t * torch.mean(loss_group_1).data)
             global_loss = global_loss / (global_loss.sum())
-            loss = loss + torch.mean(loss_group_1) * global_loss[s_group_1]
+            loss = torch.mean(loss_group_0) * global_loss[s_group_0] + torch.mean(loss_group_1) * global_loss[s_group_1]
             if loss_rg is not None:
                 loss = loss + (loss_rg * loss_rg_weight)
 
