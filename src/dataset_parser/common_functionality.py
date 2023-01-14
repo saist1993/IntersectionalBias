@@ -2,12 +2,47 @@ import copy
 import torch
 import numpy as np
 import pandas as pd
+import torch.nn as nn
 from scipy import optimize
 from metrics import fairness_utils
 from itertools import combinations
 from typing import NamedTuple, List
 from sklearn.preprocessing import StandardScaler
 from utils.iterator import TextClassificationDataset, sequential_transforms
+
+
+class SimpleModelGenerator(nn.Module):
+    """Fairgrad uses this as complex non linear model"""
+
+    def __init__(self, input_dim):
+        super().__init__()
+
+        self.layer_1 = nn.Linear(input_dim, 128)
+        self.layer_2 = nn.Linear(128, input_dim)
+        self.relu = nn.ReLU()
+
+    def forward(self, other_examples):
+        final_output = torch.tensor(0.0, requires_grad=True)
+        for group in other_examples:
+            x = group['input']
+            x = self.layer_1(x)
+            x = self.relu(x)
+            x = self.layer_2(x)
+            final_output = final_output + x
+
+        output = {
+            'prediction': final_output,
+            'adv_output': None,
+            'hidden': x,  # just for compatabilit
+            'classifier_hiddens': None,
+            'adv_hiddens': None
+        }
+
+        return output
+
+    @property
+    def layers(self):
+        return torch.nn.ModuleList([self.layer_1, self.layer_2])
 
 
 def split_data(dataset_size, train_split, valid_split):
@@ -322,6 +357,34 @@ class AugmentDataCommonFunctionality:
 
         return augmented_input_positive, augmented_input_negative
 
+    @staticmethod
+    def generate_examples_mmd(s, gen_model, number_of_examples, other_meta_data):
+        other_leaf_node = AugmentDataCommonFunctionality.generate_combinations_only_leaf_node(s, k=1)
+
+        def common_procedure(label):
+            all_other_leaf_node_example_positive = []
+
+            for group in other_leaf_node:
+                group_mask = AugmentDataCommonFunctionality.generate_mask(other_meta_data['raw_data']['train_s'], group)
+                label_1_group_mask = np.logical_and(group_mask, other_meta_data['raw_data']['train_y'] == label)
+                label_1_examples = np.random.choice(np.where(label_1_group_mask == True)[0], size=number_of_examples,
+                                                    replace=True)
+
+                batch_input = {
+                    'input': torch.FloatTensor(other_meta_data['raw_data']['train_X'][label_1_examples]),
+                }
+
+                all_other_leaf_node_example_positive.append(batch_input)
+
+            return gen_model(all_other_leaf_node_example_positive)['prediction'].detach().numpy()
+
+        positive_examples = common_procedure(label=1)
+        negative_examples = common_procedure(label=0)
+
+        return positive_examples, negative_examples
+
+
+
 
 class AugmentData:
     """A static data augmentation mechanism. Currently not very general purpose"""
@@ -344,7 +407,8 @@ class AugmentData:
 
     def run(self):
         if 'adult_multi_group' in self.dataset_name:
-            train_X, train_y, train_s = self.data_augmentation_for_adult_multi_group()
+            # train_X, train_y, train_s = self.data_augmentation_for_adult_multi_group()
+            train_X, train_y, train_s = self.data_augmentation_for_adult_multi_group_via_mmd()
         else:
             raise NotImplementedError
 
@@ -357,8 +421,8 @@ class AugmentData:
 
         all_unique_groups = np.unique(self.other_meta_data['raw_data']['train_s'], axis=0)
 
-        max_number_of_positive_examples = 1000
-        max_number_of_negative_examples = 1000
+        max_number_of_positive_examples = 500
+        max_number_of_negative_examples = 500
         max_ratio_of_generated_examples = self.max_number_of_generated_examples
 
         augmented_train_X, augmented_train_y, augmented_train_s = [], [], []
@@ -392,6 +456,76 @@ class AugmentData:
                                                                                 self.other_meta_data)
                     elif example_type == 'negative':
                         _, augmented_input = self.common_func.generate_examples(tuple(group), group_to_lambda_weights,
+                                                                                number_of_examples_to_generate,
+                                                                                self.other_meta_data)
+                    else:
+                        raise NotImplementedError
+
+                    augmented_train_X.append(
+                        np.vstack((self.other_meta_data['raw_data']['train_X'][index_of_selected_examples],
+                                   augmented_input)))
+
+                    # this is a hack. All examples for this group would have same y and s and thus it works
+                    index_of_selected_examples = np.random.choice(np.where(label_mask == True)[0],
+                                                                  size=max_number_of_examples,
+                                                                  replace=True)
+                    augmented_train_y.append(self.other_meta_data['raw_data']['train_y'][index_of_selected_examples])
+                    augmented_train_s.append(self.other_meta_data['raw_data']['train_s'][index_of_selected_examples])
+
+            sub_routine(label_mask=label_1_group_mask, total_examples=total_positive_examples,
+                        max_number_of_examples=max_number_of_positive_examples, example_type="positive")
+
+            sub_routine(label_mask=label_0_group_mask, total_examples=total_negative_examples,
+                        max_number_of_examples=max_number_of_negative_examples, example_type='negative')
+
+        augmented_train_X = np.vstack(augmented_train_X)
+        augmented_train_s = np.vstack(augmented_train_s)
+        augmented_train_y = np.hstack(augmented_train_y)
+
+        return augmented_train_X, augmented_train_y, augmented_train_s
+
+    def data_augmentation_for_adult_multi_group_via_mmd(self):
+
+        gen_model = SimpleModelGenerator(input_dim=51)
+        gen_model.load_state_dict(torch.load("gen_model_adult.pth"))
+
+        all_unique_groups = np.unique(self.other_meta_data['raw_data']['train_s'], axis=0)
+
+        max_number_of_positive_examples = 1000
+        max_number_of_negative_examples = 1000
+        max_ratio_of_generated_examples = self.max_number_of_generated_examples
+
+        augmented_train_X, augmented_train_y, augmented_train_s = [], [], []
+
+        for group in all_unique_groups:
+            group_mask = self.common_func.generate_mask(self.other_meta_data['raw_data']['train_s'], group)
+            label_1_group_mask = np.logical_and(group_mask, self.other_meta_data['raw_data']['train_y'] == 1)
+            label_0_group_mask = np.logical_and(group_mask, self.other_meta_data['raw_data']['train_y'] == 0)
+            total_positive_examples = np.sum(label_1_group_mask)
+            total_negative_examples = np.sum(group_mask) - total_positive_examples
+
+            def sub_routine(label_mask, total_examples, max_number_of_examples, example_type):
+                if total_examples > max_number_of_examples:
+                    index_of_selected_examples = np.random.choice(np.where(label_mask == True)[0],
+                                                                  size=max_number_of_examples,
+                                                                  replace=False)  # sample max number of positive examples
+
+                    augmented_train_X.append(self.other_meta_data['raw_data']['train_X'][index_of_selected_examples])
+                    augmented_train_y.append(self.other_meta_data['raw_data']['train_y'][index_of_selected_examples])
+                    augmented_train_s.append(self.other_meta_data['raw_data']['train_s'][index_of_selected_examples])
+                else:
+                    number_of_examples_to_generate = int(min(max_number_of_examples - total_examples,
+                                                             max_ratio_of_generated_examples * total_examples))
+                    index_of_selected_examples = np.random.choice(np.where(label_mask == True)[0],
+                                                                  size=max_number_of_examples - number_of_examples_to_generate,
+                                                                  replace=True)  # sample remaining
+                    # now generate remaining examples!
+                    if example_type == 'positive':
+                        augmented_input, _ = self.common_func.generate_examples_mmd(tuple(group), gen_model,
+                                                                                number_of_examples_to_generate,
+                                                                                self.other_meta_data)
+                    elif example_type == 'negative':
+                        _, augmented_input = self.common_func.generate_examples_mmd(tuple(group), gen_model,
                                                                                 number_of_examples_to_generate,
                                                                                 self.other_meta_data)
                     else:
