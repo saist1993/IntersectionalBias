@@ -84,8 +84,12 @@ def group_sampling_procedure_func(train_tilted_params, global_weight, similarity
         assert similarity_matrix != None
         s_group_0 = np.random.choice(train_tilted_params.other_params['groups'], 1, p=global_weight)[0]
         s_group_distance = similarity_matrix[s_group_0]
-        s_group_1 = np.random.choice(train_tilted_params.other_params['groups'], 1, replace=False,
-                                     p=s_group_distance / np.linalg.norm(s_group_distance, 1))[0]
+        flag = True
+        while flag:
+            s_group_1 = np.random.choice(train_tilted_params.other_params['groups'], 1, replace=False,
+                                         p=s_group_distance / np.linalg.norm(s_group_distance, 1))[0]
+            if s_group_1 != s_group_0:
+                flag = False
     elif group_sampling_procedure == 'super_group':
         # @TODO: write an assert stating that global weight should be of specific kind.
         s_group_0, s_group_1 = eval(
@@ -236,7 +240,8 @@ def dro_optimization_procedure(train_tilted_params):
         similarity_matrix = generate_similarity_matrix(train_tilted_params.other_params['valid_iterator'], model,
                                                        train_tilted_params.other_params['groups'], flattened_s_to_s,
                                                        distance_mechanism=train_tilted_params.other_params[
-                                                           'distance_mechanism'])
+                                                           'distance_mechanism'],
+                                                       train_tilted_params=train_tilted_params)
     else:
         similarity_matrix = None
 
@@ -494,8 +499,10 @@ def orchestrator(training_loop_parameters: TrainingLoopParameters):
         distance_mechanism = "static_distance"
     elif "dynamic_distance" in method:
         distance_mechanism = "dynamic_distance"
+    elif "miixup_distance" in method:
+        distance_mechanism = "miixup_distance"
     else:
-        distance_mechanism = None
+        distance_mechanism = "static_distance"
 
     # set fairness regularizer
     if "mixup_regularizer" in method:

@@ -690,7 +690,8 @@ def simplified_fairness_loss(fairness_function, loss, preds, aux, group1_pattern
         raise NotImplementedError
 
 
-def generate_similarity_matrix(iterator, model, groups, reverse_groups, distance_mechanism='dynamic_distance'):
+def generate_similarity_matrix(iterator, model, groups, reverse_groups, distance_mechanism='dynamic_distance',
+                               train_tilted_params=None):
     all_train_label, all_train_s, all_train_s_flatten, all_input = generate_flat_output_custom(
         iterator)
 
@@ -698,36 +699,47 @@ def generate_similarity_matrix(iterator, model, groups, reverse_groups, distance
     all_average_representation = {}
 
 
+    if distance_mechanism in ["static_distance", "dynamic_distance"]:
+        for unique_group in all_unique_groups:
+            mask = generate_mask(all_train_s, unique_group)
+            current_input = all_input[mask]
 
-    for unique_group in all_unique_groups:
-        mask = generate_mask(all_train_s, unique_group)
-        current_input = all_input[mask]
+            if distance_mechanism == 'static_distance':
+                # raise Warning("this has not been tested before. Do test it before hand")
+                average_representation = np.mean(current_input, axis=0)
+            elif distance_mechanism == 'dynamic_distance':
+                batch_input = {
+                    'input': torch.FloatTensor(current_input),
+                }
 
-        if distance_mechanism == 'static_distance':
-            # raise Warning("this has not been tested before. Do test it before hand")
-            average_representation = np.mean(current_input, axis=0)
-        elif distance_mechanism == 'dynamic_distance':
-            batch_input = {
-                'input': torch.FloatTensor(current_input),
-            }
+                model_hidden = model(batch_input)['hidden']
 
-            model_hidden = model(batch_input)['hidden']
+                average_representation = torch.mean(model_hidden, axis=0).cpu().detach().numpy()
+            else:
+                raise NotImplementedError
 
-            average_representation = torch.mean(model_hidden, axis=0).cpu().detach().numpy()
-        else:
-            raise NotImplementedError
+            all_average_representation[tuple([int(i) for i in unique_group])] = average_representation
 
-        all_average_representation[tuple([int(i) for i in unique_group])] = average_representation
+        # average representation = {str([0,0,1]): average_representation, str([0,1,1]): average_representation}
+        distance_lookup = {}
 
-    # average representation = {str([0,0,1]): average_representation, str([0,1,1]): average_representation}
-    distance_lookup = {}
+        for unique_group in groups:
+            distance = []
+            unique_group_representation = all_average_representation[reverse_groups[unique_group]]
+            for group in groups:
+                distance.append(cosine_distances([unique_group_representation], [all_average_representation[reverse_groups[group]]])[0][0])
+            distance_lookup[unique_group] = distance
+    elif distance_mechanism == "miixup_distance":
+        distance_lookup = {}
 
-    for unique_group in groups:
-        distance = []
-        unique_group_representation = all_average_representation[reverse_groups[unique_group]]
-        for group in groups:
-            distance.append(cosine_distances([unique_group_representation], [all_average_representation[reverse_groups[group]]])[0][0])
-        distance_lookup[unique_group] = distance
+        for unique_group in groups:
+            distance = []
+            for group in groups:
+                items_group_0, items_group_1 = sample_data(train_tilted_params, s_group_0=unique_group, s_group_1=group)
+                loss_rg = mixup_sub_routine(train_tilted_params, items_group_0, items_group_1, model, gamma=None)
+                distance.append(loss_rg.data.item())
+            distance_lookup[unique_group] = distance
+
     return distance_lookup
 
 def training_loop_common(training_loop_parameters: TrainingLoopParameters, train_function):

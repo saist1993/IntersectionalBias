@@ -252,7 +252,10 @@ if __name__ == '__main__':
 
 
     if args.method in ['dro_super_group_and_distance_equal_sampling_mixup_regularizer_dynamic_distance_integrate_reg_loss_update_only_via_reg',
-                       'dro_super_group_and_distance_equal_sampling_mixup_regularizer_dynamic_distance_integrate_reg_loss']:
+                       'dro_super_group_and_distance_equal_sampling_mixup_regularizer_dynamic_distance_integrate_reg_loss',
+                       'dro_super_group_equal_sampling_mixup_regularizer_integrate_reg_loss',
+                       'dro_random_group_equal_sampling_mixup_regularizer_integrate_reg_loss',
+                       'dro_super_group_and_distance_equal_sampling_mixup_regularizer_integrate_reg_loss_miixup_distance']:
         mixup_scales = [1.0, 10.0, 20.0, 30.0]
         titled_scales = [0.1, 0.5]
 
