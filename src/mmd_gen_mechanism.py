@@ -206,6 +206,7 @@ class AuxilaryFunction:
     def sample_batch(current_group):
         # other_leaf_group = [train_tilted_params.other_params['s_to_flattened_s'][i] for i in generate_combinations_only_leaf_node(flattened_s_to_s[current_group], k=1)]
         other_leaf_group = [i for i in AuxilaryFunction.generate_abstract_node(flattened_s_to_s[current_group], k=1)]
+        # other_leaf_group = [i for i in AuxilaryFunction.generate_combinations_only_leaf_node(flattened_s_to_s[current_group], k=1)]
 
         examples_current_group, _ = example_sampling_procedure_func(
             train_tilted_params=train_tilted_params,
@@ -476,7 +477,7 @@ mmd_loss = MMD_loss()
 max_size = 500
 aux_func = AuxilaryFunction()
 
-for _ in range(50):
+for _ in range(10):
     total_loss = 0.0
     for i in tqdm(range(train_tilted_params.other_params['number_of_iterations'])):
         current_group, _ = group_sampling_procedure_func(
@@ -523,3 +524,6 @@ for _ in range(50):
         overall_accuracy += [i[1] for i in final_accuracy_negative]
 
     print(np.mean(balanced_accuracy), np.mean(overall_accuracy))
+
+
+torch.save(gen_model.state_dict(), "gen_model_adult.pth")

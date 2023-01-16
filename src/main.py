@@ -349,12 +349,12 @@ if __name__ == '__main__':
     parser.add_argument('--fairness_lambda', '-fairness_lambda', help="the lambda in the fairness loss equation", type=float,
                         default=0.0)
     parser.add_argument('--method', '-method', help="unconstrained/adversarial_single/adversarial_group", type=str,
-                        default='erm_random_group_equal_sampling_mixup_regularizer')
+                        default='dro_random_group_equal_sampling_mixup_regularizer_integrate_reg_loss')
     parser.add_argument('--save_model_as', '-save_model_as', help="unconstrained/adversarial_single/adversarial_group", type=str,
                         default=None)
     parser.add_argument('--dataset_name', '-dataset_name', help="twitter_hate_speech/adult_multi_group/celeb_multigroup_v3",
                         type=str,
-                        default='adult_multi_group_augmented')
+                        default='adult_multi_group')
 
     parser.add_argument('--log_file_name', '-log_file_name', help="the name of the log file",
                         type=str,
@@ -380,7 +380,7 @@ if __name__ == '__main__':
     parser.add_argument('--use_dropout', '-use_dropout',
                         help="dropout(p=use_dropout)",
                         type=float,
-                        default=0.2)
+                        default=0.5)
 
     parser.add_argument('--use_batch_norm', '-use_batch_norm',
                         help="batch norm of 0.0 means no norm else batch norm is applied",
