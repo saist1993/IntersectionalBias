@@ -215,3 +215,8 @@ class SimpleNonLinearMoreComplex(nn.Module):
     @property
     def layers(self):
         return torch.nn.ModuleList([self.layer_1, self.layer_2, self.layer_3, self.layer_4, self.layer_out])
+
+
+
+
+

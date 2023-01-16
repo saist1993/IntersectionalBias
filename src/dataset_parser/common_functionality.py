@@ -357,6 +357,112 @@ class AugmentDataCommonFunctionality:
 
         return augmented_input_positive, augmented_input_negative
 
+
+    @staticmethod
+    def create_mask_with_x(data, condition):
+
+        keep_indices = []
+
+        for index, i in enumerate(condition):
+            if i != 'x':
+                keep_indices.append(i == data[:, index])
+            else:
+                keep_indices.append(np.ones_like(data[:, 0], dtype='bool'))
+
+        mask = np.ones_like(data[:, 0], dtype='bool')
+
+        # mask = [np.logical_and(mask, i) for i in keep_indices]
+
+        for i in keep_indices:
+            mask = np.logical_and(mask, i)
+        return mask
+
+
+    @staticmethod
+    def custom_sample_data(group, all_label, all_input, all_aux, all_aux_flatten, number_of_positive_examples,
+                           number_of_negative_examples):
+        '''The group would have x - (1,1,X)'''
+
+        group_mask = AugmentDataCommonFunctionality.create_mask_with_x(data=all_aux, condition=group)
+        positive_index = np.where(np.logical_and(all_label == 1, group_mask == True))[0]
+        negative_index = np.where(np.logical_and(all_label == 0, group_mask == True))[0]
+        negative_index = np.random.choice(negative_index, size=number_of_negative_examples, replace=True).tolist()
+        positive_index = np.random.choice(positive_index, size=number_of_positive_examples, replace=True).tolist()
+
+        batch_input_negative = {
+            'labels': torch.LongTensor(all_label[negative_index]),
+            'input': torch.FloatTensor(all_input[negative_index]),
+            'aux': torch.LongTensor(all_aux[negative_index]),
+            'aux_flattened': torch.LongTensor(all_aux_flatten[negative_index])
+        }
+
+        batch_input_positive = {
+            'labels': torch.LongTensor(all_label[positive_index]),
+            'input': torch.FloatTensor(all_input[positive_index]),
+            'aux': torch.LongTensor(all_aux[positive_index]),
+            'aux_flattened': torch.LongTensor(all_aux_flatten[positive_index])
+        }
+
+        return batch_input_negative, batch_input_positive
+
+    @staticmethod
+    def sample_batch(current_group, number_of_):
+        # other_leaf_group = [train_tilted_params.other_params['s_to_flattened_s'][i] for i in generate_combinations_only_leaf_node(flattened_s_to_s[current_group], k=1)]
+        other_leaf_group = [i for i in AugmentDataCommonFunctionality.generate_abstract_node(flattened_s_to_s[current_group], k=1)]
+
+        examples_current_group, _ = example_sampling_procedure_func(
+            train_tilted_params=train_tilted_params,
+            group0=current_group,
+            group1=None
+        )
+
+        index = int(train_tilted_params.other_params['batch_size'] / 2)
+
+        negative_examples_current_group = {
+            'labels': torch.LongTensor(examples_current_group['labels'][:index]),
+            'input': torch.FloatTensor(examples_current_group['input'][:index]),
+            'aux': torch.LongTensor(examples_current_group['aux'][:index]),
+            'aux_flattened': torch.LongTensor(examples_current_group['aux_flattened'][:index])
+        }
+
+        positive_examples_current_group = {
+            'labels': torch.LongTensor(examples_current_group['labels'][index:]),
+            'input': torch.FloatTensor(examples_current_group['input'][index:]),
+            'aux': torch.LongTensor(examples_current_group['aux'][index:]),
+            'aux_flattened': torch.LongTensor(examples_current_group['aux_flattened'][index:])
+        }
+
+        examples_other_leaf_group_negative, examples_other_leaf_group_positive = [], []
+
+        for group in other_leaf_group:
+            #             examples, _ = example_sampling_procedure_func(
+            #                 train_tilted_params=train_tilted_params,
+            #                 group0=group,
+            #                 group1=None
+            #             )
+
+            #             examples_other_leaf_group.append(examples)
+
+            batch_input_negative, batch_input_positive = custom_sample_data(group=group,
+                                                                            all_label=all_label,
+                                                                            all_input=all_input,
+                                                                            all_aux=all_aux,
+                                                                            all_aux_flatten=all_aux_flatten,
+                                                                            number_of_positive_examples=int(
+                                                                                train_tilted_params.other_params[
+                                                                                    'batch_size'] / 2),
+                                                                            number_of_negative_examples=int(
+                                                                                train_tilted_params.other_params[
+                                                                                    'batch_size'] / 2))
+
+            examples_other_leaf_group_negative.append(batch_input_negative)
+            examples_other_leaf_group_positive.append(batch_input_positive)
+
+        return negative_examples_current_group, positive_examples_current_group, examples_other_leaf_group_negative, examples_other_leaf_group_positive
+
+
+
+
     @staticmethod
     def generate_examples_mmd(s, gen_model, number_of_examples, other_meta_data):
         other_leaf_node = AugmentDataCommonFunctionality.generate_combinations_only_leaf_node(s, k=1)
