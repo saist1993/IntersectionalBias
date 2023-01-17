@@ -67,21 +67,50 @@ def MMD(x, y, kernel):
 class SimpleModelGenerator(nn.Module):
     """Fairgrad uses this as complex non linear model"""
 
+    # def __init__(self, input_dim):
+    #     super().__init__()
+    #
+    #     self.layer_1 = nn.Linear(input_dim, 128)
+    #     self.layer_2 = nn.Linear(128, input_dim)
+    #     self.relu = nn.ReLU()
+    #
+    # def forward(self, other_examples):
+    #     final_output = torch.tensor(0.0, requires_grad=True)
+    #     for group in other_examples:
+    #         x = group['input']
+    #         x = self.layer_1(x)
+    #         x = self.relu(x)
+    #         x = self.layer_2(x)
+    #         final_output = final_output + x
+    #
+    #     output = {
+    #         'prediction': final_output,
+    #         'adv_output': None,
+    #         'hidden': x,  # just for compatabilit
+    #         'classifier_hiddens': None,
+    #         'adv_hiddens': None
+    #     }
+    #
+    #     return output
+    #
+    # @property
+    # def layers(self):
+    #     return torch.nn.ModuleList([self.layer_1, self.layer_2])
+
+
+class SimpleModelGenerator(nn.Module):
+    """Fairgrad uses this as complex non linear model"""
+
     def __init__(self, input_dim):
         super().__init__()
 
-        self.layer_1 = nn.Linear(input_dim, 128)
-        self.layer_2 = nn.Linear(128, input_dim)
-        self.relu = nn.ReLU()
+        self.lambda_params = torch.nn.Parameter(torch.FloatTensor([0.33, 0.33, 0.33]))
 
     def forward(self, other_examples):
         final_output = torch.tensor(0.0, requires_grad=True)
-        for group in other_examples:
+        for param, group in zip(self.lambda_params, other_examples):
             x = group['input']
-            x = self.layer_1(x)
-            x = self.relu(x)
-            x = self.layer_2(x)
-            final_output = final_output + x
+            final_output = final_output + x*param
 
         output = {
             'prediction': final_output,
@@ -96,7 +125,6 @@ class SimpleModelGenerator(nn.Module):
     @property
     def layers(self):
         return torch.nn.ModuleList([self.layer_1, self.layer_2])
-
 
 class SimpleClassifier(nn.Module):
 
@@ -512,9 +540,11 @@ gen_model_positive = SimpleModelGenerator(input_dim=input_dim)
 gen_model_negative = SimpleModelGenerator(input_dim=input_dim)
 
 # optimizer
-opt_fn = partial(torch.optim.Adam)
-optimizer_positive = make_opt(gen_model_positive, opt_fn, lr=0.001)
-optimizer_negative = make_opt(gen_model_negative, opt_fn, lr=0.001)
+# opt_fn = partial(torch.optim.Adam)
+# optimizer_positive = make_opt(gen_model_positive, opt_fn, lr=0.001)
+# optimizer_negative = make_opt(gen_model_negative, opt_fn, lr=0.001)
+optimizer_positive = torch.optim.Adam(gen_model_positive.parameters(), lr=0.001)
+optimizer_negative = torch.optim.Adam(gen_model_negative.parameters(), lr=0.001)
 
 # mmd loss
 mmd_loss = MMD_loss()
@@ -538,10 +568,10 @@ for _ in range(10):
 
         output_positive = gen_model_positive(examples_other_leaf_group_positive)
         output_negative = gen_model_negative(examples_other_leaf_group_negative)
-        # positive_loss = mmd_loss(positive_examples_current_group['input'], output_positive['prediction'])
-        # negative_loss = mmd_loss(negative_examples_current_group['input'], output_negative['prediction'])
-        positive_loss = MMD(x=positive_examples_current_group['input'], y=output_positive['prediction'], kernel='rbf')
-        negative_loss = MMD(x=negative_examples_current_group['input'], y=output_negative['prediction'], kernel='rbf')
+        positive_loss = mmd_loss(positive_examples_current_group['input'], output_positive['prediction'])
+        negative_loss = mmd_loss(negative_examples_current_group['input'], output_negative['prediction'])
+        # positive_loss = MMD(x=positive_examples_current_group['input'], y=output_positive['prediction'], kernel='rbf')
+        # negative_loss = MMD(x=negative_examples_current_group['input'], y=output_negative['prediction'], kernel='rbf')
         # loss = positive_loss + negative_loss
         positive_loss.backward()
         negative_loss.backward()

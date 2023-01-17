@@ -11,24 +11,52 @@ from sklearn.preprocessing import StandardScaler
 from utils.iterator import TextClassificationDataset, sequential_transforms
 
 
+# class SimpleModelGenerator(nn.Module):
+#     """Fairgrad uses this as complex non linear model"""
+#
+#     def __init__(self, input_dim):
+#         super().__init__()
+#
+#         self.layer_1 = nn.Linear(input_dim, 128)
+#         self.layer_2 = nn.Linear(128, input_dim)
+#         self.relu = nn.ReLU()
+#
+#     def forward(self, other_examples):
+#         final_output = torch.tensor(0.0, requires_grad=True)
+#         for group in other_examples:
+#             x = group['input']
+#             x = self.layer_1(x)
+#             x = self.relu(x)
+#             x = self.layer_2(x)
+#             final_output = final_output + x
+#
+#         output = {
+#             'prediction': final_output,
+#             'adv_output': None,
+#             'hidden': x,  # just for compatabilit
+#             'classifier_hiddens': None,
+#             'adv_hiddens': None
+#         }
+#
+#         return output
+#
+#     @property
+#     def layers(self):
+#         return torch.nn.ModuleList([self.layer_1, self.layer_2])
+
 class SimpleModelGenerator(nn.Module):
     """Fairgrad uses this as complex non linear model"""
 
     def __init__(self, input_dim):
         super().__init__()
 
-        self.layer_1 = nn.Linear(input_dim, 128)
-        self.layer_2 = nn.Linear(128, input_dim)
-        self.relu = nn.ReLU()
+        self.lambda_params = torch.nn.Parameter(torch.FloatTensor([0.33, 0.33, 0.33]))
 
     def forward(self, other_examples):
         final_output = torch.tensor(0.0, requires_grad=True)
-        for group in other_examples:
+        for param, group in zip(self.lambda_params, other_examples):
             x = group['input']
-            x = self.layer_1(x)
-            x = self.relu(x)
-            x = self.layer_2(x)
-            final_output = final_output + x
+            final_output = final_output + x*param
 
         output = {
             'prediction': final_output,
@@ -527,8 +555,8 @@ class AugmentData:
 
         all_unique_groups = np.unique(self.other_meta_data['raw_data']['train_s'], axis=0)
 
-        max_number_of_positive_examples = 500
-        max_number_of_negative_examples = 500
+        max_number_of_positive_examples = 1000
+        max_number_of_negative_examples = 1000
         max_ratio_of_generated_examples = self.max_number_of_generated_examples
 
         augmented_train_X, augmented_train_y, augmented_train_s = [], [], []
