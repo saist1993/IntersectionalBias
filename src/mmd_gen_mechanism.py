@@ -517,13 +517,13 @@ for _ in range(10):
         # print(f"current_group: {current_group}, and positive accuracy {final_accuracy_positive}")
         # print(f"current_group: {current_group}, and negative accuracy {final_accuracy_negative}")
 
-        balanced_accuracy += [i[0] for i  in final_accuracy_positive]
-        balanced_accuracy += [i[0] for i  in final_accuracy_negative]
+        balanced_accuracy += [i[0] for i in final_accuracy_positive]
+        balanced_accuracy += [i[0] for i in final_accuracy_negative]
 
         overall_accuracy += [i[1] for i in final_accuracy_positive]
         overall_accuracy += [i[1] for i in final_accuracy_negative]
 
-    print(np.mean(balanced_accuracy), np.mean(overall_accuracy))
+    print(np.mean(overall_accuracy), np.max(overall_accuracy), np.min(overall_accuracy))
 
 
 torch.save(gen_model.state_dict(), "gen_model_adult.pth")
