@@ -568,10 +568,10 @@ for _ in range(10):
 
         output_positive = gen_model_positive(examples_other_leaf_group_positive)
         output_negative = gen_model_negative(examples_other_leaf_group_negative)
-        positive_loss = mmd_loss(positive_examples_current_group['input'], output_positive['prediction'])
-        negative_loss = mmd_loss(negative_examples_current_group['input'], output_negative['prediction'])
-        # positive_loss = MMD(x=positive_examples_current_group['input'], y=output_positive['prediction'], kernel='rbf')
-        # negative_loss = MMD(x=negative_examples_current_group['input'], y=output_negative['prediction'], kernel='rbf')
+        # positive_loss = mmd_loss(positive_examples_current_group['input'], output_positive['prediction'])
+        # negative_loss = mmd_loss(negative_examples_current_group['input'], output_negative['prediction'])
+        positive_loss = MMD(x=positive_examples_current_group['input'], y=output_positive['prediction'], kernel='rbf')
+        negative_loss = MMD(x=negative_examples_current_group['input'], y=output_negative['prediction'], kernel='rbf')
         # loss = positive_loss + negative_loss
         positive_loss.backward()
         negative_loss.backward()
