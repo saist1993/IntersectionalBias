@@ -18,9 +18,51 @@ from utils.misc import resolve_device, set_seed, make_opt, CustomError
 from training_loops.dro_and_erm import group_sampling_procedure_func, create_group, example_sampling_procedure_func
 
 
+import warnings
+warnings.filterwarnings("ignore")
+
 dataset_name = 'adult_multi_group'
 batch_size = 512
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
+def MMD(x, y, kernel):
+    """Emprical maximum mean discrepancy. The lower the result
+       the more evidence that distributions are the same.
+
+    Args:
+        x: first sample, distribution P
+        y: second sample, distribution Q
+        kernel: kernel type such as "multiscale" or "rbf"
+    """
+    xx, yy, zz = torch.mm(x, x.t()), torch.mm(y, y.t()), torch.mm(x, y.t())
+    rx = (xx.diag().unsqueeze(0).expand_as(xx))
+    ry = (yy.diag().unsqueeze(0).expand_as(yy))
+
+    dxx = rx.t() + rx - 2. * xx  # Used for A in (1)
+    dyy = ry.t() + ry - 2. * yy  # Used for B in (1)
+    dxy = rx.t() + ry - 2. * zz  # Used for C in (1)
+
+    XX, YY, XY = (torch.zeros(xx.shape).to(device),
+                  torch.zeros(xx.shape).to(device),
+                  torch.zeros(xx.shape).to(device))
+
+    if kernel == "multiscale":
+
+        bandwidth_range = [0.2, 0.5, 0.9, 1.3]
+        for a in bandwidth_range:
+            XX += a ** 2 * (a ** 2 + dxx) ** -1
+            YY += a ** 2 * (a ** 2 + dyy) ** -1
+            XY += a ** 2 * (a ** 2 + dxy) ** -1
+
+    if kernel == "rbf":
+
+        bandwidth_range = [10, 15, 20, 50]
+        for a in bandwidth_range:
+            XX += torch.exp(-0.5 * dxx / a)
+            YY += torch.exp(-0.5 * dyy / a)
+            XY += torch.exp(-0.5 * dxy / a)
+
+    return torch.mean(XX + YY - 2. * XY)
 
 class SimpleModelGenerator(nn.Module):
     """Fairgrad uses this as complex non linear model"""
@@ -466,11 +508,13 @@ flattened_s_to_s = {value: key for key, value in train_tilted_params.other_param
 
 # model
 input_dim = all_input.shape[1]
-gen_model = SimpleModelGenerator(input_dim=input_dim)
+gen_model_positive = SimpleModelGenerator(input_dim=input_dim)
+gen_model_negative = SimpleModelGenerator(input_dim=input_dim)
 
 # optimizer
 opt_fn = partial(torch.optim.Adam)
-optimizer = make_opt(gen_model, opt_fn, lr=0.001)
+optimizer_positive = make_opt(gen_model_positive, opt_fn, lr=0.001)
+optimizer_negative = make_opt(gen_model_negative, opt_fn, lr=0.001)
 
 # mmd loss
 mmd_loss = MMD_loss()
@@ -478,7 +522,7 @@ max_size = 500
 aux_func = AuxilaryFunction()
 
 for _ in range(10):
-    total_loss = 0.0
+    total_loss_positive, total_loss_negative = 0.0, 0.0
     for i in tqdm(range(train_tilted_params.other_params['number_of_iterations'])):
         current_group, _ = group_sampling_procedure_func(
             train_tilted_params,
@@ -489,26 +533,33 @@ for _ in range(10):
         negative_examples_current_group, positive_examples_current_group, examples_other_leaf_group_negative, examples_other_leaf_group_positive = aux_func.sample_batch(
             current_group)
 
-        optimizer.zero_grad()
+        optimizer_positive.zero_grad()
+        optimizer_negative.zero_grad()
 
-        output_positive = gen_model(examples_other_leaf_group_positive)
-        output_negative = gen_model(examples_other_leaf_group_negative)
-        positive_loss = mmd_loss(positive_examples_current_group['input'], output_positive['prediction'])
-        negative_loss = mmd_loss(negative_examples_current_group['input'], output_negative['prediction'])
-        loss = positive_loss + negative_loss
-        loss.backward()
-        optimizer.step()
+        output_positive = gen_model_positive(examples_other_leaf_group_positive)
+        output_negative = gen_model_negative(examples_other_leaf_group_negative)
+        # positive_loss = mmd_loss(positive_examples_current_group['input'], output_positive['prediction'])
+        # negative_loss = mmd_loss(negative_examples_current_group['input'], output_negative['prediction'])
+        positive_loss = MMD(x=positive_examples_current_group['input'], y=output_positive['prediction'], kernel='rbf')
+        negative_loss = MMD(x=negative_examples_current_group['input'], y=output_negative['prediction'], kernel='rbf')
+        # loss = positive_loss + negative_loss
+        positive_loss.backward()
+        negative_loss.backward()
+        optimizer_positive.step()
+        optimizer_negative.step()
 
-        total_loss += loss.data
-    print(total_loss / train_tilted_params.other_params['number_of_iterations'])
+        total_loss_positive += positive_loss.data
+        total_loss_negative += negative_loss.data
+    print(total_loss_positive / train_tilted_params.other_params['number_of_iterations'])
+    print(total_loss_negative / train_tilted_params.other_params['number_of_iterations'])
 
     balanced_accuracy, overall_accuracy = [], []
     for _, current_group in other_meta_data['s_flatten_lookup'].items():
         negative_examples_current_group, positive_examples_current_group, examples_other_leaf_group_negative, examples_other_leaf_group_positive = aux_func.sample_batch(
             current_group)
 
-        output_positive = gen_model(examples_other_leaf_group_positive)
-        output_negative = gen_model(examples_other_leaf_group_negative)
+        output_positive = gen_model_positive(examples_other_leaf_group_positive)
+        output_negative = gen_model_negative(examples_other_leaf_group_negative)
 
         final_accuracy_positive = tgs.prediction_over_generated_examples(generated_examples=output_positive['prediction'], gold_label=negative_examples_current_group['aux'])
         final_accuracy_negative = tgs.prediction_over_generated_examples(generated_examples=output_negative['prediction'], gold_label=negative_examples_current_group['aux'])
@@ -526,4 +577,5 @@ for _ in range(10):
     print(np.mean(overall_accuracy), np.max(overall_accuracy), np.min(overall_accuracy))
 
 
-torch.save(gen_model.state_dict(), "gen_model_adult.pth")
+torch.save(gen_model_positive.state_dict(), "gen_model_adult_positive.pth")
+torch.save(gen_model_negative.state_dict(), "gen_model_adult_negative.pth")

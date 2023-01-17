@@ -592,8 +592,11 @@ class AugmentData:
 
     def data_augmentation_for_adult_multi_group_via_mmd(self):
 
-        gen_model = SimpleModelGenerator(input_dim=51)
-        gen_model.load_state_dict(torch.load("gen_model_adult.pth"))
+        gen_model_positive = SimpleModelGenerator(input_dim=51)
+        gen_model_positive.load_state_dict(torch.load("gen_model_adult_positive.pth"))
+
+        gen_model_negative = SimpleModelGenerator(input_dim=51)
+        gen_model_negative.load_state_dict(torch.load("gen_model_adult_negative.pth"))
 
         all_unique_groups = np.unique(self.other_meta_data['raw_data']['train_s'], axis=0)
 
@@ -627,11 +630,11 @@ class AugmentData:
                                                                   replace=True)  # sample remaining
                     # now generate remaining examples!
                     if example_type == 'positive':
-                        augmented_input, _ = self.common_func.generate_examples_mmd(tuple(group), gen_model,
+                        augmented_input, _ = self.common_func.generate_examples_mmd(tuple(group), gen_model_positive,
                                                                                 number_of_examples_to_generate,
                                                                                 self.other_meta_data)
                     elif example_type == 'negative':
-                        _, augmented_input = self.common_func.generate_examples_mmd(tuple(group), gen_model,
+                        _, augmented_input = self.common_func.generate_examples_mmd(tuple(group), gen_model_negative,
                                                                                 number_of_examples_to_generate,
                                                                                 self.other_meta_data)
                     else:
