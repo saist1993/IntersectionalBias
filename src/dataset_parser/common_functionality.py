@@ -217,6 +217,18 @@ class AugmentDataCommonFunctionality:
         return all_s_combinations
 
     @staticmethod
+    def generate_abstract_node(s, k=1):
+        all_s_combinations = []
+
+        for i in combinations(range(len(s)), k):
+            _temp = list(copy.deepcopy(s))
+            for j in i:
+                _temp[j] = 'x'
+            all_s_combinations.append(tuple(_temp))
+
+        return all_s_combinations
+
+    @staticmethod
     def get_all_representation_positive_negative_seperate_only_leaf_node(df, s):
         s_abstract = AugmentDataCommonFunctionality.generate_combinations_only_leaf_node(list(s))
         s = tuple(s)
@@ -493,7 +505,8 @@ class AugmentDataCommonFunctionality:
 
     @staticmethod
     def generate_examples_mmd(s, gen_model, number_of_examples, other_meta_data):
-        other_leaf_node = AugmentDataCommonFunctionality.generate_combinations_only_leaf_node(s, k=1)
+        # other_leaf_node = AugmentDataCommonFunctionality.generate_combinations_only_leaf_node(s, k=1)
+        other_leaf_node = AugmentDataCommonFunctionality.generate_abstract_node(s, k=1)
 
         def common_procedure(label):
             all_other_leaf_node_example_positive = []
