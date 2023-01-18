@@ -98,14 +98,14 @@ def temp_table_generator(dataset_name, fairness_function):
         # 'only_mixup',
         # 'only_mixup_based_on_distance'
         # 'erm_random_single_group_random_sampling',
-        'erm_random_group_equal_sampling_mixup_regularizer',
+        # 'erm_random_group_equal_sampling_mixup_regularizer',
         # 'erm_distance_group_equal_sampling_mixup_regularizer_dynamic_distance',
         # 'erm_distance_group_equal_sampling_mixup_regularizer_static_distance',
         # 'dro_random_single_group_random_sampling',
         # 'dro_super_group_random_sampling',
         # 'dro_super_group_equal_sampling',
         # 'dro_random_group_equal_sampling',
-        # 'dro_random_single_group_equal_sampling',
+        'dro_random_single_group_equal_sampling',
         # 'dro_super_group_and_distance_equal_sampling_mixup_regularizer_dynamic_distance_integrate_reg_loss_update_only_via_reg',
         # 'dro_super_group_and_distance_equal_sampling_mixup_regularizer_dynamic_distance_integrate_reg_loss',
         # 'dro_super_group_equal_sampling_mixup_regularizer_integrate_reg_loss',
@@ -121,8 +121,8 @@ def temp_table_generator(dataset_name, fairness_function):
     # dataset_names = ['twitter_hate_speech']
     # dataset_names = ['celeb_multigroup_v3']
     models = ['simple_non_linear']
-    # seeds = [10, 20, 30, 40, 50]
-    seeds = [50]
+    seeds = [10, 20, 30, 40, 50]
+    # seeds = [50]
     # fairness_function = 'equal_odds'
     # fairness_function = 'equal_opportunity'
     k = 2
@@ -178,9 +178,9 @@ def temp_table_generator(dataset_name, fairness_function):
     # print(t.draw())
     return t
 
-adult_multi_group_equal_odds = temp_table_generator('adult_multi_group', 'equal_odds')
-adult_multi_group_equal_opportunity = temp_table_generator('adult_multi_group', 'equal_opportunity')
-#
+adult_multi_group_equal_odds = temp_table_generator('adult_multi_group_augmented', 'equal_odds')
+adult_multi_group_equal_opportunity = temp_table_generator('adult_multi_group_augmented', 'equal_opportunity')
+# #
 # twitter_hate_speech_equal_odds = temp_table_generator('twitter_hate_speech', 'equal_odds')
 # twitter_hate_speech_equal_opportunity = temp_table_generator('twitter_hate_speech', 'equal_opportunity')
 # # #
@@ -210,17 +210,59 @@ print(celeb_multigroup_v3_equal_opportunity.draw())
 
 
 '''
+Adult Multi Group - Equal Odds
 +------------------------------------------+-------------------+---------------+
 |                  method                  | balanced accuracy |   fairness    |
 +==========================================+===================+===============+
-| erm_distance_group_equal_sampling_mixup_ | 0.78 +/- 0.01     | 0.79 +/- 0.08 |
-| regularizer_dynamic_distance             |                   |               |
+| erm_random_single_group_random_sampling  | 0.75 +/- 0.01     | 1.8 +/- 0.12  |
++------------------------------------------+-------------------+---------------+
+| erm_random_group_equal_sampling_mixup_re | 0.78 +/- 0.01     | 0.82 +/- 0.13 |
+| gularizer                                |                   |               |
 +------------------------------------------+-------------------+---------------+
 Adult Multi Group - Equal Opportunity
 +------------------------------------------+-------------------+---------------+
 |                  method                  | balanced accuracy |   fairness    |
 +==========================================+===================+===============+
-| erm_distance_group_equal_sampling_mixup_ | 0.78 +/- 0.01     | 0.63 +/- 0.18 |
-| regularizer_dynamic_distance             |                   |               |
+| erm_random_single_group_random_sampling  | 0.74 +/- 0.01     | 0.74 +/- 0.26 |
 +------------------------------------------+-------------------+---------------+
+| erm_random_group_equal_sampling_mixup_re | 0.79 +/- 0.0      | 0.5 +/- 0.06  |
+| gularizer                                |                   |               |
++------------------------------------------+-------------------+---------------+
+
+
++------------------------------------------+-------------------+---------------+
+|                  method                  | balanced accuracy |   fairness    |
++==========================================+===================+===============+
+| dro_super_group_and_distance_equal_sampl | 0.77 +/- 0.0      | 0.72 +/- 0.09 |
+| ing_mixup_regularizer_dynamic_distance_i |                   |               |
+| ntegrate_reg_loss                        |                   |               |
++------------------------------------------+-------------------+---------------+
+Adult Multi Group - Equal Opportunity
++------------------------------------------+-------------------+---------------+
+|                  method                  | balanced accuracy |   fairness    |
++==========================================+===================+===============+
+| dro_super_group_and_distance_equal_sampl | 0.79 +/- 0.01     | 0.54 +/- 0.18 |
+| ing_mixup_regularizer_dynamic_distance_i |                   |               |
+| ntegrate_reg_loss                        |                   |               |
++------------------------------------------+-------------------+---------------+
+
+Adult
++-------------------------------------------+-------------------+--------------+
+|                  method                   | balanced accuracy |   fairness   |
++===========================================+===================+==============+
+| dro_super_group_and_distance_equal_sampli | 0.78 +/- 0.01     | 0.83 +/- 0.1 |
+| ng_mixup_regularizer_dynamic_distance_int |                   |              |
+| egrate_reg_loss                           |                   |              |
++-------------------------------------------+-------------------+--------------+
+Adult Multi Group - Equal Opportunity
++-------------------------------------------+-------------------+--------------+
+|                  method                   | balanced accuracy |   fairness   |
++===========================================+===================+==============+
+| dro_super_group_and_distance_equal_sampli | 0.79 +/- 0.0      | 0.5 +/- 0.06 |
+| ng_mixup_regularizer_dynamic_distance_int |                   |              |
+| egrate_reg_loss                           |                   |              |
++-------------------------------------------+-------------------+--------------+
+
+
+
 '''

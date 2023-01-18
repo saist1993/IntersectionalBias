@@ -44,12 +44,12 @@ class BestCandidateMechanism:
 
     def relaxation_threshold(self):
         try:
-           best_validation_accuracy = max([block.valid_epoch_metric.accuracy for blocks in self.data for block in blocks])
+           best_validation_accuracy = max([block.valid_epoch_metric.balanced_accuracy for blocks in self.data for block in blocks])
            print(best_validation_accuracy)
         except ValueError:
             print("here")
         all_blocks_flat = [block for blocks in self.data for block in blocks
-                           if block.valid_epoch_metric.accuracy > best_validation_accuracy -
+                           if block.valid_epoch_metric.balanced_accuracy > best_validation_accuracy -
                            self.level_2_strategy_params['relaxation_threshold']]
 
         best_fairness_index = np.argmin([block.valid_epoch_metric.eps_fairness[self.level_2_strategy_params['fairness_function']].intersectional_bootstrap[0]

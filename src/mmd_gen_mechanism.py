@@ -8,6 +8,7 @@ from scipy import optimize
 from functools import partial
 from collections import Counter
 import matplotlib.pyplot as plt
+from geomloss import SamplesLoss
 from dataclasses import dataclass
 from itertools import combinations
 from metrics import fairness_utils
@@ -511,7 +512,7 @@ train_tilted_params = TrainingLoopParameters(
 )
 
 
-train_tilted_params.other_params['batch_size'] = 1000
+train_tilted_params.other_params['batch_size'] = 500
 train_tilted_params.other_params['all_aux'] = all_aux
 train_tilted_params.other_params['all_label'] = all_label
 train_tilted_params.other_params['all_input'] = all_input
@@ -525,8 +526,15 @@ train_tilted_params.other_params['group_sampling_procedure'] = 'random_single_gr
 train_tilted_params.other_params['s_to_flattened_s'] = other_meta_data['s_flatten_lookup']
 
 
+group_size = {}
 
-
+for g in train_tilted_params.other_params['groups']:
+    group_mask = all_aux_flatten == g
+    positive_label_mask = all_label == 1
+    negative_label_mask = all_label == 0
+    positive_group_size = np.sum(np.logical_and(group_mask, positive_label_mask))
+    negative_group_size = np.sum(np.logical_and(group_mask, negative_label_mask))
+    group_size[g] = [positive_group_size, negative_group_size]
 
 
 
@@ -548,10 +556,11 @@ optimizer_negative = torch.optim.Adam(gen_model_negative.parameters(), lr=0.001)
 
 # mmd loss
 mmd_loss = MMD_loss()
-max_size = 500
+sample_loss = SamplesLoss(loss="laplacian".lower(), p=2)
+max_size = 20000000000
 aux_func = AuxilaryFunction()
 
-for _ in range(10):
+for _ in range(20):
     total_loss_positive, total_loss_negative = 0.0, 0.0
     for i in tqdm(range(train_tilted_params.other_params['number_of_iterations'])):
         current_group, _ = group_sampling_procedure_func(
@@ -560,49 +569,54 @@ for _ in range(10):
             None
         )
 
+        positive_size, negative_size = group_size[current_group]
+
+
         negative_examples_current_group, positive_examples_current_group, examples_other_leaf_group_negative, examples_other_leaf_group_positive = aux_func.sample_batch(
             current_group)
 
-        optimizer_positive.zero_grad()
-        optimizer_negative.zero_grad()
+        if positive_size < max_size:
+            optimizer_positive.zero_grad()
+            output_positive = gen_model_positive(examples_other_leaf_group_positive)
+            # positive_loss = MMD(x=positive_examples_current_group['input'], y=output_positive['prediction'],
+            #                     kernel='rbf')
+            positive_loss = sample_loss(positive_examples_current_group['input'], output_positive['prediction'])
+            positive_loss.backward()
+            total_loss_positive += positive_loss.data
+            optimizer_positive.step()
 
-        output_positive = gen_model_positive(examples_other_leaf_group_positive)
-        output_negative = gen_model_negative(examples_other_leaf_group_negative)
-        # positive_loss = mmd_loss(positive_examples_current_group['input'], output_positive['prediction'])
-        # negative_loss = mmd_loss(negative_examples_current_group['input'], output_negative['prediction'])
-        positive_loss = MMD(x=positive_examples_current_group['input'], y=output_positive['prediction'], kernel='rbf')
-        negative_loss = MMD(x=negative_examples_current_group['input'], y=output_negative['prediction'], kernel='rbf')
-        # loss = positive_loss + negative_loss
-        positive_loss.backward()
-        negative_loss.backward()
-        optimizer_positive.step()
-        optimizer_negative.step()
-
-        total_loss_positive += positive_loss.data
-        total_loss_negative += negative_loss.data
+        if negative_size < max_size:
+            optimizer_negative.zero_grad()
+            output_negative = gen_model_negative(examples_other_leaf_group_negative)
+            # negative_loss = MMD(x=negative_examples_current_group['input'], y=output_negative['prediction'], kernel='rbf')
+            negative_loss = sample_loss(negative_examples_current_group['input'], output_negative['prediction'])
+            negative_loss.backward()
+            optimizer_negative.step()
+            total_loss_negative += negative_loss.data
     print(total_loss_positive / train_tilted_params.other_params['number_of_iterations'])
     print(total_loss_negative / train_tilted_params.other_params['number_of_iterations'])
 
     balanced_accuracy, overall_accuracy = [], []
     for _, current_group in other_meta_data['s_flatten_lookup'].items():
+        positive_size, negative_size = group_size[current_group]
+
+
         negative_examples_current_group, positive_examples_current_group, examples_other_leaf_group_negative, examples_other_leaf_group_positive = aux_func.sample_batch(
             current_group)
 
-        output_positive = gen_model_positive(examples_other_leaf_group_positive)
-        output_negative = gen_model_negative(examples_other_leaf_group_negative)
+        if positive_size < max_size:
 
-        final_accuracy_positive = tgs.prediction_over_generated_examples(generated_examples=output_positive['prediction'], gold_label=negative_examples_current_group['aux'])
-        final_accuracy_negative = tgs.prediction_over_generated_examples(generated_examples=output_negative['prediction'], gold_label=negative_examples_current_group['aux'])
+            output_positive = gen_model_positive(examples_other_leaf_group_positive)
+            final_accuracy_positive = tgs.prediction_over_generated_examples(
+                generated_examples=output_positive['prediction'], gold_label=negative_examples_current_group['aux'])
+            balanced_accuracy += [i[0] for i in final_accuracy_positive]
+            overall_accuracy += [i[1] for i in final_accuracy_positive]
 
-
-        # print(f"current_group: {current_group}, and positive accuracy {final_accuracy_positive}")
-        # print(f"current_group: {current_group}, and negative accuracy {final_accuracy_negative}")
-
-        balanced_accuracy += [i[0] for i in final_accuracy_positive]
-        balanced_accuracy += [i[0] for i in final_accuracy_negative]
-
-        overall_accuracy += [i[1] for i in final_accuracy_positive]
-        overall_accuracy += [i[1] for i in final_accuracy_negative]
+        if negative_size < max_size:
+            output_negative = gen_model_negative(examples_other_leaf_group_negative)
+            final_accuracy_negative = tgs.prediction_over_generated_examples(generated_examples=output_negative['prediction'], gold_label=negative_examples_current_group['aux'])
+            balanced_accuracy += [i[0] for i in final_accuracy_negative]
+            overall_accuracy += [i[1] for i in final_accuracy_negative]
 
     print(np.mean(overall_accuracy), np.max(overall_accuracy), np.min(overall_accuracy))
 
