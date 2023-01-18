@@ -65,56 +65,27 @@ def MMD(x, y, kernel):
 
     return torch.mean(XX + YY - 2. * XY)
 
-class SimpleModelGenerator(nn.Module):
-    """Fairgrad uses this as complex non linear model"""
-
-    def __init__(self, input_dim):
-        super().__init__()
-
-        self.layer_1 = nn.Linear(input_dim, 30)
-        self.layer_2 = nn.Linear(30, input_dim)
-        self.relu = nn.ReLU()
-
-    def forward(self, other_examples):
-        final_output = torch.tensor(0.0, requires_grad=True)
-        for group in other_examples:
-            x = group['input']
-            x = self.layer_1(x)
-            x = self.relu(x)
-            x = self.layer_2(x)
-            final_output = final_output + x
-
-
-
-
-        output = {
-            'prediction': final_output,
-            'adv_output': None,
-            'hidden': x,  # just for compatabilit
-            'classifier_hiddens': None,
-            'adv_hiddens': None
-        }
-
-        return output
-
-    @property
-    def layers(self):
-        return torch.nn.ModuleList([self.layer_1, self.layer_2])
-
-
 # class SimpleModelGenerator(nn.Module):
 #     """Fairgrad uses this as complex non linear model"""
 #
 #     def __init__(self, input_dim):
 #         super().__init__()
 #
-#         self.lambda_params = torch.nn.Parameter(torch.FloatTensor([0.33, 0.33, 0.33]))
+#         self.layer_1 = nn.Linear(input_dim, 30)
+#         self.layer_2 = nn.Linear(30, input_dim)
+#         self.relu = nn.ReLU()
 #
 #     def forward(self, other_examples):
 #         final_output = torch.tensor(0.0, requires_grad=True)
-#         for param, group in zip(self.lambda_params, other_examples):
+#         for group in other_examples:
 #             x = group['input']
-#             final_output = final_output + x*param
+#             x = self.layer_1(x)
+#             x = self.relu(x)
+#             x = self.layer_2(x)
+#             final_output = final_output + x
+#
+#
+#
 #
 #         output = {
 #             'prediction': final_output,
@@ -129,6 +100,35 @@ class SimpleModelGenerator(nn.Module):
 #     @property
 #     def layers(self):
 #         return torch.nn.ModuleList([self.layer_1, self.layer_2])
+
+
+class SimpleModelGenerator(nn.Module):
+    """Fairgrad uses this as complex non linear model"""
+
+    def __init__(self, input_dim):
+        super().__init__()
+
+        self.lambda_params = torch.nn.Parameter(torch.FloatTensor([0.33, 0.33, 0.33]))
+
+    def forward(self, other_examples):
+        final_output = torch.tensor(0.0, requires_grad=True)
+        for param, group in zip(self.lambda_params, other_examples):
+            x = group['input']
+            final_output = final_output + x*param
+
+        output = {
+            'prediction': final_output,
+            'adv_output': None,
+            'hidden': x,  # just for compatabilit
+            'classifier_hiddens': None,
+            'adv_hiddens': None
+        }
+
+        return output
+
+    @property
+    def layers(self):
+        return torch.nn.ModuleList([self.layer_1, self.layer_2])
 
 class SimpleClassifier(nn.Module):
 
@@ -563,7 +563,7 @@ sample_loss = SamplesLoss(loss="laplacian".lower(), p=2)
 max_size = 20000000000
 aux_func = AuxilaryFunction()
 
-for _ in range(20):
+for _ in range(10):
     total_loss_positive, total_loss_negative = 0.0, 0.0
     for i in tqdm(range(train_tilted_params.other_params['number_of_iterations'])):
         current_group, _ = group_sampling_procedure_func(
@@ -581,9 +581,16 @@ for _ in range(20):
         if positive_size < max_size:
             optimizer_positive.zero_grad()
             output_positive = gen_model_positive(examples_other_leaf_group_positive)
-            # positive_loss = MMD(x=positive_examples_current_group['input'], y=output_positive['prediction'],
-            #                     kernel='rbf')
-            positive_loss = sample_loss(positive_examples_current_group['input'], output_positive['prediction'])
+            positive_loss = MMD(x=positive_examples_current_group['input'], y=output_positive['prediction'],
+                                kernel='rbf')*0.0 + MMD(x=examples_other_leaf_group_positive[0]['input'], y=output_positive['prediction'],
+                                kernel='rbf') + MMD(x=examples_other_leaf_group_positive[1]['input'], y=output_positive['prediction'],
+                                kernel='rbf') + MMD(x=examples_other_leaf_group_positive[2]['input'], y=output_positive['prediction'],
+                                kernel='rbf')
+            # positive_loss = sample_loss(positive_examples_current_group['input'], output_positive['prediction'])*0.0+\
+            #                 sample_loss(examples_other_leaf_group_positive[0]['input'], output_positive['prediction'])\
+            #                 + sample_loss(examples_other_leaf_group_positive[1]['input'], output_positive['prediction'])\
+            #                  + + sample_loss(examples_other_leaf_group_positive[2]['input'], output_positive['prediction'])
+
             positive_loss.backward()
             total_loss_positive += positive_loss.data
             optimizer_positive.step()
@@ -591,8 +598,18 @@ for _ in range(20):
         if negative_size < max_size:
             optimizer_negative.zero_grad()
             output_negative = gen_model_negative(examples_other_leaf_group_negative)
-            # negative_loss = MMD(x=negative_examples_current_group['input'], y=output_negative['prediction'], kernel='rbf')
-            negative_loss = sample_loss(negative_examples_current_group['input'], output_negative['prediction'])
+            negative_loss = MMD(x=negative_examples_current_group['input'], y=output_negative['prediction'],
+                                kernel='rbf')*0.0 + MMD(x=examples_other_leaf_group_negative[0]['input'], y=output_negative['prediction'],
+                                kernel='rbf') + MMD(x=examples_other_leaf_group_negative[1]['input'], y=output_negative['prediction'],
+                                kernel='rbf') + MMD(x=examples_other_leaf_group_negative[2]['input'], y=output_negative['prediction'],
+                                kernel='rbf')
+            # negative_loss = sample_loss(negative_examples_current_group['input'], output_negative['prediction'])*0.0+\
+            #                 sample_loss(examples_other_leaf_group_negative[0]['input'], output_negative['prediction']) \
+            #                  + sample_loss(examples_other_leaf_group_negative[1]['input'], output_negative['prediction'])\
+            #                  + sample_loss(examples_other_leaf_group_negative[2]['input'], output_negative['prediction'])
+
+
+
             negative_loss.backward()
             optimizer_negative.step()
             total_loss_negative += negative_loss.data

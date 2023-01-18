@@ -68,6 +68,12 @@ class SimpleClassificationDataset:
             train_X, train_y, train_s = augment_data.run()
 
         valid_X, valid_y, valid_s = X[dev_index:test_index, :], y[dev_index:test_index], s[dev_index:test_index]
+
+        if "augmented_valid":
+            augment_data = AugmentData(self.dataset_name, valid_X, valid_y, valid_s,
+                                       200)
+            train_X, train_y, train_s = augment_data.run()
+
         test_X, test_y, test_s = X[test_index:, :], y[test_index:], s[test_index:]
 
         # this is where the data augmentation can take place.
