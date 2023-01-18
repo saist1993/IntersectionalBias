@@ -232,7 +232,7 @@ if __name__ == '__main__':
             mixup_scales = [0.01, 0.001, 0.02, 0.005]
             titled_scales = [0.01, 0.001]
 
-    if args.method in ['erm_random_single_group_random_sampling']:
+    if args.method in ['erm_random_single_group_random_sampling', 'erm_random_single_group_equal_sampling']:
         mixup_scales = [0.0]
         titled_scales = [0.0]
 
