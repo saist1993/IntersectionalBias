@@ -621,7 +621,7 @@ sample_loss = SamplesLoss(loss="laplacian".lower(), p=2)
 max_size = 20000000000
 aux_func = AuxilaryFunction()
 
-for _ in range(10):
+for _ in range(8):
     total_loss_positive, total_loss_negative = 0.0, 0.0
     for i in tqdm(range(train_tilted_params.other_params['number_of_iterations'])):
         current_group, _ = group_sampling_procedure_func(
