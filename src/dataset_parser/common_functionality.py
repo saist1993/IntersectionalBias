@@ -340,12 +340,12 @@ class AugmentDataCommonFunctionality:
                 new_all_representation_negative = []
 
                 for i,representation in zip(s_abstract[1:],all_representation_positive[1:]):
-                    if np.sum(all_label[AugmentDataCommonFunctionality.generate_mask(all_s, i)] == 1) > 150:
+                    if np.sum(all_label[AugmentDataCommonFunctionality.generate_mask(all_s, i)] == 1) > 1:
                         new_all_representation_positive.append(representation)
                         s_abstract_positive.append(i)
 
                 for i,representation in zip(s_abstract[1:],all_representation_negative[1:]):
-                    if np.sum(all_label[AugmentDataCommonFunctionality.generate_mask(all_s, i)] == 0) > 200:
+                    if np.sum(all_label[AugmentDataCommonFunctionality.generate_mask(all_s, i)] == 0) > 1:
                         new_all_representation_negative.append(representation)
                         s_abstract_negative.append(i)
 

@@ -99,14 +99,14 @@ def temp_table_generator(dataset_name, fairness_function):
         # 'only_mixup_based_on_distance'
         'erm_random_single_group_random_sampling',
         'erm_random_single_group_equal_sampling',
-        # 'erm_random_group_equal_sampling_mixup_regularizer',
+        'erm_random_group_equal_sampling_mixup_regularizer',
         # 'erm_distance_group_equal_sampling_mixup_regularizer_dynamic_distance',
         # 'erm_distance_group_equal_sampling_mixup_regularizer_static_distance',
         # 'dro_random_single_group_random_sampling',
         # 'dro_super_group_random_sampling',
         # 'dro_super_group_equal_sampling',
         # 'dro_random_group_equal_sampling',
-        # 'dro_random_single_group_equal_sampling',
+        'dro_random_single_group_equal_sampling',
         # 'dro_super_group_and_distance_equal_sampling_mixup_regularizer_dynamic_distance_integrate_reg_loss_update_only_via_reg',
         # 'dro_super_group_and_distance_equal_sampling_mixup_regularizer_dynamic_distance_integrate_reg_loss',
         # 'dro_super_group_equal_sampling_mixup_regularizer_integrate_reg_loss',
@@ -123,7 +123,7 @@ def temp_table_generator(dataset_name, fairness_function):
     # dataset_names = ['celeb_multigroup_v3']
     models = ['simple_non_linear']
     seeds = [10, 20, 30, 40, 50]
-    # seeds = [50]
+    seeds = [50]
     # fairness_function = 'equal_odds'
     # fairness_function = 'equal_opportunity'
     k = 2
@@ -179,8 +179,8 @@ def temp_table_generator(dataset_name, fairness_function):
     # print(t.draw())
     return t
 
-adult_multi_group_equal_odds = temp_table_generator('adult_multi_group_augmented', 'equal_odds')
-adult_multi_group_equal_opportunity = temp_table_generator('adult_multi_group_augmented', 'equal_opportunity')
+adult_multi_group_equal_odds = temp_table_generator('adult_multi_group', 'equal_odds')
+adult_multi_group_equal_opportunity = temp_table_generator('adult_multi_group', 'equal_opportunity')
 # #
 # twitter_hate_speech_equal_odds = temp_table_generator('twitter_hate_speech', 'equal_odds')
 # twitter_hate_speech_equal_opportunity = temp_table_generator('twitter_hate_speech', 'equal_opportunity')
@@ -211,39 +211,40 @@ print(celeb_multigroup_v3_equal_opportunity.draw())
 
 
 '''
-+-----------------------------------------+-------------------+---------------+
-|                 method                  | balanced accuracy |   fairness    |
-+=========================================+===================+===============+
-| erm_random_single_group_random_sampling | 0.76 +/- 0.01     | 1.87 +/- 0.12 |
-+-----------------------------------------+-------------------+---------------+
-| erm_random_single_group_equal_sampling  | 0.79 +/- 0.01     | 1.15 +/- 0.15 |
-+-----------------------------------------+-------------------+---------------+
+
+Augmented
++----------------------------------------+-------------------+---------------+
+|                 method                 | balanced accuracy |   fairness    |
++========================================+===================+===============+
+| erm_random_single_group_equal_sampling | 0.78 +/- 0.01     | 1.01 +/- 0.21 |
++----------------------------------------+-------------------+---------------+
 Adult Multi Group - Equal Opportunity
-+-----------------------------------------+-------------------+---------------+
-|                 method                  | balanced accuracy |   fairness    |
-+=========================================+===================+===============+
-| erm_random_single_group_random_sampling | 0.76 +/- 0.01     | 0.76 +/- 0.27 |
-+-----------------------------------------+-------------------+---------------+
-| erm_random_single_group_equal_sampling  | 0.8 +/- 0.01      | 0.5 +/- 0.12  |
-+-----------------------------------------+-------------------+---------------+
++----------------------------------------+-------------------+--------------+
+|                 method                 | balanced accuracy |   fairness   |
++========================================+===================+==============+
+| erm_random_single_group_equal_sampling | 0.79 +/- 0.01     | 0.51 +/- 0.1 |
++----------------------------------------+-------------------+--------------+
 
 
-
-Adult Multi Group - Equal Odds
-+-----------------------------------------+-------------------+---------------+
-|                 method                  | balanced accuracy |   fairness    |
-+=========================================+===================+===============+
-| erm_random_single_group_random_sampling | 0.78 +/- 0.01     | 1.07 +/- 0.19 |
-+-----------------------------------------+-------------------+---------------+
-| erm_random_single_group_equal_sampling  | 0.78 +/- 0.01     | 1.01 +/- 0.21 |
-+-----------------------------------------+-------------------+---------------+
+Normal
++----------------------------------------+-------------------+---------------+
+|                 method                 | balanced accuracy |   fairness    |
++========================================+===================+===============+
+| erm_random_single_group_equal_sampling | 0.79 +/- 0.01     | 1.15 +/- 0.15 |
++----------------------------------------+-------------------+---------------+
 Adult Multi Group - Equal Opportunity
-+-----------------------------------------+-------------------+---------------+
-|                 method                  | balanced accuracy |   fairness    |
-+=========================================+===================+===============+
-| erm_random_single_group_random_sampling | 0.78 +/- 0.01     | 0.58 +/- 0.15 |
-+-----------------------------------------+-------------------+---------------+
-| erm_random_single_group_equal_sampling  | 0.79 +/- 0.01     | 0.51 +/- 0.1  |
-+-----------------------------------------+-------------------+---------------+
++----------------------------------------+-------------------+--------------+
+|                 method                 | balanced accuracy |   fairness   |
++========================================+===================+==============+
+| erm_random_single_group_equal_sampling | 0.8 +/- 0.01      | 0.5 +/- 0.12 |
++----------------------------------------+-------------------+--------------+
+
+Augmented Valid
+
+
+
+
+
+
 
 '''

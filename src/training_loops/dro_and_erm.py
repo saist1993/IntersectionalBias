@@ -153,6 +153,7 @@ def update_loss_and_global_loss_dro(train_tilted_params, s_group_0, s_group_1, l
     tilt_t = train_tilted_params.other_params['titled_t']
     integrate_reg_loss = train_tilted_params.other_params['integrate_reg_loss']
     loss_rg_weight = train_tilted_params.other_params['mixup_rg']
+    positive_index = int(train_tilted_params.other_params['batch_size']/2)
     if train_tilted_params.other_params['update_only_via_reg']:
         update_only_via_reg = 0.0
     else:
@@ -160,13 +161,14 @@ def update_loss_and_global_loss_dro(train_tilted_params, s_group_0, s_group_1, l
 
 
     if group_sampling_procedure == 'super_group' or group_sampling_procedure == 'super_group_and_distance':
+        # loss = torch.mean(loss_group_0[positive_index:]) + torch.mean(loss_group_1[positive_index:])  # calculate the total loss
         loss = torch.mean(loss_group_0) + torch.mean(loss_group_1)  # calculate the total loss
 
         if integrate_reg_loss and (loss_rg is not None):
             global_loss[s_group_0, s_group_1] = global_loss[s_group_0, s_group_1] * torch.exp(
                 tilt_t * (loss*update_only_via_reg + (loss_rg * loss_rg_weight)).data)
             global_loss = global_loss / (global_loss.sum())
-            loss = (loss + (loss_rg * loss_rg_weight)) * global_loss[s_group_0, s_group_1]
+            loss = (torch.mean(loss_group_0) + torch.mean(loss_group_1) + (loss_rg * loss_rg_weight)) * global_loss[s_group_0, s_group_1]
         else:
             global_loss[s_group_0, s_group_1] = global_loss[s_group_0, s_group_1] * torch.exp(
                 tilt_t * loss.data)
@@ -283,6 +285,7 @@ def dro_optimization_procedure(train_tilted_params):
                                                          items_group_1=items_group_1,
                                                          model=model,
                                                          other_params={'gamma': None})
+
 
         global_loss, loss = update_loss_and_global_loss_dro(train_tilted_params=train_tilted_params,
                                                             s_group_0=s_group_0,

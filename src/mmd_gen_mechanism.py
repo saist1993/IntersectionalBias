@@ -435,6 +435,10 @@ class TestGeneratedSamples:
 
         self.all_attribute_reco_models = all_attribute_classifier
 
+    def create_and_learn_multiple_all_attribute_model(self):
+        for i in self.number_of_attributes:
+
+
 
     def prediction_over_generated_examples(self, generated_examples, gold_label):
         with torch.no_grad():
@@ -445,7 +449,6 @@ class TestGeneratedSamples:
                 label = gold_label[:,k]
                 final_accuracy.append((balanced_accuracy_score(label, output.argmax(axis=1)), accuracy_score(label, output.argmax(axis=1))))
             return final_accuracy
-
 
 
 
@@ -641,5 +644,5 @@ for _ in range(10):
     print(np.mean(overall_accuracy), np.max(overall_accuracy), np.min(overall_accuracy))
 
 
-torch.save(gen_model_positive.state_dict(), "gen_model_adult_positive.pth")
-torch.save(gen_model_negative.state_dict(), "gen_model_adult_negative.pth")
+torch.save(gen_model_positive.state_dict(), "gen_model_celeb_positive.pth")
+torch.save(gen_model_negative.state_dict(), "gen_model_celeb_negative.pth")

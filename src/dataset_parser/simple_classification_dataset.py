@@ -69,7 +69,7 @@ class SimpleClassificationDataset:
 
         valid_X, valid_y, valid_s = X[dev_index:test_index, :], y[dev_index:test_index], s[dev_index:test_index]
 
-        if "augmented_valid":
+        if "augmented_valid" in self.dataset_name:
             augment_data = AugmentData(self.dataset_name, valid_X, valid_y, valid_s,
                                        200)
             train_X, train_y, train_s = augment_data.run()
