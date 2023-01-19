@@ -640,7 +640,7 @@ for _ in range(10):
             optimizer_positive.zero_grad()
             output_positive = gen_model_positive(examples_other_leaf_group_positive)
             positive_loss = MMD(x=positive_examples_current_group['input'], y=output_positive['prediction'],
-                                kernel='rbf') + MMD(x=examples_other_leaf_group_positive[0]['input'], y=output_positive['prediction'],
+                                kernel='rbf')*0.0 + MMD(x=examples_other_leaf_group_positive[0]['input'], y=output_positive['prediction'],
                                 kernel='rbf') + MMD(x=examples_other_leaf_group_positive[1]['input'], y=output_positive['prediction'],
                                 kernel='rbf') + MMD(x=examples_other_leaf_group_positive[2]['input'], y=output_positive['prediction'],
                                 kernel='rbf')
@@ -657,7 +657,7 @@ for _ in range(10):
             optimizer_negative.zero_grad()
             output_negative = gen_model_negative(examples_other_leaf_group_negative)
             negative_loss = MMD(x=negative_examples_current_group['input'], y=output_negative['prediction'],
-                                kernel='rbf') + MMD(x=examples_other_leaf_group_negative[0]['input'], y=output_negative['prediction'],
+                                kernel='rbf')*0.0 + MMD(x=examples_other_leaf_group_negative[0]['input'], y=output_negative['prediction'],
                                 kernel='rbf') + MMD(x=examples_other_leaf_group_negative[1]['input'], y=output_negative['prediction'],
                                 kernel='rbf') + MMD(x=examples_other_leaf_group_negative[2]['input'], y=output_negative['prediction'],
                                 kernel='rbf')
