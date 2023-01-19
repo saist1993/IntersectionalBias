@@ -13,6 +13,8 @@ from dataclasses import dataclass
 from itertools import combinations
 from metrics import fairness_utils
 from typing import Dict, Callable, Optional
+from sklearn.neural_network import MLPClassifier
+from sklearn.model_selection import train_test_split
 from dataset_iterators import generate_data_iterators
 from sklearn.metrics import balanced_accuracy_score, accuracy_score
 from utils.misc import resolve_device, set_seed, make_opt, CustomError
@@ -335,14 +337,38 @@ class AuxilaryFunction:
 class TestGeneratedSamples:
 
     def __init__(self, iterators, other_meta_data):
+        self.one_vs_all_clf = {}
+        self.one_vs_all_clf = {}
         self.iterators = iterators
+        self.all_attribute_reco_models = None
         self.other_meta_data = other_meta_data
         self.single_attribute_reco_models = []
-        self.all_attribute_reco_models = None
+        self.raw_data = other_meta_data['raw_data']
+        self.s_flatten_lookup = other_meta_data['s_flatten_lookup']
         self.number_of_attributes = other_meta_data['raw_data']['train_s'].shape[1]
 
+    @staticmethod
+    def create_mask_with_x(data, condition):
+
+        keep_indices = []
+
+        for index, i in enumerate(condition):
+            if i != 'x':
+                keep_indices.append(i == data[:, index])
+            else:
+                keep_indices.append(np.ones_like(data[:, 0], dtype='bool'))
+
+        mask = np.ones_like(data[:, 0], dtype='bool')
+
+        # mask = [np.logical_and(mask, i) for i in keep_indices]
+
+        for i in keep_indices:
+            mask = np.logical_and(mask, i)
+        return mask
+
+
     def run(self):
-        self.create_and_learn_all_attribute_model()
+        self.run_one_vs_all_classifier_group()
         self.create_and_learn_single_attribute_models()
 
     def create_and_learn_single_attribute_models(self):
@@ -435,8 +461,37 @@ class TestGeneratedSamples:
 
         self.all_attribute_reco_models = all_attribute_classifier
 
-    def create_and_learn_multiple_all_attribute_model(self):
-        for i in self.number_of_attributes:
+    def one_vs_all_classifier_group(self, group):
+        mask_group_train_X = self.create_mask_with_x(data=self.raw_data['train_s'], condition=group)
+        size = mask_group_train_X.sum()
+        index_group_train_X = np.random.choice(np.where(mask_group_train_X == True)[0], size=size, replace=False)
+        index_not_group_train_X = np.random.choice(np.where(mask_group_train_X == False)[0], size=size, replace=False)
+
+        train_X_group, train_y_group = self.raw_data['train_X'][index_group_train_X], np.ones(size)
+        train_X_not_group, train_y_not_group = self.raw_data['train_X'][index_not_group_train_X], np.zeros(size)
+
+        clf = MLPClassifier(solver="adam", learning_rate_init=0.01, hidden_layer_sizes=(25, 5), random_state=1)
+
+        X = np.vstack([train_X_group, train_X_not_group])
+        y = np.hstack([train_y_group, train_y_not_group])
+
+        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.33, random_state=42, shuffle=True)
+
+        clf.fit(X_train, y_train)
+
+        print()
+        y_pred = clf.predict(X_test)
+        print(clf.score(X_train, y_train), accuracy_score(y_test, y_pred), balanced_accuracy_score(y_test, y_pred))
+
+        return clf
+
+    def run_one_vs_all_classifier_group(self):
+
+        for group, group_id in self.s_flatten_lookup.items():
+            print(f"current group: {group_id}")
+            clf = self.one_vs_all_classifier_group(group=group)
+            print("**************")
+            self.one_vs_all_clf[group_id] = clf
 
 
 
@@ -585,7 +640,7 @@ for _ in range(10):
             optimizer_positive.zero_grad()
             output_positive = gen_model_positive(examples_other_leaf_group_positive)
             positive_loss = MMD(x=positive_examples_current_group['input'], y=output_positive['prediction'],
-                                kernel='rbf')*0.0 + MMD(x=examples_other_leaf_group_positive[0]['input'], y=output_positive['prediction'],
+                                kernel='rbf') + MMD(x=examples_other_leaf_group_positive[0]['input'], y=output_positive['prediction'],
                                 kernel='rbf') + MMD(x=examples_other_leaf_group_positive[1]['input'], y=output_positive['prediction'],
                                 kernel='rbf') + MMD(x=examples_other_leaf_group_positive[2]['input'], y=output_positive['prediction'],
                                 kernel='rbf')
@@ -602,7 +657,7 @@ for _ in range(10):
             optimizer_negative.zero_grad()
             output_negative = gen_model_negative(examples_other_leaf_group_negative)
             negative_loss = MMD(x=negative_examples_current_group['input'], y=output_negative['prediction'],
-                                kernel='rbf')*0.0 + MMD(x=examples_other_leaf_group_negative[0]['input'], y=output_negative['prediction'],
+                                kernel='rbf') + MMD(x=examples_other_leaf_group_negative[0]['input'], y=output_negative['prediction'],
                                 kernel='rbf') + MMD(x=examples_other_leaf_group_negative[1]['input'], y=output_negative['prediction'],
                                 kernel='rbf') + MMD(x=examples_other_leaf_group_negative[2]['input'], y=output_negative['prediction'],
                                 kernel='rbf')
@@ -619,7 +674,7 @@ for _ in range(10):
     print(total_loss_positive / train_tilted_params.other_params['number_of_iterations'])
     print(total_loss_negative / train_tilted_params.other_params['number_of_iterations'])
 
-    balanced_accuracy, overall_accuracy = [], []
+    balanced_accuracy, overall_accuracy, one_vs_all_accuracy = [], [], []
     for _, current_group in other_meta_data['s_flatten_lookup'].items():
         positive_size, negative_size = group_size[current_group]
 
@@ -641,8 +696,19 @@ for _ in range(10):
             balanced_accuracy += [i[0] for i in final_accuracy_negative]
             overall_accuracy += [i[1] for i in final_accuracy_negative]
 
+        acc1 = tgs.one_vs_all_clf[current_group].score(output_positive['prediction'].detach().numpy(),
+                                                      np.ones(len(output_positive['prediction'])))
+        acc2 = tgs.one_vs_all_clf[current_group].score(output_negative['prediction'].detach().numpy(),
+                                                      np.ones(len(output_negative['prediction'])))
+
+        print(f"group {current_group}: {np.mean([acc2, acc1])}")
+
+        one_vs_all_accuracy.append(np.mean([acc2, acc1]))
+
     print(np.mean(overall_accuracy), np.max(overall_accuracy), np.min(overall_accuracy))
+    print(np.mean(one_vs_all_accuracy), np.max(one_vs_all_accuracy), np.min(one_vs_all_accuracy))
 
 
-torch.save(gen_model_positive.state_dict(), "gen_model_celeb_positive.pth")
-torch.save(gen_model_negative.state_dict(), "gen_model_celeb_negative.pth")
+
+torch.save(gen_model_positive.state_dict(), "gen_model_adult_positive.pth")
+torch.save(gen_model_negative.state_dict(), "gen_model_adult_negative.pth")
