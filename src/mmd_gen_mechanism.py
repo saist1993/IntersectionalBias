@@ -612,8 +612,8 @@ gen_model_negative = SimpleModelGenerator(input_dim=input_dim)
 # opt_fn = partial(torch.optim.Adam)
 # optimizer_positive = make_opt(gen_model_positive, opt_fn, lr=0.001)
 # optimizer_negative = make_opt(gen_model_negative, opt_fn, lr=0.001)
-optimizer_positive = torch.optim.Adam(gen_model_positive.parameters(), lr=0.001)
-optimizer_negative = torch.optim.Adam(gen_model_negative.parameters(), lr=0.001)
+optimizer_positive = torch.optim.Adam(gen_model_positive.parameters(), lr=0.01)
+optimizer_negative = torch.optim.Adam(gen_model_negative.parameters(), lr=0.01)
 
 # mmd loss
 mmd_loss = MMD_loss()
@@ -707,6 +707,14 @@ for _ in range(5):
 
     print(np.mean(overall_accuracy), np.max(overall_accuracy), np.min(overall_accuracy))
     print(np.mean(one_vs_all_accuracy), np.max(one_vs_all_accuracy), np.min(one_vs_all_accuracy))
+
+    for name, param in gen_model_positive.named_parameters():
+        if param.requires_grad:
+            print(name, param.data)
+
+    for name, param in gen_model_negative.named_parameters():
+        if param.requires_grad:
+            print(name, param.data)
 
 
 
