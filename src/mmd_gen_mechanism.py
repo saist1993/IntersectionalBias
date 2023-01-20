@@ -108,10 +108,13 @@ def MMD(x, y, kernel):
 class SimpleModelGenerator(nn.Module):
     """Fairgrad uses this as complex non linear model"""
 
-    def __init__(self, input_dim):
+    def __init__(self, input_dim, number_of_params=3):
         super().__init__()
 
-        self.lambda_params = torch.nn.Parameter(torch.FloatTensor([0.33, 0.33, 0.33]))
+        if number_of_params == 3:
+            self.lambda_params = torch.nn.Parameter(torch.FloatTensor([0.33, 0.33, 0.33]))
+        elif number_of_params == 4:
+            self.lambda_params = torch.nn.Parameter(torch.FloatTensor([0.25, 0.25, 0.25, 0.25]))
 
     def forward(self, other_examples):
         final_output = torch.tensor(0.0, requires_grad=True)
@@ -608,8 +611,8 @@ flattened_s_to_s = {value: key for key, value in train_tilted_params.other_param
 
 # model
 input_dim = all_input.shape[1]
-gen_model_positive = SimpleModelGenerator(input_dim=input_dim)
-gen_model_negative = SimpleModelGenerator(input_dim=input_dim)
+gen_model_positive = SimpleModelGenerator(input_dim=input_dim, number_of_params=len(flattened_s_to_s[1]))
+gen_model_negative = SimpleModelGenerator(input_dim=input_dim, number_of_params=len(flattened_s_to_s[1]))
 
 # optimizer
 # opt_fn = partial(torch.optim.Adam)
@@ -643,10 +646,13 @@ for _ in range(5):
             optimizer_positive.zero_grad()
             output_positive = gen_model_positive(examples_other_leaf_group_positive)
             positive_loss = MMD(x=positive_examples_current_group['input'], y=output_positive['prediction'],
-                                kernel='rbf')*0.0 + MMD(x=examples_other_leaf_group_positive[0]['input'], y=output_positive['prediction'],
-                                kernel='rbf') + MMD(x=examples_other_leaf_group_positive[1]['input'], y=output_positive['prediction'],
-                                kernel='rbf') + MMD(x=examples_other_leaf_group_positive[2]['input'], y=output_positive['prediction'],
                                 kernel='rbf')
+
+            other_positive_loss = torch.sum(torch.tensor([MMD(x=examples['input'], y=output_positive['prediction'],
+                                kernel='rbf') for examples in examples_other_leaf_group_positive], requires_grad=True))
+
+            positive_loss = positive_loss + other_positive_loss
+
             # positive_loss = sample_loss(positive_examples_current_group['input'], output_positive['prediction'])+\
             #                 sample_loss(examples_other_leaf_group_positive[0]['input'], output_positive['prediction'])\
             #                 + sample_loss(examples_other_leaf_group_positive[1]['input'], output_positive['prediction'])\
@@ -662,10 +668,13 @@ for _ in range(5):
             optimizer_negative.zero_grad()
             output_negative = gen_model_negative(examples_other_leaf_group_negative)
             negative_loss = MMD(x=negative_examples_current_group['input'], y=output_negative['prediction'],
-                                kernel='rbf')*0.0 + MMD(x=examples_other_leaf_group_negative[0]['input'], y=output_negative['prediction'],
-                                kernel='rbf') + MMD(x=examples_other_leaf_group_negative[1]['input'], y=output_negative['prediction'],
-                                kernel='rbf') + MMD(x=examples_other_leaf_group_negative[2]['input'], y=output_negative['prediction'],
                                 kernel='rbf')
+
+            other_negative_loss = torch.sum(torch.tensor([MMD(x=examples['input'], y=output_positive['prediction'],
+                                                 kernel='rbf') for examples in examples_other_leaf_group_negative],
+                                                         requires_grad=True))
+
+            negative_loss = negative_loss + other_negative_loss
             # negative_loss = sample_loss(negative_examples_current_group['input'], output_negative['prediction'])+\
             #                 sample_loss(examples_other_leaf_group_negative[0]['input'], output_negative['prediction']) \
             #                  + sample_loss(examples_other_leaf_group_negative[1]['input'], output_negative['prediction'])\
