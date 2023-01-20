@@ -458,8 +458,9 @@ class AugmentDataCommonFunctionality:
 
             all_other_leaf_node_example_positive = []
             selected_examples = []
+            counter = 0
 
-            while len(selected_examples) <= number_of_examples:
+            while len(selected_examples) <= number_of_examples :
                 for group in other_leaf_node:
                     group_mask = AugmentDataCommonFunctionality.generate_mask(other_meta_data['raw_data']['train_s'], group)
                     label_1_group_mask = np.logical_and(group_mask, other_meta_data['raw_data']['train_y'] == label)
@@ -473,8 +474,13 @@ class AugmentDataCommonFunctionality:
                     all_other_leaf_node_example_positive.append(batch_input)
 
                 generated_examples = gen_model(all_other_leaf_node_example_positive)['prediction'].detach().numpy()
-                relevant_index = np.where(classifier_models[s].predict_proba(generated_examples)[:, 1] > confidence_score)
+                if counter > 10:
+                    relevant_index = np.where(classifier_models[s].predict_proba(generated_examples)[:, 1] > confidence_score)
+                else:
+                    relevant_index = np.where(
+                        classifier_models[s].predict_proba(generated_examples)[:, 1] > 0.2)
                 selected_examples += generated_examples[relevant_index].tolist()
+                counter += 1
             return selected_examples[:number_of_examples]
 
         positive_examples = common_procedure(label=1)
