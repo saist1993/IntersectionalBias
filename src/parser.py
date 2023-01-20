@@ -123,7 +123,7 @@ def temp_table_generator(dataset_name, fairness_function):
     # dataset_names = ['celeb_multigroup_v3']
     models = ['simple_non_linear']
     seeds = [10, 20, 30, 40, 50]
-    seeds = [50]
+    # seeds = [50]
     # fairness_function = 'equal_odds'
     # fairness_function = 'equal_opportunity'
     k = 2
@@ -179,8 +179,8 @@ def temp_table_generator(dataset_name, fairness_function):
     # print(t.draw())
     return t
 
-adult_multi_group_equal_odds = temp_table_generator('adult_multi_group', 'equal_odds')
-adult_multi_group_equal_opportunity = temp_table_generator('adult_multi_group', 'equal_opportunity')
+adult_multi_group_equal_odds = temp_table_generator('adult_multi_group_augmented', 'equal_odds')
+adult_multi_group_equal_opportunity = temp_table_generator('adult_multi_group_augmented', 'equal_opportunity')
 # #
 # twitter_hate_speech_equal_odds = temp_table_generator('twitter_hate_speech', 'equal_odds')
 # twitter_hate_speech_equal_opportunity = temp_table_generator('twitter_hate_speech', 'equal_opportunity')
