@@ -25,7 +25,7 @@ from training_loops.dro_and_erm import group_sampling_procedure_func, create_gro
 import warnings
 warnings.filterwarnings("ignore")
 
-dataset_name = 'adult_multi_group'
+dataset_name = 'twitter_hate_speech'
 batch_size = 512
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
