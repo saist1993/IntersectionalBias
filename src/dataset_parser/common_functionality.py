@@ -453,6 +453,7 @@ class AugmentDataCommonFunctionality:
     def generate_examples_mmd(s, gen_model, number_of_examples, other_meta_data, classifier_models, confidence_score=0.80):
         # other_leaf_node = AugmentDataCommonFunctionality.generate_combinations_only_leaf_node(s, k=1)
         other_leaf_node = AugmentDataCommonFunctionality.generate_abstract_node(s, k=1)
+        assert  number_of_examples > 1
         def common_procedure(label):
 
             all_other_leaf_node_example_positive = []
