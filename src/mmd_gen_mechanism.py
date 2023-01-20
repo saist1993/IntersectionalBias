@@ -680,6 +680,8 @@ for _ in range(5):
     print(total_loss_negative / train_tilted_params.other_params['number_of_iterations'])
 
     balanced_accuracy, overall_accuracy, one_vs_all_accuracy = [], [], []
+
+    all_generated_examples = []
     for _, current_group in other_meta_data['s_flatten_lookup'].items():
         positive_size, negative_size = group_size[current_group]
 
@@ -710,6 +712,9 @@ for _ in range(5):
 
         one_vs_all_accuracy.append(np.mean([acc2, acc1]))
 
+        all_generated_examples.append(output_positive['prediction'])
+        all_generated_examples.append(output_negative['prediction'])
+
     print(np.mean(overall_accuracy), np.max(overall_accuracy), np.min(overall_accuracy))
     print(np.mean(one_vs_all_accuracy), np.max(one_vs_all_accuracy), np.min(one_vs_all_accuracy))
 
@@ -720,6 +725,28 @@ for _ in range(5):
     for name, param in gen_model_negative.named_parameters():
         if param.requires_grad:
             print(name, param.data)
+
+    all_generated_examples = torch.vstack(all_generated_examples).detach().numpy()
+    real_examples = np.random.choice(range(len(other_meta_data['raw_data']['train_X'])), size=len(all_generated_examples), replace=False)
+    real_examples = other_meta_data['raw_data']['train_X'][real_examples]
+    generated_example_label = np.zeros(len(all_generated_examples))
+    real_example_label = np.ones(len(all_generated_examples))
+
+    X = np.vstack([all_generated_examples, real_examples])
+    y = np.hstack([generated_example_label, real_example_label])
+
+
+    clf = MLPClassifier(solver="adam", learning_rate_init=0.01, hidden_layer_sizes=(25, 5), random_state=1)
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.33, random_state=42, shuffle=True)
+    clf.fit(X_train, y_train)
+    y_pred = clf.predict(X_test)
+    print("****")
+    print(clf.score(X_train, y_train), accuracy_score(y_test, y_pred), balanced_accuracy_score(y_test, y_pred))
+    print("***")
+
+
+
+
 
 
 
