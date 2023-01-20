@@ -363,7 +363,7 @@ if __name__ == '__main__':
 
     parser.add_argument('--fairness_function', '-fairness_function', help="fairness function to concern with",
                         type=str,
-                        default='equal_odds')
+                        default='equal_opportunity')
 
     parser.add_argument('--titled_t', '-titled_t', help="fairness function to concern with",
                         type=float,
