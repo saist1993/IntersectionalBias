@@ -68,59 +68,27 @@ def MMD(x, y, kernel):
 
     return torch.mean(XX + YY - 2. * XY)
 
-# class SimpleModelGenerator(nn.Module):
-#     """Fairgrad uses this as complex non linear model"""
-#
-#     def __init__(self, input_dim):
-#         super().__init__()
-#
-#         self.layer_1 = nn.Linear(input_dim, 30)
-#         self.layer_2 = nn.Linear(30, input_dim)
-#         self.relu = nn.ReLU()
-#
-#     def forward(self, other_examples):
-#         final_output = torch.tensor(0.0, requires_grad=True)
-#         for group in other_examples:
-#             x = group['input']
-#             x = self.layer_1(x)
-#             x = self.relu(x)
-#             x = self.layer_2(x)
-#             final_output = final_output + x
-#
-#
-#
-#
-#         output = {
-#             'prediction': final_output,
-#             'adv_output': None,
-#             'hidden': x,  # just for compatabilit
-#             'classifier_hiddens': None,
-#             'adv_hiddens': None
-#         }
-#
-#         return output
-#
-#     @property
-#     def layers(self):
-#         return torch.nn.ModuleList([self.layer_1, self.layer_2])
-
-
 class SimpleModelGenerator(nn.Module):
     """Fairgrad uses this as complex non linear model"""
 
-    def __init__(self, input_dim, number_of_params=3):
+    def __init__(self, input_dim, number_of_params=None):
         super().__init__()
 
-        if number_of_params == 3:
-            self.lambda_params = torch.nn.Parameter(torch.FloatTensor([0.33, 0.33, 0.33]))
-        elif number_of_params == 4:
-            self.lambda_params = torch.nn.Parameter(torch.FloatTensor([0.25, 0.25, 0.25, 0.25]))
+        self.layer_1 = nn.Linear(input_dim, 30)
+        self.layer_2 = nn.Linear(30, input_dim)
+        self.relu = nn.ReLU()
 
     def forward(self, other_examples):
         final_output = torch.tensor(0.0, requires_grad=True)
-        for param, group in zip(self.lambda_params, other_examples):
+        for group in other_examples:
             x = group['input']
-            final_output = final_output + x*param
+            x = self.layer_1(x)
+            x = self.relu(x)
+            x = self.layer_2(x)
+            final_output = final_output + x
+
+
+
 
         output = {
             'prediction': final_output,
@@ -135,6 +103,38 @@ class SimpleModelGenerator(nn.Module):
     @property
     def layers(self):
         return torch.nn.ModuleList([self.layer_1, self.layer_2])
+
+
+# class SimpleModelGenerator(nn.Module):
+#     """Fairgrad uses this as complex non linear model"""
+#
+#     def __init__(self, input_dim, number_of_params=3):
+#         super().__init__()
+#
+#         if number_of_params == 3:
+#             self.lambda_params = torch.nn.Parameter(torch.FloatTensor([0.33, 0.33, 0.33]))
+#         elif number_of_params == 4:
+#             self.lambda_params = torch.nn.Parameter(torch.FloatTensor([0.25, 0.25, 0.25, 0.25]))
+#
+#     def forward(self, other_examples):
+#         final_output = torch.tensor(0.0, requires_grad=True)
+#         for param, group in zip(self.lambda_params, other_examples):
+#             x = group['input']
+#             final_output = final_output + x*param
+#
+#         output = {
+#             'prediction': final_output,
+#             'adv_output': None,
+#             'hidden': x,  # just for compatabilit
+#             'classifier_hiddens': None,
+#             'adv_hiddens': None
+#         }
+#
+#         return output
+#
+#     @property
+#     def layers(self):
+#         return torch.nn.ModuleList([self.layer_1, self.layer_2])
 
 class SimpleClassifier(nn.Module):
 
@@ -627,7 +627,7 @@ sample_loss = SamplesLoss(loss="laplacian".lower(), p=2)
 max_size = 20000000000
 aux_func = AuxilaryFunction()
 
-for _ in range(5):
+for _ in range(50):
     total_loss_positive, total_loss_negative = 0.0, 0.0
     for i in tqdm(range(train_tilted_params.other_params['number_of_iterations'])):
         current_group, _ = group_sampling_procedure_func(
@@ -651,7 +651,12 @@ for _ in range(5):
             other_positive_loss = torch.sum(torch.tensor([MMD(x=examples['input'], y=output_positive['prediction'],
                                 kernel='rbf') for examples in examples_other_leaf_group_positive], requires_grad=True))
 
-            positive_loss = positive_loss + other_positive_loss
+
+            loss2 = MMD(x=torch.tensor(other_meta_data['raw_data']['train_X'][np.random.choice(np.where((other_meta_data['raw_data']['train_y'] == 1) ==True)[0],
+                                                        size=len(output_positive['prediction']), replace=False)], dtype=torch.float), y=output_positive['prediction'],
+                        kernel='rbf')
+
+            positive_loss = positive_loss + other_positive_loss + loss2
 
             # positive_loss = sample_loss(positive_examples_current_group['input'], output_positive['prediction'])+\
             #                 sample_loss(examples_other_leaf_group_positive[0]['input'], output_positive['prediction'])\
@@ -674,7 +679,11 @@ for _ in range(5):
                                                  kernel='rbf') for examples in examples_other_leaf_group_negative],
                                                          requires_grad=True))
 
-            negative_loss = negative_loss + other_negative_loss
+            loss2 = MMD(x=torch.tensor(other_meta_data['raw_data']['train_X'][np.random.choice(np.where((other_meta_data['raw_data']['train_y'] == 0) == True)[0],
+                                                                      size=len(output_negative['prediction']), replace=False)], dtype=torch.float),
+                        y=output_negative['prediction'], kernel='rbf')
+
+            negative_loss = negative_loss + other_negative_loss + loss2
             # negative_loss = sample_loss(negative_examples_current_group['input'], output_negative['prediction'])+\
             #                 sample_loss(examples_other_leaf_group_negative[0]['input'], output_negative['prediction']) \
             #                  + sample_loss(examples_other_leaf_group_negative[1]['input'], output_negative['prediction'])\
@@ -727,13 +736,13 @@ for _ in range(5):
     print(np.mean(overall_accuracy), np.max(overall_accuracy), np.min(overall_accuracy))
     print(np.mean(one_vs_all_accuracy), np.max(one_vs_all_accuracy), np.min(one_vs_all_accuracy))
 
-    for name, param in gen_model_positive.named_parameters():
-        if param.requires_grad:
-            print(name, param.data)
-
-    for name, param in gen_model_negative.named_parameters():
-        if param.requires_grad:
-            print(name, param.data)
+    # for name, param in gen_model_positive.named_parameters():
+    #     if param.requires_grad:
+    #         print(name, param.data)
+    #
+    # for name, param in gen_model_negative.named_parameters():
+    #     if param.requires_grad:
+    #         print(name, param.data)
 
     all_generated_examples = torch.vstack(all_generated_examples).detach().numpy()
     real_examples = np.random.choice(range(len(other_meta_data['raw_data']['train_X'])), size=len(all_generated_examples), replace=False)
