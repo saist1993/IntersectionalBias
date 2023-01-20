@@ -1,5 +1,6 @@
 import copy
 import torch
+import pickle
 import numpy as np
 import torch.nn as nn
 import pandas as pd
@@ -479,7 +480,6 @@ class TestGeneratedSamples:
 
         clf.fit(X_train, y_train)
 
-        print()
         y_pred = clf.predict(X_test)
         print(clf.score(X_train, y_train), accuracy_score(y_test, y_pred), balanced_accuracy_score(y_test, y_pred))
 
@@ -492,6 +492,9 @@ class TestGeneratedSamples:
             clf = self.one_vs_all_classifier_group(group=group)
             print("**************")
             self.one_vs_all_clf[group_id] = clf
+            self.one_vs_all_clf[group] = clf
+
+        pickle.dump(self.one_vs_all_clf, open("adult_one_vs_all_clf.sklearn", 'wb'))
 
 
 
@@ -639,15 +642,15 @@ for _ in range(5):
         if positive_size < max_size:
             optimizer_positive.zero_grad()
             output_positive = gen_model_positive(examples_other_leaf_group_positive)
-            # positive_loss = MMD(x=positive_examples_current_group['input'], y=output_positive['prediction'],
-            #                     kernel='rbf') + MMD(x=examples_other_leaf_group_positive[0]['input'], y=output_positive['prediction'],
-            #                     kernel='rbf') + MMD(x=examples_other_leaf_group_positive[1]['input'], y=output_positive['prediction'],
-            #                     kernel='rbf') + MMD(x=examples_other_leaf_group_positive[2]['input'], y=output_positive['prediction'],
-            #                     kernel='rbf')
-            positive_loss = sample_loss(positive_examples_current_group['input'], output_positive['prediction'])+\
-                            sample_loss(examples_other_leaf_group_positive[0]['input'], output_positive['prediction'])\
-                            + sample_loss(examples_other_leaf_group_positive[1]['input'], output_positive['prediction'])\
-                             + + sample_loss(examples_other_leaf_group_positive[2]['input'], output_positive['prediction'])
+            positive_loss = MMD(x=positive_examples_current_group['input'], y=output_positive['prediction'],
+                                kernel='rbf')*0.0 + MMD(x=examples_other_leaf_group_positive[0]['input'], y=output_positive['prediction'],
+                                kernel='rbf') + MMD(x=examples_other_leaf_group_positive[1]['input'], y=output_positive['prediction'],
+                                kernel='rbf') + MMD(x=examples_other_leaf_group_positive[2]['input'], y=output_positive['prediction'],
+                                kernel='rbf')
+            # positive_loss = sample_loss(positive_examples_current_group['input'], output_positive['prediction'])+\
+            #                 sample_loss(examples_other_leaf_group_positive[0]['input'], output_positive['prediction'])\
+            #                 + sample_loss(examples_other_leaf_group_positive[1]['input'], output_positive['prediction'])\
+            #                  + + sample_loss(examples_other_leaf_group_positive[2]['input'], output_positive['prediction'])
 
             # positive_loss = positive_loss
 
@@ -658,15 +661,15 @@ for _ in range(5):
         if negative_size < max_size:
             optimizer_negative.zero_grad()
             output_negative = gen_model_negative(examples_other_leaf_group_negative)
-            # negative_loss = MMD(x=negative_examples_current_group['input'], y=output_negative['prediction'],
-            #                     kernel='rbf') + MMD(x=examples_other_leaf_group_negative[0]['input'], y=output_negative['prediction'],
-            #                     kernel='rbf') + MMD(x=examples_other_leaf_group_negative[1]['input'], y=output_negative['prediction'],
-            #                     kernel='rbf') + MMD(x=examples_other_leaf_group_negative[2]['input'], y=output_negative['prediction'],
-            #                     kernel='rbf')
-            negative_loss = sample_loss(negative_examples_current_group['input'], output_negative['prediction'])+\
-                            sample_loss(examples_other_leaf_group_negative[0]['input'], output_negative['prediction']) \
-                             + sample_loss(examples_other_leaf_group_negative[1]['input'], output_negative['prediction'])\
-                             + sample_loss(examples_other_leaf_group_negative[2]['input'], output_negative['prediction'])
+            negative_loss = MMD(x=negative_examples_current_group['input'], y=output_negative['prediction'],
+                                kernel='rbf')*0.0 + MMD(x=examples_other_leaf_group_negative[0]['input'], y=output_negative['prediction'],
+                                kernel='rbf') + MMD(x=examples_other_leaf_group_negative[1]['input'], y=output_negative['prediction'],
+                                kernel='rbf') + MMD(x=examples_other_leaf_group_negative[2]['input'], y=output_negative['prediction'],
+                                kernel='rbf')
+            # negative_loss = sample_loss(negative_examples_current_group['input'], output_negative['prediction'])+\
+            #                 sample_loss(examples_other_leaf_group_negative[0]['input'], output_negative['prediction']) \
+            #                  + sample_loss(examples_other_leaf_group_negative[1]['input'], output_negative['prediction'])\
+            #                  + sample_loss(examples_other_leaf_group_negative[2]['input'], output_negative['prediction'])
 
 
 

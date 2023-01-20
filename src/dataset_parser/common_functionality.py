@@ -1,5 +1,6 @@
 import copy
 import torch
+import pickle
 import numpy as np
 import pandas as pd
 import torch.nn as nn
@@ -445,85 +446,35 @@ class AugmentDataCommonFunctionality:
 
         return batch_input_negative, batch_input_positive
 
-    @staticmethod
-    def sample_batch(current_group, number_of_):
-        # other_leaf_group = [train_tilted_params.other_params['s_to_flattened_s'][i] for i in generate_combinations_only_leaf_node(flattened_s_to_s[current_group], k=1)]
-        other_leaf_group = [i for i in AugmentDataCommonFunctionality.generate_abstract_node(flattened_s_to_s[current_group], k=1)]
-
-        examples_current_group, _ = example_sampling_procedure_func(
-            train_tilted_params=train_tilted_params,
-            group0=current_group,
-            group1=None
-        )
-
-        index = int(train_tilted_params.other_params['batch_size'] / 2)
-
-        negative_examples_current_group = {
-            'labels': torch.LongTensor(examples_current_group['labels'][:index]),
-            'input': torch.FloatTensor(examples_current_group['input'][:index]),
-            'aux': torch.LongTensor(examples_current_group['aux'][:index]),
-            'aux_flattened': torch.LongTensor(examples_current_group['aux_flattened'][:index])
-        }
-
-        positive_examples_current_group = {
-            'labels': torch.LongTensor(examples_current_group['labels'][index:]),
-            'input': torch.FloatTensor(examples_current_group['input'][index:]),
-            'aux': torch.LongTensor(examples_current_group['aux'][index:]),
-            'aux_flattened': torch.LongTensor(examples_current_group['aux_flattened'][index:])
-        }
-
-        examples_other_leaf_group_negative, examples_other_leaf_group_positive = [], []
-
-        for group in other_leaf_group:
-            #             examples, _ = example_sampling_procedure_func(
-            #                 train_tilted_params=train_tilted_params,
-            #                 group0=group,
-            #                 group1=None
-            #             )
-
-            #             examples_other_leaf_group.append(examples)
-
-            batch_input_negative, batch_input_positive = custom_sample_data(group=group,
-                                                                            all_label=all_label,
-                                                                            all_input=all_input,
-                                                                            all_aux=all_aux,
-                                                                            all_aux_flatten=all_aux_flatten,
-                                                                            number_of_positive_examples=int(
-                                                                                train_tilted_params.other_params[
-                                                                                    'batch_size'] / 2),
-                                                                            number_of_negative_examples=int(
-                                                                                train_tilted_params.other_params[
-                                                                                    'batch_size'] / 2))
-
-            examples_other_leaf_group_negative.append(batch_input_negative)
-            examples_other_leaf_group_positive.append(batch_input_positive)
-
-        return negative_examples_current_group, positive_examples_current_group, examples_other_leaf_group_negative, examples_other_leaf_group_positive
-
 
 
 
     @staticmethod
-    def generate_examples_mmd(s, gen_model, number_of_examples, other_meta_data):
+    def generate_examples_mmd(s, gen_model, number_of_examples, other_meta_data, classifier_models, confidence_score=0.80):
         # other_leaf_node = AugmentDataCommonFunctionality.generate_combinations_only_leaf_node(s, k=1)
         other_leaf_node = AugmentDataCommonFunctionality.generate_abstract_node(s, k=1)
-
         def common_procedure(label):
+
             all_other_leaf_node_example_positive = []
+            selected_examples = []
 
-            for group in other_leaf_node:
-                group_mask = AugmentDataCommonFunctionality.generate_mask(other_meta_data['raw_data']['train_s'], group)
-                label_1_group_mask = np.logical_and(group_mask, other_meta_data['raw_data']['train_y'] == label)
-                label_1_examples = np.random.choice(np.where(label_1_group_mask == True)[0], size=number_of_examples,
-                                                    replace=True)
+            while len(selected_examples) <= number_of_examples:
+                for group in other_leaf_node:
+                    group_mask = AugmentDataCommonFunctionality.generate_mask(other_meta_data['raw_data']['train_s'], group)
+                    label_1_group_mask = np.logical_and(group_mask, other_meta_data['raw_data']['train_y'] == label)
+                    label_1_examples = np.random.choice(np.where(label_1_group_mask == True)[0], size=number_of_examples,
+                                                        replace=True)
 
-                batch_input = {
-                    'input': torch.FloatTensor(other_meta_data['raw_data']['train_X'][label_1_examples]),
-                }
+                    batch_input = {
+                        'input': torch.FloatTensor(other_meta_data['raw_data']['train_X'][label_1_examples]),
+                    }
 
-                all_other_leaf_node_example_positive.append(batch_input)
+                    all_other_leaf_node_example_positive.append(batch_input)
 
-            return gen_model(all_other_leaf_node_example_positive)['prediction'].detach().numpy()
+                generated_examples = gen_model(all_other_leaf_node_example_positive)['prediction'].detach().numpy()
+                relevant_index = np.where(classifier_models[s].predict_proba(generated_examples)[:, 1] > confidence_score)
+                selected_examples += generated_examples[relevant_index].tolist()
+            return selected_examples[:number_of_examples]
 
         positive_examples = common_procedure(label=1)
         negative_examples = common_procedure(label=0)
@@ -547,7 +498,8 @@ class AugmentData:
                 'train_X': self.X,
                 'train_y': self.y,
                 'train_s': self.s
-            }
+            },
+
         }
 
         self.common_func = AugmentDataCommonFunctionality()
@@ -639,6 +591,9 @@ class AugmentData:
         gen_model_negative = SimpleModelGenerator(input_dim=51)
         gen_model_negative.load_state_dict(torch.load("gen_model_adult_negative.pth"))
 
+
+        classifier_models = pickle.load(open('adult_one_vs_all_clf.sklearn', 'rb'))
+
         all_unique_groups = np.unique(self.other_meta_data['raw_data']['train_s'], axis=0)
 
         max_number_of_positive_examples = 1000
@@ -673,11 +628,11 @@ class AugmentData:
                     if example_type == 'positive':
                         augmented_input, _ = self.common_func.generate_examples_mmd(tuple(group), gen_model_positive,
                                                                                 number_of_examples_to_generate,
-                                                                                self.other_meta_data)
+                                                                                self.other_meta_data, classifier_models)
                     elif example_type == 'negative':
                         _, augmented_input = self.common_func.generate_examples_mmd(tuple(group), gen_model_negative,
                                                                                 number_of_examples_to_generate,
-                                                                                self.other_meta_data)
+                                                                                self.other_meta_data, classifier_models)
                     else:
                         raise NotImplementedError
 
