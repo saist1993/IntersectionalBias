@@ -513,8 +513,8 @@ class AugmentData:
 
     def run(self):
         if 'adult_multi_group' in self.dataset_name:
-            # train_X, train_y, train_s = self.data_augmentation_for_adult_multi_group()
-            train_X, train_y, train_s = self.data_augmentation_for_adult_multi_group_via_mmd()
+            train_X, train_y, train_s = self.data_augmentation_for_adult_multi_group()
+            # train_X, train_y, train_s = self.data_augmentation_for_adult_multi_group_via_mmd()
         else:
             raise NotImplementedError
 

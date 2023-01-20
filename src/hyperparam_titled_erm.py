@@ -35,7 +35,7 @@ if __name__ == '__main__':
     if type(args.seeds) is int:
         args.seeds = [args.seeds]
 
-    max_number_of_generated_examples = [0.5]
+    max_number_of_generated_examples = [1.0]
 
 
     if args.method == 'tilted_erm_with_mixup' or args.method == 'tilted_erm_with_mixup_only_one_group' \
