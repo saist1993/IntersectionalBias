@@ -474,12 +474,13 @@ class AugmentDataCommonFunctionality:
                     all_other_leaf_node_example_positive.append(batch_input)
 
                 generated_examples = gen_model(all_other_leaf_node_example_positive)['prediction'].detach().numpy()
-                if counter > 10:
-                    relevant_index = np.where(classifier_models[s].predict_proba(generated_examples)[:, 1] > confidence_score)
-                else:
-                    relevant_index = np.where(
-                        classifier_models[s].predict_proba(generated_examples)[:, 1] > 0.2)
-                selected_examples += generated_examples[relevant_index].tolist()
+                # if counter > 10:
+                #     relevant_index = np.where(classifier_models[s].predict_proba(generated_examples)[:, 1] > confidence_score)
+                # else:
+                #     relevant_index = np.where(
+                #         classifier_models[s].predict_proba(generated_examples)[:, 1] > 0.2)
+                # selected_examples += generated_examples[relevant_index].tolist()
+                selected_examples += generated_examples.tolist()
                 counter += 1
             return selected_examples[:number_of_examples]
 
