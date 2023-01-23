@@ -643,7 +643,7 @@ if __name__ == '__main__':
 
     # mmd loss
     mmd_loss = MMD_loss()
-    sample_loss = SamplesLoss(loss="laplacian".lower(), p=2)
+    sample_loss = SamplesLoss(loss="sinkhorn".lower(), p=2)
     max_size = 20000000000
     aux_func = AuxilaryFunction()
 
@@ -673,12 +673,17 @@ if __name__ == '__main__':
                 other_positive_loss = torch.sum(torch.tensor([MMD(x=examples['input'], y=output_positive['prediction'],
                                     kernel='rbf') for examples in examples_other_leaf_group_positive], requires_grad=True))
 
+                positive_loss = sample_loss(positive_examples_current_group['input'], output_positive['prediction'])
 
-                loss2 = MMD(x=torch.tensor(other_meta_data['raw_data']['train_X'][np.random.choice(np.where((other_meta_data['raw_data']['train_y'] == 1) ==True)[0],
-                                                            size=len(output_positive['prediction']), replace=False)], dtype=torch.float), y=output_positive['prediction'],
-                            kernel='rbf')
+                other_positive_loss = torch.sum(torch.tensor([sample_loss(examples['input'], output_positive['prediction']) for examples in
+                                                              examples_other_leaf_group_positive], requires_grad=True))
 
-                positive_loss = positive_loss + other_positive_loss + loss2*0.0
+
+                # loss2 = MMD(x=torch.tensor(other_meta_data['raw_data']['train_X'][np.random.choice(np.where((other_meta_data['raw_data']['train_y'] == 1) ==True)[0],
+                #                                             size=len(output_positive['prediction']), replace=False)], dtype=torch.float), y=output_positive['prediction'],
+                #             kernel='rbf')
+
+                positive_loss = positive_loss + other_positive_loss
 
                 # positive_loss = sample_loss(positive_examples_current_group['input'], output_positive['prediction'])+\
                 #                 sample_loss(examples_other_leaf_group_positive[0]['input'], output_positive['prediction'])\
@@ -694,18 +699,24 @@ if __name__ == '__main__':
             if negative_size < max_size:
                 optimizer_negative.zero_grad()
                 output_negative = gen_model_negative(examples_other_leaf_group_negative)
-                negative_loss = MMD(x=negative_examples_current_group['input'], y=output_negative['prediction'],
-                                    kernel='rbf')
+                # negative_loss = MMD(x=negative_examples_current_group['input'], y=output_negative['prediction'],
+                #                     kernel='rbf')
+                #
+                # other_negative_loss = torch.sum(torch.tensor([MMD(x=examples['input'], y=output_positive['prediction'],
+                #                                      kernel='rbf') for examples in examples_other_leaf_group_negative],
+                #                                              requires_grad=True))
 
-                other_negative_loss = torch.sum(torch.tensor([MMD(x=examples['input'], y=output_positive['prediction'],
-                                                     kernel='rbf') for examples in examples_other_leaf_group_negative],
+                negative_loss = sample_loss(negative_examples_current_group['input'], output_negative['prediction'])
+
+                other_negative_loss = torch.sum(torch.tensor([sample_loss(examples['input'], output_positive['prediction']) for examples in
+                                                              examples_other_leaf_group_negative],
                                                              requires_grad=True))
 
-                loss2 = MMD(x=torch.tensor(other_meta_data['raw_data']['train_X'][np.random.choice(np.where((other_meta_data['raw_data']['train_y'] == 0) == True)[0],
-                                                                          size=len(output_negative['prediction']), replace=False)], dtype=torch.float),
-                            y=output_negative['prediction'], kernel='rbf')
+                # loss2 = MMD(x=torch.tensor(other_meta_data['raw_data']['train_X'][np.random.choice(np.where((other_meta_data['raw_data']['train_y'] == 0) == True)[0],
+                #                                                           size=len(output_negative['prediction']), replace=False)], dtype=torch.float),
+                #             y=output_negative['prediction'], kernel='rbf')
 
-                negative_loss = negative_loss + other_negative_loss + loss2*0.0
+                negative_loss = negative_loss + other_negative_loss
                 # negative_loss = sample_loss(negative_examples_current_group['input'], output_negative['prediction'])+\
                 #                 sample_loss(examples_other_leaf_group_negative[0]['input'], output_negative['prediction']) \
                 #                  + sample_loss(examples_other_leaf_group_negative[1]['input'], output_negative['prediction'])\
