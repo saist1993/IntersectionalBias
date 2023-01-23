@@ -647,6 +647,8 @@ if __name__ == '__main__':
     max_size = 20000000000
     aux_func = AuxilaryFunction()
 
+
+    worst_accuracy = 1.0
     for _ in range(50):
         total_loss_positive, total_loss_negative = 0.0, 0.0
         for i in tqdm(range(train_tilted_params.other_params['number_of_iterations'])):
@@ -782,11 +784,14 @@ if __name__ == '__main__':
         print(clf.score(X_train, y_train), accuracy_score(y_test, y_pred), balanced_accuracy_score(y_test, y_pred))
         print("***")
 
+        if balanced_accuracy_score(y_test, y_pred) < worst_accuracy:
+            worst_accuracy = balanced_accuracy_score(y_test, y_pred)
+            torch.save(gen_model_positive.state_dict(), "gen_model_adult_positive.pth")
+            torch.save(gen_model_negative.state_dict(), "gen_model_adult_negative.pth")
 
 
 
 
 
 
-    torch.save(gen_model_positive.state_dict(), "gen_model_adult_positive.pth")
-    torch.save(gen_model_negative.state_dict(), "gen_model_adult_negative.pth")
+
