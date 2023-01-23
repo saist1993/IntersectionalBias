@@ -599,6 +599,8 @@ class AugmentData:
         gen_model_negative = SimpleModelGenerator(input_dim=51)
         gen_model_negative.load_state_dict(torch.load("gen_model_adult_negative.pth"))
 
+        all_models = pickle.load(open("all_adult_model.pt", "rb"))
+
 
         classifier_models = pickle.load(open('adult_one_vs_all_clf.sklearn', 'rb'))
 
@@ -634,11 +636,11 @@ class AugmentData:
                                                                   replace=True)  # sample remaining
                     # now generate remaining examples!
                     if example_type == 'positive':
-                        augmented_input, _ = self.common_func.generate_examples_mmd(tuple(group), gen_model_positive,
+                        augmented_input, _ = self.common_func.generate_examples_mmd(tuple(group), all_models[tuple(group)]['gen_model_positive'],
                                                                                 number_of_examples_to_generate,
                                                                                 self.other_meta_data, classifier_models)
                     elif example_type == 'negative':
-                        _, augmented_input = self.common_func.generate_examples_mmd(tuple(group), gen_model_negative,
+                        _, augmented_input = self.common_func.generate_examples_mmd(tuple(group), all_models[tuple(group)]['gen_model_negative'],
                                                                                 number_of_examples_to_generate,
                                                                                 self.other_meta_data, classifier_models)
                     else:

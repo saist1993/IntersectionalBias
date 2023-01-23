@@ -629,18 +629,26 @@ if __name__ == '__main__':
     flattened_s_to_s = {value: key for key, value in train_tilted_params.other_params['s_to_flattened_s'].items()}
 
 
-
-    # model
+    all_models = {}
     input_dim = all_input.shape[1]
-    gen_model_positive = SimpleModelGenerator(input_dim=input_dim, number_of_params=len(flattened_s_to_s[1]))
-    gen_model_negative = SimpleModelGenerator(input_dim=input_dim, number_of_params=len(flattened_s_to_s[1]))
+    for current_group_flat, current_group in flattened_s_to_s.items():
+
+        gen_model_positive = SimpleModelGenerator(input_dim=input_dim, number_of_params=len(flattened_s_to_s[1]))
+        gen_model_negative = SimpleModelGenerator(input_dim=input_dim, number_of_params=len(flattened_s_to_s[1]))
 
     # optimizer
     # opt_fn = partial(torch.optim.Adam)
-    # optimizer_positive = make_opt(gen_model_positive, opt_fn, lr=0.001)
-    # optimizer_negative = make_opt(gen_model_negative, opt_fn, lr=0.001)
-    optimizer_positive = torch.optim.SGD(gen_model_positive.parameters(), lr=0.1)
-    optimizer_negative = torch.optim.SGD(gen_model_negative.parameters(), lr=0.1)
+    #     optimizer_positive = make_opt(gen_model_positive, opt_fn, lr=0.001)
+    #     optimizer_negative = make_opt(gen_model_negative, opt_fn, lr=0.001)
+        optimizer_positive = torch.optim.Adam(gen_model_positive.parameters(), lr=0.01)
+        optimizer_negative = torch.optim.Adam(gen_model_negative.parameters(), lr=0.01)
+
+        all_models[current_group] = {
+            'gen_model_positive' : gen_model_positive,
+            'gen_model_negative' : gen_model_negative,
+            'optimizer_positive' : optimizer_positive,
+            'optimizer_negative' : optimizer_negative
+        }
 
     # mmd loss
     mmd_loss = MMD_loss()
@@ -651,7 +659,7 @@ if __name__ == '__main__':
 
 
     worst_accuracy = 1.0
-    for _ in range(50):
+    for _ in range(100):
         total_loss_positive, total_loss_negative = 0.0, 0.0
         for i in tqdm(range(train_tilted_params.other_params['number_of_iterations'])):
             current_group, _ = group_sampling_procedure_func(
@@ -659,6 +667,13 @@ if __name__ == '__main__':
                 global_weight,
                 None
             )
+
+            gen_model_positive, gen_model_negative, optimizer_positive, optimizer_negative = \
+                    all_models[flattened_s_to_s[current_group]]['gen_model_positive'],\
+                    all_models[flattened_s_to_s[current_group]]['gen_model_negative'],\
+                    all_models[flattened_s_to_s[current_group]]['optimizer_positive'], \
+                    all_models[flattened_s_to_s[current_group]]['optimizer_negative']
+
 
             positive_size, negative_size = group_size[current_group]
 
@@ -735,8 +750,14 @@ if __name__ == '__main__':
         balanced_accuracy, overall_accuracy, one_vs_all_accuracy = [], [], []
 
         all_generated_examples = []
-        for _, current_group in other_meta_data['s_flatten_lookup'].items():
+        for flat_current_group, current_group in other_meta_data['s_flatten_lookup'].items():
             positive_size, negative_size = group_size[current_group]
+
+            gen_model_positive, gen_model_negative, optimizer_positive, optimizer_negative = \
+                all_models[flat_current_group]['gen_model_positive'], \
+                    all_models[flat_current_group]['gen_model_negative'], \
+                    all_models[flat_current_group]['optimizer_positive'], \
+                    all_models[flat_current_group]['optimizer_negative']
 
 
             negative_examples_current_group, positive_examples_current_group, examples_other_leaf_group_negative, examples_other_leaf_group_positive = aux_func.sample_batch(
@@ -799,12 +820,6 @@ if __name__ == '__main__':
 
         if balanced_accuracy_score(y_test, y_pred) < worst_accuracy:
             worst_accuracy = balanced_accuracy_score(y_test, y_pred)
-            torch.save(gen_model_positive.state_dict(), "dummy.pth")
-            torch.save(gen_model_negative.state_dict(), "dummy.pth")
-
-
-
-
-
-
-
+            # torch.save(gen_model_positive.state_dict(), "dummy.pth")
+            # torch.save(gen_model_negative.state_dict(), "dummy.pth")
+            pickle.dump(all_models, open("all_adult_model.pt", 'wb'))

@@ -28,6 +28,35 @@ LOG_DIR = Path('../logs')
 SAVED_MODEL_PATH = Path('../saved_models/')
 
 
+class SimpleModelGenerator(nn.Module):
+    """Fairgrad uses this as complex non linear model"""
+
+    def __init__(self, input_dim):
+        super().__init__()
+
+        self.lambda_params = torch.nn.Parameter(torch.FloatTensor([0.33, 0.33, 0.33]))
+
+    def forward(self, other_examples):
+        final_output = torch.tensor(0.0, requires_grad=True)
+        for param, group in zip(self.lambda_params, other_examples):
+            x = group['input']
+            final_output = final_output + x*param
+
+        output = {
+            'prediction': final_output,
+            'adv_output': None,
+            'hidden': x,  # just for compatabilit
+            'classifier_hiddens': None,
+            'adv_hiddens': None
+        }
+
+        return output
+
+    @property
+    def layers(self):
+        return torch.nn.ModuleList([self.layer_1, self.layer_2])
+
+
 class RunnerArguments(NamedTuple):
     """Arguments for the main function"""
     seed: int
