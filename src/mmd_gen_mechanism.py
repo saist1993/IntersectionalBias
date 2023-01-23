@@ -704,7 +704,7 @@ if __name__ == '__main__':
                 negative_loss = MMD(x=negative_examples_current_group['input'], y=output_negative['prediction'],
                                     kernel='rbf')
                 #
-                other_negative_loss = torch.sum(torch.tensor([MMD(x=examples['input'], y=output_positive['prediction'],
+                other_negative_loss = torch.sum(torch.tensor([MMD(x=examples['input'], y=output_negative['prediction'],
                                                      kernel='rbf') for examples in examples_other_leaf_group_negative],
                                                              requires_grad=True))
 
@@ -799,8 +799,8 @@ if __name__ == '__main__':
 
         if balanced_accuracy_score(y_test, y_pred) < worst_accuracy:
             worst_accuracy = balanced_accuracy_score(y_test, y_pred)
-            torch.save(gen_model_positive.state_dict(), "gen_model_adult_positive.pth")
-            torch.save(gen_model_negative.state_dict(), "gen_model_adult_negative.pth")
+            torch.save(gen_model_positive.state_dict(), "dummy.pth")
+            torch.save(gen_model_negative.state_dict(), "dummy.pth")
 
 
 
