@@ -456,11 +456,12 @@ class AugmentDataCommonFunctionality:
         assert  number_of_examples > 1
         def common_procedure(label):
 
-            all_other_leaf_node_example_positive = []
+
             selected_examples = []
             counter = 0
 
             while len(selected_examples) <= number_of_examples :
+                all_other_leaf_node_example_positive = []
                 for group in other_leaf_node:
                     group_mask = AugmentDataCommonFunctionality.generate_mask(other_meta_data['raw_data']['train_s'], group)
                     label_1_group_mask = np.logical_and(group_mask, other_meta_data['raw_data']['train_y'] == label)
