@@ -823,3 +823,4 @@ if __name__ == '__main__':
             # torch.save(gen_model_positive.state_dict(), "dummy.pth")
             # torch.save(gen_model_negative.state_dict(), "dummy.pth")
             pickle.dump(all_models, open("all_adult_model.pt", 'wb'))
+            pickle.dump(clf, open("real_vs_fake.sklearn", 'wb'))

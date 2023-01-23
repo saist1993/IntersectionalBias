@@ -474,13 +474,14 @@ class AugmentDataCommonFunctionality:
                     all_other_leaf_node_example_positive.append(batch_input)
 
                 generated_examples = gen_model(all_other_leaf_node_example_positive)['prediction'].detach().numpy()
-                # if counter > 10:
-                #     relevant_index = np.where(classifier_models[s].predict_proba(generated_examples)[:, 1] > confidence_score)
-                # else:
-                #     relevant_index = np.where(
-                #         classifier_models[s].predict_proba(generated_examples)[:, 1] > 0.2)
-                # selected_examples += generated_examples[relevant_index].tolist()
-                selected_examples += generated_examples.tolist()
+                if counter < 10:
+                    # the classifier is confident that this is real. Which means fake looks very much like real
+                    relevant_index = np.where(classifier_models.predict_proba(generated_examples)[:, 1] > confidence_score)
+                else:
+                    relevant_index = np.where(
+                        classifier_models.predict_proba(generated_examples)[:, 1] > 0.2)
+                selected_examples += generated_examples[relevant_index].tolist()
+                # selected_examples += generated_examples.tolist()
                 counter += 1
             return selected_examples[:number_of_examples]
 
@@ -602,7 +603,7 @@ class AugmentData:
         all_models = pickle.load(open("all_adult_model.pt", "rb"))
 
 
-        classifier_models = pickle.load(open('adult_one_vs_all_clf.sklearn', 'rb'))
+        classifier_models = pickle.load(open('real_vs_fake.sklearn', 'rb'))
 
         all_unique_groups = np.unique(self.other_meta_data['raw_data']['train_s'], axis=0)
 
