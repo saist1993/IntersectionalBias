@@ -612,7 +612,7 @@ class AugmentData:
         max_number_of_negative_examples = 500
         max_ratio_of_generated_examples = self.max_number_of_generated_examples
 
-        augmented_train_X, augmented_train_y, augmented_train_s = [], [], []
+        augmented_train_X, augmented_train_y, augmented_train_s, is_instance_real = [], [], [], [] # generated - 0  and real is 1
 
         for group in all_unique_groups:
             group_mask = self.common_func.generate_mask(self.other_meta_data['raw_data']['train_s'], group)
@@ -622,7 +622,7 @@ class AugmentData:
             total_negative_examples = np.sum(group_mask) - total_positive_examples
 
             def sub_routine(label_mask, total_examples, max_number_of_examples, example_type):
-                if total_examples > max_number_of_examples:
+                if False:
                     index_of_selected_examples = np.random.choice(np.where(label_mask == True)[0],
                                                                   size=max_number_of_examples,
                                                                   replace=False)  # sample max number of positive examples
@@ -630,9 +630,9 @@ class AugmentData:
                     augmented_train_X.append(self.other_meta_data['raw_data']['train_X'][index_of_selected_examples])
                     augmented_train_y.append(self.other_meta_data['raw_data']['train_y'][index_of_selected_examples])
                     augmented_train_s.append(self.other_meta_data['raw_data']['train_s'][index_of_selected_examples])
+
                 else:
-                    number_of_examples_to_generate = int(min(max_number_of_examples - total_examples,
-                                                             max_ratio_of_generated_examples * total_examples))
+                    number_of_examples_to_generate = max_number_of_negative_examples
                     index_of_selected_examples = np.random.choice(np.where(label_mask == True)[0],
                                                                   size=max_number_of_examples - number_of_examples_to_generate,
                                                                   replace=True)  # sample remaining
