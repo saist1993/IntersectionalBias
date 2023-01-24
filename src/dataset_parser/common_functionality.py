@@ -8,7 +8,10 @@ from scipy import optimize
 from metrics import fairness_utils
 from itertools import combinations
 from typing import NamedTuple, List
+from sklearn.neural_network import MLPClassifier
 from sklearn.preprocessing import StandardScaler
+from sklearn.model_selection import train_test_split
+from sklearn.metrics import balanced_accuracy_score, accuracy_score
 from utils.iterator import TextClassificationDataset, sequential_transforms
 
 
@@ -622,7 +625,7 @@ class AugmentData:
             total_negative_examples = np.sum(group_mask) - total_positive_examples
 
             def sub_routine(label_mask, total_examples, max_number_of_examples, example_type):
-                if False:
+                if total_examples > max_number_of_examples:
                     index_of_selected_examples = np.random.choice(np.where(label_mask == True)[0],
                                                                   size=max_number_of_examples,
                                                                   replace=False)  # sample max number of positive examples
@@ -636,16 +639,16 @@ class AugmentData:
                     number_of_examples_to_generate = int(min(max_number_of_examples - total_examples,
                                                              max_ratio_of_generated_examples * total_examples))
                     index_of_selected_examples = np.random.choice(np.where(label_mask == True)[0],
-                                                                  size=1,
+                                                                  size=max_number_of_examples - number_of_examples_to_generate,
                                                                   replace=True)  # sample remaining
                     # now generate remaining examples!
                     if example_type == 'positive':
                         augmented_input, _ = self.common_func.generate_examples_mmd(tuple(group), all_models[tuple(group)]['gen_model_positive'],
-                                                                                max_number_of_examples - 1,
+                                                                                number_of_examples_to_generate,
                                                                                 self.other_meta_data, classifier_models)
                     elif example_type == 'negative':
                         _, augmented_input = self.common_func.generate_examples_mmd(tuple(group), all_models[tuple(group)]['gen_model_negative'],
-                                                                                max_number_of_examples - 1,
+                                                                                number_of_examples_to_generate,
                                                                                 self.other_meta_data, classifier_models)
                     else:
                         raise NotImplementedError
@@ -654,7 +657,7 @@ class AugmentData:
                         np.vstack((self.other_meta_data['raw_data']['train_X'][index_of_selected_examples],
                                    augmented_input)))
 
-                    # np.hstack([np.ones(len(index_of_selected_examples)), np.zeros(number_of_examples_to_generate)])
+                    is_instance_real.append(np.hstack([np.ones(len(index_of_selected_examples)), np.zeros(number_of_examples_to_generate)]))
 
                     # this is a hack. All examples for this group would have same y and s and thus it works
                     index_of_selected_examples = np.random.choice(np.where(label_mask == True)[0],
@@ -672,5 +675,15 @@ class AugmentData:
         augmented_train_X = np.vstack(augmented_train_X)
         augmented_train_s = np.vstack(augmented_train_s)
         augmented_train_y = np.hstack(augmented_train_y)
+        is_instance_real = np.hstack(is_instance_real)
+
+        X, y = augmented_train_X, is_instance_real
+        clf = MLPClassifier(solver="adam", learning_rate_init=0.01, hidden_layer_sizes=(25, 5), random_state=1)
+        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.33, random_state=42, shuffle=True)
+        clf.fit(X_train, y_train)
+        y_pred = clf.predict(X_test)
+        print("****")
+        print(clf.score(X_train, y_train), accuracy_score(y_test, y_pred), balanced_accuracy_score(y_test, y_pred))
+        print("***")
 
         return augmented_train_X, augmented_train_y, augmented_train_s
