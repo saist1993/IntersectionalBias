@@ -63,10 +63,13 @@ class SimpleClassificationDataset:
         X, y, s = X[index], y[index], s[index]
         train_X, train_y, train_s = X[:dev_index, :], y[:dev_index], s[:dev_index]
         valid_X, valid_y, valid_s = X[dev_index:test_index, :], y[dev_index:test_index], s[dev_index:test_index]
+        test_X, test_y, test_s = X[test_index:, :], y[test_index:], s[test_index:]
+
 
         if "augmented" in self.dataset_name:
             augment_data = AugmentData(self.dataset_name, valid_X, valid_y, valid_s, self.max_number_of_generated_examples)
-            train_X, train_y, train_s = augment_data.run()
+            # train_X, train_y, train_s = augment_data.run()
+            train_X, train_y, train_s = valid_X, valid_y, valid_s
 
 
 
@@ -75,7 +78,7 @@ class SimpleClassificationDataset:
         #                                200)
         #     train_X, train_y, train_s = augment_data.run()
 
-        test_X, test_y, test_s = X[test_index:, :], y[test_index:], s[test_index:]
+
 
         # this is where the data augmentation can take place.
 
