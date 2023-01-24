@@ -240,9 +240,9 @@ class AuxilaryFunction:
         reverse_flatten = {value: str(key) for key, value in other_meta_data['s_flatten_lookup'].items()}
 
         flattened_s = np.asarray(
-            [other_meta_data['s_flatten_lookup'][tuple(i)] for i in other_meta_data['raw_data']['train_s']])
-        mask_y_0 = other_meta_data['raw_data']['train_y'] == 0
-        mask_y_1 = other_meta_data['raw_data']['train_y'] == 1
+            [other_meta_data['s_flatten_lookup'][tuple(i)] for i in other_meta_data['raw_data']['valid_s']])
+        mask_y_0 = other_meta_data['raw_data']['valid_y'] == 0
+        mask_y_1 = other_meta_data['raw_data']['valid_y'] == 1
         s_y_0 = Counter(flattened_s[mask_y_0])
         s_y_1 = Counter(flattened_s[mask_y_1])
 
@@ -362,7 +362,7 @@ class TestGeneratedSamples:
         self.single_attribute_reco_models = []
         self.raw_data = other_meta_data['raw_data']
         self.s_flatten_lookup = other_meta_data['s_flatten_lookup']
-        self.number_of_attributes = other_meta_data['raw_data']['train_s'].shape[1]
+        self.number_of_attributes = other_meta_data['raw_data']['valid_s'].shape[1]
 
     @staticmethod
     def create_mask_with_x(data, condition):
@@ -389,12 +389,12 @@ class TestGeneratedSamples:
         self.create_and_learn_single_attribute_models()
 
     def create_and_learn_single_attribute_models(self):
-        number_of_attributes = other_meta_data['raw_data']['train_s'].shape[1]
+        number_of_attributes = other_meta_data['raw_data']['valid_s'].shape[1]
         self.number_of_attributes = number_of_attributes
         for k in range(number_of_attributes):
 
             print(f"learning for attribute {k}")
-            input_dim = other_meta_data['raw_data']['train_X'].shape[1]
+            input_dim = other_meta_data['raw_data']['valid_X'].shape[1]
             output_dim = 2
             single_attribute_classifier = SimpleClassifier(input_dim=input_dim, output_dim=output_dim)
 
@@ -403,7 +403,7 @@ class TestGeneratedSamples:
 
             for e in tqdm(range(10)):
                 average_loss = []
-                for items in (self.iterators[0]['train_iterator']):
+                for items in (self.iterators[0]['valid_iterator']):
                     optimizer.zero_grad()
                     prediction = single_attribute_classifier(items).squeeze()
                     attribute_label = items['aux'][:, k]
@@ -427,8 +427,8 @@ class TestGeneratedSamples:
 
                     return all_predictions, all_label
 
-                all_predictions_train, all_label_train = common_sub_routine(iterators[0]['train_iterator'])
-                all_predictions_test, all_label_test = common_sub_routine(iterators[0]['test_iterator'])
+                all_predictions_train, all_label_train = common_sub_routine(iterators[0]['valid_iterator'])
+                all_predictions_test, all_label_test = common_sub_routine(iterators[0]['valid_iterator'])
 
                 print(f"{k} Balanced test accuracy: {balanced_accuracy_score(all_label_test, all_predictions_test.argmax(axis=1))}"
                       f" and unbalanced test accuracy: {accuracy_score(all_label_test, all_predictions_test.argmax(axis=1))}" )
@@ -436,7 +436,7 @@ class TestGeneratedSamples:
             self.single_attribute_reco_models.append(single_attribute_classifier)
 
     def create_and_learn_all_attribute_model(self):
-        input_dim = other_meta_data['raw_data']['train_X'].shape[1]
+        input_dim = other_meta_data['raw_data']['valid_X'].shape[1]
         output_dim = len(other_meta_data['s_flatten_lookup']) # this needs to change
         all_attribute_classifier = SimpleClassifier(input_dim=input_dim, output_dim=output_dim)
 
@@ -445,7 +445,7 @@ class TestGeneratedSamples:
 
         for e in tqdm(range(10)):
             average_loss = []
-            for items in (self.iterators[0]['train_iterator']):
+            for items in (self.iterators[0]['valid_iterator']):
                 optimizer.zero_grad()
                 prediction = all_attribute_classifier(items).squeeze()
                 attribute_label = items['aux_flattened']
@@ -469,7 +469,7 @@ class TestGeneratedSamples:
 
                 return all_predictions, all_label
 
-            all_predictions_train, all_label_train = common_sub_routine(iterators[0]['train_iterator'])
+            all_predictions_train, all_label_train = common_sub_routine(iterators[0]['valid_iterator'])
             all_predictions_test, all_label_test = common_sub_routine(iterators[0]['test_iterator'])
 
             print(
@@ -479,13 +479,13 @@ class TestGeneratedSamples:
         self.all_attribute_reco_models = all_attribute_classifier
 
     def one_vs_all_classifier_group(self, group):
-        mask_group_train_X = self.create_mask_with_x(data=self.raw_data['train_s'], condition=group)
+        mask_group_train_X = self.create_mask_with_x(data=self.raw_data['valid_s'], condition=group)
         size = mask_group_train_X.sum()
         index_group_train_X = np.random.choice(np.where(mask_group_train_X == True)[0], size=size, replace=False)
         index_not_group_train_X = np.random.choice(np.where(mask_group_train_X == False)[0], size=size, replace=False)
 
-        train_X_group, train_y_group = self.raw_data['train_X'][index_group_train_X], np.ones(size)
-        train_X_not_group, train_y_not_group = self.raw_data['train_X'][index_not_group_train_X], np.zeros(size)
+        train_X_group, train_y_group = self.raw_data['valid_X'][index_group_train_X], np.ones(size)
+        train_X_not_group, train_y_not_group = self.raw_data['valid_X'][index_not_group_train_X], np.zeros(size)
 
         clf = MLPClassifier(solver="adam", learning_rate_init=0.01, hidden_layer_sizes=(25, 5), random_state=1)
 
@@ -561,17 +561,17 @@ if __name__ == '__main__':
     tgs.run()
 
     _labels, _input, _lengths, _aux, _aux_flattened = [], [], [], [], []
-    for items in (iterators[0]['train_iterator']):
+    for items in (iterators[0]['valid_iterator']):
         _labels.append(items['labels'])
         _input.append(items['input'])
         _lengths.append(items['lengths'])
         _aux.append(items['aux'])
         _aux_flattened.append(items['aux_flattened'])
 
-    all_label = other_meta_data['raw_data']['train_y']
-    all_aux = other_meta_data['raw_data']['train_s']
+    all_label = other_meta_data['raw_data']['valid_y']
+    all_aux = other_meta_data['raw_data']['valid_s']
     all_aux_flatten = np.asarray([other_meta_data['s_flatten_lookup'][tuple(i)] for i in all_aux])
-    all_input = other_meta_data['raw_data']['train_X']
+    all_input = other_meta_data['raw_data']['valid_X']
 
     scaler = StandardScaler().fit(all_input)
     # all_input = scaler.transform(all_input)
@@ -801,8 +801,8 @@ if __name__ == '__main__':
         #         print(name, param.data)
 
         all_generated_examples = torch.vstack(all_generated_examples).detach().numpy()
-        real_examples = np.random.choice(range(len(other_meta_data['raw_data']['train_X'])), size=len(all_generated_examples), replace=False)
-        real_examples = other_meta_data['raw_data']['train_X'][real_examples]
+        real_examples = np.random.choice(range(len(other_meta_data['raw_data']['valid_X'])), size=len(all_generated_examples), replace=False)
+        real_examples = other_meta_data['raw_data']['valid_X'][real_examples]
         generated_example_label = np.zeros(len(all_generated_examples))
         real_example_label = np.ones(len(all_generated_examples))
 
@@ -822,5 +822,5 @@ if __name__ == '__main__':
             worst_accuracy = balanced_accuracy_score(y_test, y_pred)
             # torch.save(gen_model_positive.state_dict(), "dummy.pth")
             # torch.save(gen_model_negative.state_dict(), "dummy.pth")
-            # pickle.dump(all_models, open("all_adult_model.pt", 'wb'))
-            # pickle.dump(clf, open("real_vs_fake.sklearn", 'wb'))
+            pickle.dump(all_models, open("all_adult_model.pt", 'wb'))
+            pickle.dump(clf, open("real_vs_fake.sklearn", 'wb'))

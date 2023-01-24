@@ -62,17 +62,18 @@ class SimpleClassificationDataset:
         index, test_index, dev_index = split_data(X.shape[0], train_split=self.train_split, valid_split=self.valid_split)
         X, y, s = X[index], y[index], s[index]
         train_X, train_y, train_s = X[:dev_index, :], y[:dev_index], s[:dev_index]
-
-        if "augmented" in self.dataset_name:
-            augment_data = AugmentData(self.dataset_name, train_X, train_y, train_s, self.max_number_of_generated_examples)
-            train_X, train_y, train_s = augment_data.run()
-
         valid_X, valid_y, valid_s = X[dev_index:test_index, :], y[dev_index:test_index], s[dev_index:test_index]
 
-        if "augmented_valid" in self.dataset_name:
-            augment_data = AugmentData(self.dataset_name, valid_X, valid_y, valid_s,
-                                       200)
+        if "augmented" in self.dataset_name:
+            augment_data = AugmentData(self.dataset_name, valid_X, valid_y, valid_s, self.max_number_of_generated_examples)
             train_X, train_y, train_s = augment_data.run()
+
+
+
+        # if "augmented_valid" in self.dataset_name:
+        #     augment_data = AugmentData(self.dataset_name, valid_X, valid_y, valid_s,
+        #                                200)
+        #     train_X, train_y, train_s = augment_data.run()
 
         test_X, test_y, test_s = X[test_index:, :], y[test_index:], s[test_index:]
 
