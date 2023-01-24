@@ -533,8 +533,8 @@ class AugmentData:
 
         all_unique_groups = np.unique(self.other_meta_data['raw_data']['train_s'], axis=0)
 
-        max_number_of_positive_examples = 500
-        max_number_of_negative_examples = 500
+        max_number_of_positive_examples = 1000
+        max_number_of_negative_examples = 1000
         max_ratio_of_generated_examples = self.max_number_of_generated_examples
 
         augmented_train_X, augmented_train_y, augmented_train_s = [], [], []
