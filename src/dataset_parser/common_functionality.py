@@ -453,7 +453,7 @@ class AugmentDataCommonFunctionality:
 
 
     @staticmethod
-    def generate_examples_mmd(s, gen_model, number_of_examples, other_meta_data, classifier_models, confidence_score=0.10):
+    def generate_examples_mmd(s, gen_model, number_of_examples, other_meta_data, classifier_models, confidence_score=0.3):
         # other_leaf_node = AugmentDataCommonFunctionality.generate_combinations_only_leaf_node(s, k=1)
         other_leaf_node = AugmentDataCommonFunctionality.generate_abstract_node(s, k=1)
         assert  number_of_examples > 1
@@ -478,9 +478,10 @@ class AugmentDataCommonFunctionality:
                     all_other_leaf_node_example_positive.append(batch_input)
 
                 generated_examples = gen_model(all_other_leaf_node_example_positive)['prediction'].detach().numpy()
-                if counter < 10:
+                if counter < 100:
                     # the classifier is confident that this is real. Which means fake looks very much like real
-                    relevant_index = np.where(classifier_models.predict_proba(generated_examples)[:, 1] > confidence_score)
+                    relevant_index = np.where((classifier_models.predict_proba(generated_examples)[:, 1] > confidence_score) &
+                                              (classifier_models.predict_proba(generated_examples)[:, 0] > confidence_score))
                 else:
                     relevant_index = np.where(
                         classifier_models.predict_proba(generated_examples)[:, 1] > 0.2)
