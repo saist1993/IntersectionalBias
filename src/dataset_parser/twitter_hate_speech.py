@@ -126,6 +126,8 @@ class DatasetTwitterHateSpeech:
         self.valid_encodings = None
         self.test_encodings = None
 
+        self.max_number_of_generated_examples = params['max_number_of_generated_examples']
+
     def _check_if_encodings_are_present(self):
         location_avg = self.dataset_location / Path('train' + f'{self.lm_encoder_type}_encoding_avg.npy')
         location_cls = self.dataset_location / Path('train' + f'{self.lm_encoder_type}_encoding_cls.npy')

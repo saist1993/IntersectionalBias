@@ -521,11 +521,13 @@ class AugmentData:
         self.common_func = AugmentDataCommonFunctionality()
 
     def run(self):
-        if 'adult_multi_group' in self.dataset_name:
-            # train_X, train_y, train_s = self.data_augmentation_for_adult_multi_group()
-            train_X, train_y, train_s = self.data_augmentation_via_mmd()
-        else:
-            raise NotImplementedError
+
+        train_X, train_y, train_s = self.data_augmentation_via_mmd()
+        # if 'adult_multi_group' in self.dataset_name:
+        #     # train_X, train_y, train_s = self.data_augmentation_for_adult_multi_group()
+        #
+        # else:
+        #     raise NotImplementedError
 
         return train_X, train_y, train_s
 
@@ -607,10 +609,10 @@ class AugmentData:
         # gen_model_negative = SimpleModelGenerator(input_dim=51)
         # gen_model_negative.load_state_dict(torch.load("gen_model_adult_negative.pth"))
 
-        all_models = pickle.load(open(f"all_{self.dataset_name}.pt", "rb"))
+        all_models = pickle.load(open(f"all_{self.dataset_name.replace('_augmented', '')}.pt", "rb"))
 
 
-        classifier_models = pickle.load(open(f"real_vs_fake_{self.dataset_name}.sklearn", "rb"))
+        classifier_models = pickle.load(open(f"real_vs_fake_{self.dataset_name.replace('_augmented', '')}.sklearn", "rb"))
 
         all_unique_groups = np.unique(self.other_meta_data['raw_data']['train_s'], axis=0)
 
@@ -664,9 +666,10 @@ class AugmentData:
 
                     is_instance_real.append(np.hstack([np.ones(len(index_of_selected_examples)), np.zeros(number_of_examples_to_generate)]))
 
-
-                augmented_train_y.append(np.ones(max_number_of_examples))
-                augmented_train_y.append(np.zeros(max_number_of_examples))
+                if example_type == "positive":
+                    augmented_train_y.append(np.ones(max_number_of_examples))
+                else:
+                    augmented_train_y.append(np.zeros(max_number_of_examples))
                 # augmented_train_s.append(self.other_meta_data['raw_data']['train_s'][index_of_selected_examples])
 
                 augmented_train_s.append(np.repeat(np.expand_dims(group, 0), max_number_of_examples, 0))
