@@ -654,7 +654,7 @@ class AugmentData:
                         np.vstack((self.other_meta_data['raw_data']['train_X'][index_of_selected_examples],
                                    augmented_input)))
 
-                    np.hstack([np.ones(len(index_of_selected_examples)), np.zeros(number_of_examples_to_generate)])
+                    # np.hstack([np.ones(len(index_of_selected_examples)), np.zeros(number_of_examples_to_generate)])
 
                     # this is a hack. All examples for this group would have same y and s and thus it works
                     index_of_selected_examples = np.random.choice(np.where(label_mask == True)[0],
