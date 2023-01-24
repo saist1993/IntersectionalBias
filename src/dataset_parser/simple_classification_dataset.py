@@ -67,9 +67,9 @@ class SimpleClassificationDataset:
 
 
         if "augmented" in self.dataset_name:
-            augment_data = AugmentData(self.dataset_name, valid_X, valid_y, valid_s, self.max_number_of_generated_examples)
-            # train_X, train_y, train_s = augment_data.run()
-            train_X, train_y, train_s = valid_X, valid_y, valid_s
+            augment_data = AugmentData(self.dataset_name, train_X, train_y, train_s, self.max_number_of_generated_examples)
+            train_X, train_y, train_s = augment_data.run()
+            # train_X, train_y, train_s = valid_X, valid_y, valid_s
 
 
 

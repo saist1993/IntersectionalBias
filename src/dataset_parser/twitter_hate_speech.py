@@ -5,7 +5,7 @@ import pandas as pd
 from pathlib import Path
 from typing import Tuple, List
 from transformers import PreTrainedTokenizer, PreTrainedModel
-from .common_functionality import CreateIterators, IteratorData
+from .common_functionality import CreateIterators, IteratorData, AugmentData
 from utils.encode_text_via_lm import load_lm, batch_tokenize, encode_text_batch
 
 
@@ -191,6 +191,13 @@ class DatasetTwitterHateSpeech:
 
         if self.dataset_name == 'twitter_hate_speech_v3':
             train_s, valid_s, test_s = train_s[:, :3], valid_s[:, :3], test_s[:, :3]
+
+        if "augmented" in self.dataset_name:
+            augment_data = AugmentData(self.dataset_name, train_X, train_y, train_s,
+                                       self.max_number_of_generated_examples,
+                                       max_number_of_positive_examples=1000,
+                                       max_number_of_negative_examples=1000)
+            train_X, train_y, train_s = augment_data.run()
 
 
         # Step3: Create iterators - This can be abstracted out to dataset iterators.
