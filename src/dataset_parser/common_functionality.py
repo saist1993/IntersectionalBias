@@ -460,7 +460,7 @@ class AugmentDataCommonFunctionality:
             selected_examples = []
             counter = 0
 
-            while len(selected_examples) <= number_of_examples :
+            while len(selected_examples) <= number_of_examples:
                 all_other_leaf_node_example_positive = []
                 for group in other_leaf_node:
                     group_mask = AugmentDataCommonFunctionality.generate_mask(other_meta_data['raw_data']['train_s'], group)
