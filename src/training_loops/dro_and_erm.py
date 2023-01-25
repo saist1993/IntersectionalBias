@@ -284,8 +284,8 @@ def dro_optimization_procedure(train_tilted_params):
 
         def sub_routine():
             loss_rg = torch.tensor(0.0, requires_grad=True)
-            k = 1
-            for _ in range(k):0
+            k = 10
+            for _ in range(k):
 
                 loss_rg = loss_rg + fairness_regularization_procedure_func(train_tilted_params=train_tilted_params,
                                                                  items_group_0=items_group_0,
