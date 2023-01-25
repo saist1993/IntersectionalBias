@@ -182,8 +182,8 @@ def temp_table_generator(dataset_name, fairness_function):
 # adult_multi_group_equal_odds = temp_table_generator('adult_multi_group_augmented', 'equal_odds')
 # adult_multi_group_equal_opportunity = temp_table_generator('adult_multi_group_augmented', 'equal_opportunity')
 # #
-twitter_hate_speech_equal_odds = temp_table_generator('twitter_hate_speech', 'equal_odds')
-twitter_hate_speech_equal_opportunity = temp_table_generator('twitter_hate_speech', 'equal_opportunity')
+twitter_hate_speech_equal_odds = temp_table_generator('twitter_hate_speech_augmented', 'equal_odds')
+twitter_hate_speech_equal_opportunity = temp_table_generator('twitter_hate_speech_augmented', 'equal_opportunity')
 # # #
 # celeb_multigroup_v3_equal_odds = temp_table_generator('celeb_multigroup_v3', 'equal_odds')
 # celeb_multigroup_v3_equal_opportunity = temp_table_generator('celeb_multigroup_v3', 'equal_opportunity')
