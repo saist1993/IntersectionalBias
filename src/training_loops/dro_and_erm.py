@@ -280,11 +280,25 @@ def dro_optimization_procedure(train_tilted_params):
         else:
             loss_group_1 = None
 
-        loss_rg = fairness_regularization_procedure_func(train_tilted_params=train_tilted_params,
-                                                         items_group_0=items_group_0,
-                                                         items_group_1=items_group_1,
-                                                         model=model,
-                                                         other_params={'gamma': None})
+
+
+        def sub_routine():
+            loss_rg = torch.tensor(0.0, requires_grad=True)
+            k = 1
+            for _ in range(k):0
+
+                loss_rg = loss_rg + fairness_regularization_procedure_func(train_tilted_params=train_tilted_params,
+                                                                 items_group_0=items_group_0,
+                                                                 items_group_1=items_group_1,
+                                                                 model=model,
+                                                                 other_params={'gamma': None})
+
+            loss_rg = loss_rg/k
+
+            return loss_rg
+
+        loss_rg = sub_routine()
+
 
 
         global_loss, loss = update_loss_and_global_loss_dro(train_tilted_params=train_tilted_params,

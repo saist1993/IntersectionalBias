@@ -26,6 +26,7 @@ from training_loops.dro_and_erm import group_sampling_procedure_func, create_gro
 dataset_name = 'adult_multi_group'
 batch_size = 512
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+import numpy as np
 
 
 class AuxilaryFunction:
@@ -232,6 +233,12 @@ if __name__ == '__main__':
     tgs = TestGeneratedSamples(iterators=iterators, other_meta_data=other_meta_data)
     # tgs.run()
 
+    scaler = StandardScaler().fit(other_meta_data['raw_data']['train_X'])
+    other_meta_data['raw_data']['train_X'] = scaler.transform(other_meta_data['raw_data']['train_X'])
+    other_meta_data['raw_data']['valid_X'] = scaler.transform(other_meta_data['raw_data']['valid_X'])
+
+
+
     all_label_train = other_meta_data['raw_data']['train_y']
     all_aux_train = other_meta_data['raw_data']['train_s']
     all_input_train = other_meta_data['raw_data']['train_X']
@@ -277,8 +284,8 @@ if __name__ == '__main__':
         gen_model_positive = SimpleModelGenerator(input_dim=input_dim, number_of_params=len(flattened_s_to_s[1]))
         gen_model_negative = SimpleModelGenerator(input_dim=input_dim, number_of_params=len(flattened_s_to_s[1]))
 
-        optimizer_positive = torch.optim.Adam(gen_model_positive.parameters(), lr=0.01)
-        optimizer_negative = torch.optim.Adam(gen_model_negative.parameters(), lr=0.01)
+        optimizer_positive = torch.optim.Adam(gen_model_positive.parameters(), lr=0.1)
+        optimizer_negative = torch.optim.Adam(gen_model_negative.parameters(), lr=0.1)
 
         all_models[current_group] = {
             'gen_model_positive': gen_model_positive,
