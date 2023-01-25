@@ -23,8 +23,8 @@ from sklearn.metrics import balanced_accuracy_score, accuracy_score
 from utils.misc import resolve_device, set_seed, make_opt, CustomError
 from training_loops.dro_and_erm import group_sampling_procedure_func, create_group, example_sampling_procedure_func
 
-dataset_name = 'twitter_hate_speech'
-batch_size = 1024
+dataset_name = 'adult_multi_group'
+batch_size = 512
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 
@@ -118,7 +118,7 @@ class AuxilaryFunction:
         return batch_input_negative, batch_input_positive
 
     @staticmethod
-    def sample_batch(current_group, other_meta_data):
+    def sample_batch(current_group, other_meta_data, batch_sizes=512):
 
         # all_label_train = other_meta_data['raw_data']['train_y']
         # all_aux_train = other_meta_data['raw_data']['train_s']
@@ -180,7 +180,7 @@ class AuxilaryFunction:
             all_input=all_input, all_aux=all_aux,
             all_aux_flatten=np.asarray(
                 [other_meta_data['s_flatten_lookup'][tuple(i)] for i in all_aux]),
-            number_of_positive_examples=int(batch_size / 2), number_of_negative_examples=int(batch_size / 2))
+            number_of_positive_examples=int(batch_sizes / 2), number_of_negative_examples=int(batch_sizes / 2))
 
 
         examples_other_leaf_group_negative, examples_other_leaf_group_positive = [], []
@@ -201,9 +201,9 @@ class AuxilaryFunction:
                                                                                                       'raw_data'][
                                                                                                       'train_s']]),
                                                                                              number_of_positive_examples=int(
-                                                                                                 batch_size / 2),
+                                                                                                 batch_sizes / 2),
                                                                                              number_of_negative_examples=int(
-                                                                                                 batch_size / 2))
+                                                                                                 batch_sizes / 2))
 
             examples_other_leaf_group_negative.append(batch_input_negative)
             examples_other_leaf_group_positive.append(batch_input_positive)
@@ -305,7 +305,7 @@ if __name__ == '__main__':
 
             negative_examples_current_group, positive_examples_current_group, \
                 examples_other_leaf_group_negative, examples_other_leaf_group_positive = aux_func.sample_batch(
-                current_group, other_meta_data)
+                current_group, other_meta_data, batch_sizes=batch_size)
 
             if positive_size < max_size:
                 optimizer_positive.zero_grad()
@@ -385,7 +385,7 @@ if __name__ == '__main__':
                     all_models[flat_current_group]['optimizer_negative']
 
             negative_examples_current_group, positive_examples_current_group, examples_other_leaf_group_negative, examples_other_leaf_group_positive = aux_func.sample_batch(
-                current_group, other_meta_data)
+                current_group, other_meta_data, batch_sizes=1024)
 
             if positive_size < max_size:
                 output_positive = gen_model_positive(examples_other_leaf_group_positive)
