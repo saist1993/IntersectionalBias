@@ -238,7 +238,7 @@ if __name__ == '__main__':
     all_input_valid = other_meta_data['raw_data']['valid_X']
     all_aux_flatten_valid = [other_meta_data['s_flatten_lookup'][tuple(i)] for i in all_aux_valid]
 
-    total_no_groups = len(np.unique(all_aux_valid))  # hopefully this also has all the groups
+    total_no_groups = len(np.unique(all_aux_flatten_valid))  # hopefully this also has all the groups
     # groups_matrix, global_weight, global_loss = create_group(total_no_groups, method="single_group")
 
     train_tilted_params = TrainingLoopParameters(
