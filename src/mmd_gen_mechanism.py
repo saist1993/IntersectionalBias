@@ -158,7 +158,7 @@ class AuxilaryFunction:
         #     'aux_flattened': torch.LongTensor(examples_current_group['aux_flattened'][index:])
         # }
 
-        reverse_lookup = {value: key for key, value in other_meta_data['s_flatten_lookup'].items()}
+        # reverse_lookup = {value: key for key, value in other_meta_data['s_flatten_lookup'].items()}
 
         # negative_examples_current_group, positive_examples_current_group = AuxilaryFunction.custom_sample_data(
         #     group=reverse_lookup[current_group], all_label=other_meta_data['raw_data']['valid_y'],
@@ -176,7 +176,7 @@ class AuxilaryFunction:
         all_input = other_meta_data['raw_data']['train_X']
 
         negative_examples_current_group, positive_examples_current_group = AuxilaryFunction.custom_sample_data(
-            group=reverse_lookup[current_group], all_label=all_label,
+            group=flattened_s_to_s[current_group], all_label=all_label,
             all_input=all_input, all_aux=all_aux,
             all_aux_flatten=np.asarray(
                 [other_meta_data['s_flatten_lookup'][tuple(i)] for i in all_aux]),
@@ -273,8 +273,8 @@ if __name__ == '__main__':
         gen_model_positive = SimpleModelGenerator(input_dim=input_dim, number_of_params=len(flattened_s_to_s[1]))
         gen_model_negative = SimpleModelGenerator(input_dim=input_dim, number_of_params=len(flattened_s_to_s[1]))
 
-        optimizer_positive = torch.optim.Adam(gen_model_positive.parameters(), lr=0.01)
-        optimizer_negative = torch.optim.Adam(gen_model_negative.parameters(), lr=0.01)
+        optimizer_positive = torch.optim.SGD(gen_model_positive.parameters(), lr=0.1)
+        optimizer_negative = torch.optim.SGD(gen_model_negative.parameters(), lr=0.1)
 
         all_models[current_group] = {
             'gen_model_positive': gen_model_positive,
