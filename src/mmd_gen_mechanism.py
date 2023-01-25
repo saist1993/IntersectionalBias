@@ -31,6 +31,9 @@ dataset_name = 'twitter_hate_speech'
 batch_size = 512
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
+
+
+
 def MMD(x, y, kernel):
     """Emprical maximum mean discrepancy. The lower the result
        the more evidence that distributions are the same.
@@ -236,6 +239,7 @@ class AuxilaryFunction:
 
     @staticmethod
     def size_of_group(other_meta_data):
+        # there is train here
         labels = [value for key, value in other_meta_data['s_flatten_lookup'].items()]
         reverse_flatten = {value: str(key) for key, value in other_meta_data['s_flatten_lookup'].items()}
 
@@ -558,7 +562,7 @@ if __name__ == '__main__':
 
 
     tgs = TestGeneratedSamples(iterators=iterators, other_meta_data=other_meta_data)
-    tgs.run()
+    # tgs.run()
 
     _labels, _input, _lengths, _aux, _aux_flattened = [], [], [], [], []
     for items in (iterators[0]['train_iterator']):
@@ -766,31 +770,31 @@ if __name__ == '__main__':
             if positive_size < max_size:
 
                 output_positive = gen_model_positive(examples_other_leaf_group_positive)
-                final_accuracy_positive = tgs.prediction_over_generated_examples(
-                    generated_examples=output_positive['prediction'], gold_label=negative_examples_current_group['aux'])
-                balanced_accuracy += [i[0] for i in final_accuracy_positive]
-                overall_accuracy += [i[1] for i in final_accuracy_positive]
+                # final_accuracy_positive = tgs.prediction_over_generated_examples(
+                #     generated_examples=output_positive['prediction'], gold_label=negative_examples_current_group['aux'])
+                # balanced_accuracy += [i[0] for i in final_accuracy_positive]
+                # overall_accuracy += [i[1] for i in final_accuracy_positive]
 
             if negative_size < max_size:
                 output_negative = gen_model_negative(examples_other_leaf_group_negative)
-                final_accuracy_negative = tgs.prediction_over_generated_examples(generated_examples=output_negative['prediction'], gold_label=negative_examples_current_group['aux'])
-                balanced_accuracy += [i[0] for i in final_accuracy_negative]
-                overall_accuracy += [i[1] for i in final_accuracy_negative]
+                # final_accuracy_negative = tgs.prediction_over_generated_examples(generated_examples=output_negative['prediction'], gold_label=negative_examples_current_group['aux'])
+                # balanced_accuracy += [i[0] for i in final_accuracy_negative]
+                # overall_accuracy += [i[1] for i in final_accuracy_negative]
 
-            acc1 = tgs.one_vs_all_clf[current_group].score(output_positive['prediction'].detach().numpy(),
-                                                          np.ones(len(output_positive['prediction'])))
-            acc2 = tgs.one_vs_all_clf[current_group].score(output_negative['prediction'].detach().numpy(),
-                                                          np.ones(len(output_negative['prediction'])))
-
-            print(f"group {current_group}: {np.mean([acc2, acc1])}")
-
-            one_vs_all_accuracy.append(np.mean([acc2, acc1]))
+            # acc1 = tgs.one_vs_all_clf[current_group].score(output_positive['prediction'].detach().numpy(),
+            #                                               np.ones(len(output_positive['prediction'])))
+            # acc2 = tgs.one_vs_all_clf[current_group].score(output_negative['prediction'].detach().numpy(),
+            #                                               np.ones(len(output_negative['prediction'])))
+            #
+            # print(f"group {current_group}: {np.mean([acc2, acc1])}")
+            #
+            # one_vs_all_accuracy.append(np.mean([acc2, acc1]))
 
             all_generated_examples.append(output_positive['prediction'])
             all_generated_examples.append(output_negative['prediction'])
 
-        print(np.mean(overall_accuracy), np.max(overall_accuracy), np.min(overall_accuracy))
-        print(np.mean(one_vs_all_accuracy), np.max(one_vs_all_accuracy), np.min(one_vs_all_accuracy))
+        # print(np.mean(overall_accuracy), np.max(overall_accuracy), np.min(overall_accuracy))
+        # print(np.mean(one_vs_all_accuracy), np.max(one_vs_all_accuracy), np.min(one_vs_all_accuracy))
 
         # for name, param in gen_model_positive.named_parameters():
         #     if param.requires_grad:
