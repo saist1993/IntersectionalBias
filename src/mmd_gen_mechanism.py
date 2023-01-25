@@ -23,7 +23,7 @@ from sklearn.metrics import balanced_accuracy_score, accuracy_score
 from utils.misc import resolve_device, set_seed, make_opt, CustomError
 from training_loops.dro_and_erm import group_sampling_procedure_func, create_group, example_sampling_procedure_func
 
-dataset_name = 'adult_multi_group'
+dataset_name = 'twitter_hate_speech'
 batch_size = 512
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -167,13 +167,13 @@ class AuxilaryFunction:
         #         [other_meta_data['s_flatten_lookup'][tuple(i)] for i in other_meta_data['raw_data']['valid_s']]),
         #     number_of_positive_examples=int(batch_size / 2), number_of_negative_examples=int(batch_size / 2))
 
-        # all_label = np.hstack([other_meta_data['raw_data']['valid_y'], other_meta_data['raw_data']['train_y']])
-        # all_aux = np.vstack([other_meta_data['raw_data']['valid_s'], other_meta_data['raw_data']['train_s']])
-        # all_input = np.vstack([other_meta_data['raw_data']['valid_X'], other_meta_data['raw_data']['train_X']])
-
-        all_label = other_meta_data['raw_data']['train_y']
-        all_aux = other_meta_data['raw_data']['train_s']
-        all_input = other_meta_data['raw_data']['train_X']
+        all_label = np.hstack([other_meta_data['raw_data']['valid_y'], other_meta_data['raw_data']['train_y']])
+        all_aux = np.vstack([other_meta_data['raw_data']['valid_s'], other_meta_data['raw_data']['train_s']])
+        all_input = np.vstack([other_meta_data['raw_data']['valid_X'], other_meta_data['raw_data']['train_X']])
+        #
+        # all_label = other_meta_data['raw_data']['train_y']
+        # all_aux = other_meta_data['raw_data']['train_s']
+        # all_input = other_meta_data['raw_data']['train_X']
 
         negative_examples_current_group, positive_examples_current_group = AuxilaryFunction.custom_sample_data(
             group=flattened_s_to_s[current_group], all_label=all_label,
