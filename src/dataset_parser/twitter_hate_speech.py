@@ -180,6 +180,7 @@ class DatasetTwitterHateSpeech:
         # Step2: Get the data into numpy format.
         train_X, train_s, train_y = \
             self.train_encodings, self.get_private_attribute(self.train_df), self.get_label(self.train_df)
+        #
         valid_X, valid_s, valid_y = \
             self.valid_encodings, self.get_private_attribute(self.valid_df), self.get_label(self.valid_df)
         test_X, test_s, test_y = \
