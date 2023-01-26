@@ -483,7 +483,7 @@ class AugmentDataCommonFunctionality:
                     relevant_index = np.where((classifier_models.predict_proba(generated_examples)[:, 1] > confidence_score))
                 else:
                     relevant_index = np.where(
-                        classifier_models.predict_proba(generated_examples)[:, 1] > 0.2)
+                        classifier_models.predict_proba(generated_examples)[:, 1] > 0.0)
                 selected_examples += generated_examples[relevant_index].tolist()
                 # selected_examples += generated_examples.tolist()
                 counter += 1
