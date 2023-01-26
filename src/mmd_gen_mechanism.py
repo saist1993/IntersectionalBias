@@ -23,7 +23,7 @@ from sklearn.metrics import balanced_accuracy_score, accuracy_score
 from utils.misc import resolve_device, set_seed, make_opt, CustomError
 from training_loops.dro_and_erm import group_sampling_procedure_func, create_group, example_sampling_procedure_func
 
-dataset_name = 'adult_multi_group'
+dataset_name = 'twitter_hate_speech'
 batch_size = 512
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 import numpy as np
