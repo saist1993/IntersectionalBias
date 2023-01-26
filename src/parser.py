@@ -98,7 +98,7 @@ def temp_table_generator(dataset_name, fairness_function):
         # 'only_mixup',
         # 'only_mixup_based_on_distance'
         # 'erm_random_single_group_random_sampling',
-        'erm_random_single_group_equal_sampling',
+        # 'erm_random_single_group_equal_sampling',
         # 'erm_random_group_equal_sampling_mixup_regularizer',
         # 'erm_distance_group_equal_sampling_mixup_regularizer_dynamic_distance',
         # 'erm_distance_group_equal_sampling_mixup_regularizer_static_distance',
@@ -108,8 +108,8 @@ def temp_table_generator(dataset_name, fairness_function):
         # 'dro_random_group_equal_sampling',
         # 'dro_random_single_group_equal_sampling',
         # 'dro_super_group_and_distance_equal_sampling_mixup_regularizer_dynamic_distance_integrate_reg_loss_update_only_via_reg',
-        # 'dro_super_group_and_distance_equal_sampling_mixup_regularizer_dynamic_distance_integrate_reg_loss',
-        # 'dro_super_group_equal_sampling_mixup_regularizer_integrate_reg_loss',
+        'dro_super_group_and_distance_equal_sampling_mixup_regularizer_dynamic_distance_integrate_reg_loss',
+        'dro_super_group_equal_sampling_mixup_regularizer_integrate_reg_loss',
         # 'dro_super_group_and_distance_equal_sampling_mixup_regularizer_integrate_reg_loss_miixup_distance'
         # 'erm_super_group_with_simplified_fairness_loss',
         # 'train_only_group_dro_with_mixup_regularizer_super_group',
@@ -179,21 +179,21 @@ def temp_table_generator(dataset_name, fairness_function):
     # print(t.draw())
     return t
 
-# adult_multi_group_equal_odds = temp_table_generator('adult_multi_group_augmented', 'equal_odds')
-# adult_multi_group_equal_opportunity = temp_table_generator('adult_multi_group_augmented', 'equal_opportunity')
+adult_multi_group_equal_odds = temp_table_generator('adult_multi_group', 'equal_odds')
+adult_multi_group_equal_opportunity = temp_table_generator('adult_multi_group', 'equal_opportunity')
 # #
-twitter_hate_speech_equal_odds = temp_table_generator('twitter_hate_speech_augmented', 'equal_odds')
-twitter_hate_speech_equal_opportunity = temp_table_generator('twitter_hate_speech_augmented', 'equal_opportunity')
+twitter_hate_speech_equal_odds = temp_table_generator('twitter_hate_speech', 'equal_odds')
+twitter_hate_speech_equal_opportunity = temp_table_generator('twitter_hate_speech', 'equal_opportunity')
 # # #
-# celeb_multigroup_v3_equal_odds = temp_table_generator('celeb_multigroup_v3', 'equal_odds')
-# celeb_multigroup_v3_equal_opportunity = temp_table_generator('celeb_multigroup_v3', 'equal_opportunity')
+celeb_multigroup_v3_equal_odds = temp_table_generator('celeb_multigroup_v3', 'equal_odds')
+celeb_multigroup_v3_equal_opportunity = temp_table_generator('celeb_multigroup_v3', 'equal_opportunity')
 
 
-# print("Adult Multi Group - Equal Odds")
-# print(adult_multi_group_equal_odds.draw())
-#
-# print("Adult Multi Group - Equal Opportunity")
-# print(adult_multi_group_equal_opportunity.draw())
+print("Adult Multi Group - Equal Odds")
+print(adult_multi_group_equal_odds.draw())
+
+print("Adult Multi Group - Equal Opportunity")
+print(adult_multi_group_equal_opportunity.draw())
 #
 print("Twitter Hate Speech equal odds")
 print(twitter_hate_speech_equal_odds.draw())
