@@ -34,7 +34,7 @@ class SimpleModelGenerator(nn.Module):
     def __init__(self, input_dim):
         super().__init__()
 
-        self.lambda_params = torch.nn.Parameter(torch.FloatTensor([0.33, 0.33, 0.33]))
+        self.lambda_params = torch.nn.Parameter(torch.FloatTensor([0.25, 0.25, 0.25, 0.25]))
 
     def forward(self, other_examples):
         final_output = torch.tensor(0.0, requires_grad=True)
