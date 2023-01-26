@@ -24,7 +24,7 @@ from utils.misc import resolve_device, set_seed, make_opt, CustomError
 from training_loops.dro_and_erm import group_sampling_procedure_func, create_group, example_sampling_procedure_func
 
 dataset_name = 'twitter_hate_speech'
-batch_size = 512
+batch_size = 1024
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 import numpy as np
 
@@ -284,8 +284,8 @@ if __name__ == '__main__':
         gen_model_positive = SimpleModelGenerator(input_dim=input_dim, number_of_params=len(flattened_s_to_s[1]))
         gen_model_negative = SimpleModelGenerator(input_dim=input_dim, number_of_params=len(flattened_s_to_s[1]))
 
-        optimizer_positive = torch.optim.Adam(gen_model_positive.parameters(), lr=0.1)
-        optimizer_negative = torch.optim.Adam(gen_model_negative.parameters(), lr=0.1)
+        optimizer_positive = torch.optim.Adam(gen_model_positive.parameters(), lr=0.01)
+        optimizer_negative = torch.optim.Adam(gen_model_negative.parameters(), lr=0.01)
 
         all_models[current_group] = {
             'gen_model_positive': gen_model_positive,
