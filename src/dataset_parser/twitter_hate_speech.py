@@ -207,10 +207,7 @@ class DatasetTwitterHateSpeech:
                                        max_number_of_positive_examples=3000,
                                        max_number_of_negative_examples=3000)
             train_X, train_y, train_s = augment_data.run()
-            # scaler = StandardScaler().fit(train_X)
-            # train_X = scaler.transform(train_X)
-            # valid_X = scaler.transform(valid_X)
-            # test_X = scaler.transform(test_X)
+
 
         # Step3: Create iterators - This can be abstracted out to dataset iterators.
         create_iterator = CreateIterators()
