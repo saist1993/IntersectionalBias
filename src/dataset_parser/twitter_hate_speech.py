@@ -4,6 +4,7 @@ import numpy as np
 import pandas as pd
 from pathlib import Path
 from typing import Tuple, List
+from sklearn.preprocessing import StandardScaler
 from transformers import PreTrainedTokenizer, PreTrainedModel
 from .common_functionality import CreateIterators, IteratorData, AugmentData
 from utils.encode_text_via_lm import load_lm, batch_tokenize, encode_text_batch
@@ -195,13 +196,21 @@ class DatasetTwitterHateSpeech:
         if self.dataset_name == 'twitter_hate_speech_v3':
             train_s, valid_s, test_s = train_s[:, :3], valid_s[:, :3], test_s[:, :3]
 
+        scaler = StandardScaler().fit(train_X)
+        train_X = scaler.transform(train_X)
+        valid_X = scaler.transform(valid_X)
+        test_X = scaler.transform(test_X)
+
         if "augmented" in self.dataset_name:
             augment_data = AugmentData(self.dataset_name, train_X, train_y, train_s,
                                        self.max_number_of_generated_examples,
                                        max_number_of_positive_examples=3000,
                                        max_number_of_negative_examples=3000)
             train_X, train_y, train_s = augment_data.run()
-
+            # scaler = StandardScaler().fit(train_X)
+            # train_X = scaler.transform(train_X)
+            # valid_X = scaler.transform(valid_X)
+            # test_X = scaler.transform(test_X)
 
         # Step3: Create iterators - This can be abstracted out to dataset iterators.
         create_iterator = CreateIterators()
@@ -210,7 +219,7 @@ class DatasetTwitterHateSpeech:
             dev_X=valid_X, dev_y=valid_y, dev_s=valid_s,
             test_X=test_X, test_y=test_y, test_s=test_s,
             batch_size=self.batch_size,
-            do_standard_scalar_transformation=True
+            do_standard_scalar_transformation=False
         )
         iterator_set, vocab, s_flatten_lookup = create_iterator.get_iterators(iterator_data)
 

@@ -380,6 +380,13 @@ if __name__ == '__main__':
                 negative_loss.backward()
                 optimizer_negative.step()
                 total_loss_negative += negative_loss.data
+
+
+            all_models[flattened_s_to_s[current_group]]['gen_model_positive'], \
+                    all_models[flattened_s_to_s[current_group]]['gen_model_negative'], \
+                    all_models[flattened_s_to_s[current_group]]['optimizer_positive'], \
+                    all_models[flattened_s_to_s[current_group]]['optimizer_negative'] = gen_model_positive, gen_model_negative, optimizer_positive, optimizer_negative
+
         print(total_loss_positive / train_tilted_params.other_params['number_of_iterations'])
         print(total_loss_negative / train_tilted_params.other_params['number_of_iterations'])
 
@@ -422,6 +429,8 @@ if __name__ == '__main__':
 
             all_generated_examples.append(output_positive['prediction'])
             all_generated_examples.append(output_negative['prediction'])
+
+
 
         # print(np.mean(overall_accuracy), np.max(overall_accuracy), np.min(overall_accuracy))
         # print(np.mean(one_vs_all_accuracy), np.max(one_vs_all_accuracy), np.min(one_vs_all_accuracy))
