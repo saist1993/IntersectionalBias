@@ -28,19 +28,54 @@ LOG_DIR = Path('../logs')
 SAVED_MODEL_PATH = Path('../saved_models/')
 
 
+# class SimpleModelGenerator(nn.Module):
+#     """Fairgrad uses this as complex non linear model"""
+#
+#     def __init__(self, input_dim):
+#         super().__init__()
+#
+#         self.lambda_params = torch.nn.Parameter(torch.FloatTensor([0.25, 0.25, 0.25, 0.25]))
+#
+#     def forward(self, other_examples):
+#         final_output = torch.tensor(0.0, requires_grad=True)
+#         for param, group in zip(self.lambda_params, other_examples):
+#             x = group['input']
+#             final_output = final_output + x*param
+#
+#         output = {
+#             'prediction': final_output,
+#             'adv_output': None,
+#             'hidden': x,  # just for compatabilit
+#             'classifier_hiddens': None,
+#             'adv_hiddens': None
+#         }
+#
+#         return output
+#
+#     @property
+#     def layers(self):
+#         return torch.nn.ModuleList([self.layer_1, self.layer_2])
+
+
 class SimpleModelGenerator(nn.Module):
     """Fairgrad uses this as complex non linear model"""
 
-    def __init__(self, input_dim):
+    def __init__(self, input_dim, number_of_params=3):
         super().__init__()
 
-        self.lambda_params = torch.nn.Parameter(torch.FloatTensor([0.25, 0.25, 0.25, 0.25]))
+        if number_of_params == 3:
+            self.lambda_params = torch.nn.Parameter(torch.FloatTensor([0.33, 0.33, 0.33]))
+        elif number_of_params == 4:
+            self.lambda_params = torch.nn.Parameter(torch.FloatTensor([0.25, 0.25, 0.25, 0.25]))
+
+        self.more_lambda_params = [torch.nn.Parameter(torch.FloatTensor(torch.ones(input_dim))) for i in
+                                   range(len(self.lambda_params))]
 
     def forward(self, other_examples):
         final_output = torch.tensor(0.0, requires_grad=True)
-        for param, group in zip(self.lambda_params, other_examples):
+        for param, group, more_params in zip(self.lambda_params, other_examples, self.more_lambda_params):
             x = group['input']
-            final_output = final_output + x*param
+            final_output = final_output + (x*more_params)*param
 
         output = {
             'prediction': final_output,
@@ -55,7 +90,6 @@ class SimpleModelGenerator(nn.Module):
     @property
     def layers(self):
         return torch.nn.ModuleList([self.layer_1, self.layer_2])
-
 
 class RunnerArguments(NamedTuple):
     """Arguments for the main function"""
@@ -378,7 +412,7 @@ if __name__ == '__main__':
     parser.add_argument('--fairness_lambda', '-fairness_lambda', help="the lambda in the fairness loss equation", type=float,
                         default=0.0)
     parser.add_argument('--method', '-method', help="unconstrained/adversarial_single/adversarial_group", type=str,
-                        default='erm_random_single_group_equal_sampling')
+                        default='erm_random_group_equal_sampling_mixup_regularizer')
     parser.add_argument('--save_model_as', '-save_model_as', help="unconstrained/adversarial_single/adversarial_group", type=str,
                         default=None)
     parser.add_argument('--dataset_name', '-dataset_name', help="twitter_hate_speech/adult_multi_group/celeb_multigroup_v3",
