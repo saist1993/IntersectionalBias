@@ -284,7 +284,7 @@ def dro_optimization_procedure(train_tilted_params):
 
         def sub_routine():
             loss_rg = torch.tensor(0.0, requires_grad=True)
-            k = 10
+            k = 1
             for _ in range(k):
 
                 loss_rg = loss_rg + fairness_regularization_procedure_func(train_tilted_params=train_tilted_params,
@@ -346,12 +346,16 @@ def erm_optimization_procedure(train_tilted_params):
     track_output = []
     track_input = []
 
+    all_groups = []
+
     for i in tqdm(range(train_tilted_params.other_params['number_of_iterations'])):
         s_group_0, s_group_1 = group_sampling_procedure_func(
             train_tilted_params=train_tilted_params,
             global_weight=global_weight,
             similarity_matrix=similarity_matrix
         )
+
+        all_groups.append(s_group_0)
 
         items_group_0, items_group_1 = example_sampling_procedure_func(
             train_tilted_params=train_tilted_params,
@@ -426,6 +430,8 @@ def erm_optimization_procedure(train_tilted_params):
         output_group_0['loss_batch'] = torch.mean(loss).item()  # handel this better!
         track_output.append(output_group_0)
         track_input.append(items_group_0)
+
+    all_groups = np.unique(all_groups)
 
     epoch_metric_tracker, loss = train_tilted_params.per_epoch_metric(track_output,
                                                                       track_input,
@@ -560,8 +566,11 @@ def orchestrator(training_loop_parameters: TrainingLoopParameters):
 
         logger.info("start of epoch block  ")
 
-        training_loop_parameters.other_params['number_of_iterations'] = int(
-            size_of_training_dataset / training_loop_parameters.other_params['batch_size'])
+        # training_loop_parameters.other_params['number_of_iterations'] = int(
+        #     size_of_training_dataset / training_loop_parameters.other_params['batch_size'])
+
+        training_loop_parameters.other_params['number_of_iterations'] = 100
+
         training_loop_parameters.other_params['global_weight'] = global_weight
         training_loop_parameters.other_params['global_loss'] = global_loss
         training_loop_parameters.other_params['all_label'] = all_label

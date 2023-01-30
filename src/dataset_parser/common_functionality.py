@@ -653,11 +653,11 @@ class AugmentData:
                                                                   replace=True)  # sample remaining
                     # now generate remaining examples!
                     if example_type == 'positive':
-                        augmented_input, _ = self.common_func.generate_examples_mmd(tuple(group), all_models[tuple(group)]['gen_model_positive'],
+                        augmented_input, _ = self.common_func.generate_examples_mmd(tuple(group), all_models['a']['gen_model_positive'],
                                                                                 number_of_examples_to_generate,
                                                                                 self.other_meta_data, classifier_models)
                     elif example_type == 'negative':
-                        _, augmented_input = self.common_func.generate_examples_mmd(tuple(group), all_models[tuple(group)]['gen_model_negative'],
+                        _, augmented_input = self.common_func.generate_examples_mmd(tuple(group), all_models['a']['gen_model_negative'],
                                                                                 number_of_examples_to_generate,
                                                                                 self.other_meta_data, classifier_models)
                     else:

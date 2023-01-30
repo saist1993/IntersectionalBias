@@ -1,3 +1,4 @@
+import warnings
 from copy import deepcopy
 from dataclasses import dataclass
 from typing import List, Optional
@@ -115,13 +116,31 @@ class EstimateProbability:
                 denominator = np.count_nonzero(new_mask)
 
             # find the number of instance with S=s and label=1
-
-            prob = (numerator + self.alpha) / (denominator * 1.0 + self.alpha + self.beta)
+            try:
+                prob = (numerator + self.alpha) / (denominator * 1.0 + self.alpha + self.beta)
+            except ZeroDivisionError:
+                prob = 0.0
             all_probs.append(prob)
 
         max_prob = max(all_probs)
         min_prob = min(all_probs)
-        average_prob = [max(i/j , j/i) for i,j in combinations(all_probs , 2 )]
+        # average_prob = [max(i/j , j/i) for i,j in combinations(all_probs , 2 )]
+
+        average_prob = []
+        for i,j in combinations(all_probs, 2):
+            try:
+                a = i/j
+            except ZeroDivisionError:
+                a = 0
+            try:
+                b = j/i
+            except ZeroDivisionError:
+                b = 0
+            average_prob.append(max(a,b))
+
+        if min_prob == 0:
+            warnings.warn("There is something fishy in the data. There was no example atleast for one group at all.")
+            return [0.0, [0.0, 0.0], average_prob]
 
         return [np.log(max_prob / min_prob), [0.0, 0.0], average_prob]
 

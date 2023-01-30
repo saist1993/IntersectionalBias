@@ -168,13 +168,13 @@ class AuxilaryFunction:
         #         [other_meta_data['s_flatten_lookup'][tuple(i)] for i in other_meta_data['raw_data']['valid_s']]),
         #     number_of_positive_examples=int(batch_size / 2), number_of_negative_examples=int(batch_size / 2))
 
-        all_label = np.hstack([other_meta_data['raw_data']['valid_y'], other_meta_data['raw_data']['train_y']])
-        all_aux = np.vstack([other_meta_data['raw_data']['valid_s'], other_meta_data['raw_data']['train_s']])
-        all_input = np.vstack([other_meta_data['raw_data']['valid_X'], other_meta_data['raw_data']['train_X']])
+        # all_label = np.hstack([other_meta_data['raw_data']['valid_y'], other_meta_data['raw_data']['train_y']])
+        # all_aux = np.vstack([other_meta_data['raw_data']['valid_s'], other_meta_data['raw_data']['train_s']])
+        # all_input = np.vstack([other_meta_data['raw_data']['valid_X'], other_meta_data['raw_data']['train_X']])
         #
-        # # all_label = other_meta_data['raw_data']['train_y']
-        # # all_aux = other_meta_data['raw_data']['train_s']
-        # # all_input = other_meta_data['raw_data']['train_X']
+        all_label = other_meta_data['raw_data']['train_y']
+        all_aux = other_meta_data['raw_data']['train_s']
+        all_input = other_meta_data['raw_data']['train_X']
         #
         # all_label = other_meta_data['raw_data']['valid_y']
         # all_aux = other_meta_data['raw_data']['valid_s']
@@ -252,6 +252,9 @@ if __name__ == '__main__':
     total_no_groups = len(np.unique(all_aux_flatten_valid))  # hopefully this also has all the groups
     # groups_matrix, global_weight, global_loss = create_group(total_no_groups, method="single_group")
 
+
+
+
     train_tilted_params = TrainingLoopParameters(
         n_epochs=10,
         model=None,
@@ -279,20 +282,24 @@ if __name__ == '__main__':
 
     all_models = {}
     input_dim = all_input_valid.shape[1]
+    sigma_list = [1.0, 2.0, 4.0, 8.0, 16.0]
+
 
     for current_group_flat, current_group in flattened_s_to_s.items():
         gen_model_positive = SimpleModelGenerator(input_dim=input_dim, number_of_params=len(flattened_s_to_s[1]))
         gen_model_negative = SimpleModelGenerator(input_dim=input_dim, number_of_params=len(flattened_s_to_s[1]))
 
-        optimizer_positive = torch.optim.Adam(gen_model_positive.parameters(), lr=0.01)
-        optimizer_negative = torch.optim.Adam(gen_model_negative.parameters(), lr=0.01)
+        optimizer_positive = torch.optim.SGD(gen_model_positive.parameters(), lr=1.0)
+        optimizer_negative = torch.optim.SGD(gen_model_negative.parameters(), lr=1.0)
 
-        all_models[current_group] = {
+        all_models['a'] = {
             'gen_model_positive': gen_model_positive,
             'gen_model_negative': gen_model_negative,
             'optimizer_positive': optimizer_positive,
             'optimizer_negative': optimizer_negative
         }
+
+
 
     # mmd_loss = MMD_loss()
     # sample_loss = SamplesLoss(loss="gaussian".lower(), p=2)
@@ -307,10 +314,10 @@ if __name__ == '__main__':
             current_group = np.random.choice(train_tilted_params.other_params['groups'], 1)[0]
 
             gen_model_positive, gen_model_negative, optimizer_positive, optimizer_negative = \
-                all_models[flattened_s_to_s[current_group]]['gen_model_positive'], \
-                    all_models[flattened_s_to_s[current_group]]['gen_model_negative'], \
-                    all_models[flattened_s_to_s[current_group]]['optimizer_positive'], \
-                    all_models[flattened_s_to_s[current_group]]['optimizer_negative']
+                all_models['a']['gen_model_positive'], \
+                    all_models['a']['gen_model_negative'], \
+                    all_models['a']['optimizer_positive'], \
+                    all_models['a']['optimizer_negative']
 
             positive_size, negative_size = 0, 0
 
@@ -321,12 +328,20 @@ if __name__ == '__main__':
             if positive_size < max_size:
                 optimizer_positive.zero_grad()
                 output_positive = gen_model_positive(examples_other_leaf_group_positive)
-                positive_loss = MMD(x=positive_examples_current_group['input'], y=output_positive['prediction'],
-                                    kernel='rbf')
-                #
-                other_positive_loss = torch.sum(torch.tensor([MMD(x=examples['input'], y=output_positive['prediction'],
-                                                                  kernel='rbf') for examples in
+
+                positive_loss = mix_rbf_mmd2(positive_examples_current_group['input'],
+                                             output_positive['prediction'],
+                                             sigma_list=sigma_list)
+
+                other_positive_loss = torch.sum(torch.tensor([mix_rbf_mmd2(examples['input'], output_positive['prediction'],
+                                                                  sigma_list=sigma_list) for examples in
                                                               examples_other_leaf_group_positive], requires_grad=True))
+                # positive_loss = MMD(x=positive_examples_current_group['input'], y=output_positive['prediction'],
+                #                     kernel='rbf')
+                # #
+                # other_positive_loss = torch.sum(torch.tensor([MMD(x=examples['input'], y=output_positive['prediction'],
+                #                                                   kernel='rbf') for examples in
+                #                                               examples_other_leaf_group_positive], requires_grad=True))
 
                 # positive_loss = sample_loss(positive_examples_current_group['input'], output_positive['prediction'])
 
@@ -353,13 +368,25 @@ if __name__ == '__main__':
             if negative_size < max_size:
                 optimizer_negative.zero_grad()
                 output_negative = gen_model_negative(examples_other_leaf_group_negative)
-                negative_loss = MMD(x=negative_examples_current_group['input'], y=output_negative['prediction'],
-                                    kernel='rbf')
+
+                negative_loss = mix_rbf_mmd2(negative_examples_current_group['input'],
+                                             output_negative['prediction'],
+                                             sigma_list=sigma_list)
+
+                other_negative_loss = torch.sum(
+                    torch.tensor([mix_rbf_mmd2(examples['input'], output_negative['prediction'],
+                                               sigma_list=sigma_list) for examples in
+                                  examples_other_leaf_group_negative], requires_grad=True))
+
+
                 #
-                other_negative_loss = torch.sum(torch.tensor([MMD(x=examples['input'], y=output_negative['prediction'],
-                                                                  kernel='rbf') for examples in
-                                                              examples_other_leaf_group_negative],
-                                                             requires_grad=True))
+                # negative_loss = MMD(x=negative_examples_current_group['input'], y=output_negative['prediction'],
+                #                     kernel='rbf')
+                # #
+                # other_negative_loss = torch.sum(torch.tensor([MMD(x=examples['input'], y=output_negative['prediction'],
+                #                                                   kernel='rbf') for examples in
+                #                                               examples_other_leaf_group_negative],
+                #                                              requires_grad=True))
 
                 # negative_loss = sample_loss(negative_examples_current_group['input'], output_negative['prediction'])
                 #
@@ -382,10 +409,10 @@ if __name__ == '__main__':
                 total_loss_negative += negative_loss.data
 
 
-            all_models[flattened_s_to_s[current_group]]['gen_model_positive'], \
-                    all_models[flattened_s_to_s[current_group]]['gen_model_negative'], \
-                    all_models[flattened_s_to_s[current_group]]['optimizer_positive'], \
-                    all_models[flattened_s_to_s[current_group]]['optimizer_negative'] = gen_model_positive, gen_model_negative, optimizer_positive, optimizer_negative
+            all_models['a']['gen_model_positive'], \
+                    all_models['a']['gen_model_negative'], \
+                    all_models['a']['optimizer_positive'], \
+                    all_models['a']['optimizer_negative'] = gen_model_positive, gen_model_negative, optimizer_positive, optimizer_negative
 
         print(total_loss_positive / train_tilted_params.other_params['number_of_iterations'])
         print(total_loss_negative / train_tilted_params.other_params['number_of_iterations'])
@@ -397,10 +424,10 @@ if __name__ == '__main__':
             positive_size, negative_size = 0, 0
 
             gen_model_positive, gen_model_negative, optimizer_positive, optimizer_negative = \
-                all_models[flat_current_group]['gen_model_positive'], \
-                    all_models[flat_current_group]['gen_model_negative'], \
-                    all_models[flat_current_group]['optimizer_positive'], \
-                    all_models[flat_current_group]['optimizer_negative']
+                all_models['a']['gen_model_positive'], \
+                    all_models['a']['gen_model_negative'], \
+                    all_models['a']['optimizer_positive'], \
+                    all_models['a']['optimizer_negative']
 
             negative_examples_current_group, positive_examples_current_group, examples_other_leaf_group_negative, examples_other_leaf_group_positive = aux_func.sample_batch(
                 current_group, other_meta_data, batch_sizes=1024)
