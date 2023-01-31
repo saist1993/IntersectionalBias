@@ -23,7 +23,7 @@ from sklearn.metrics import balanced_accuracy_score, accuracy_score
 from utils.misc import resolve_device, set_seed, make_opt, CustomError
 from training_loops.dro_and_erm import group_sampling_procedure_func, create_group, example_sampling_procedure_func
 
-dataset_name = 'adult_multi_group'
+dataset_name = 'twitter_hate_speech'
 batch_size = 1024
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 import numpy as np
@@ -168,13 +168,13 @@ class AuxilaryFunction:
         #         [other_meta_data['s_flatten_lookup'][tuple(i)] for i in other_meta_data['raw_data']['valid_s']]),
         #     number_of_positive_examples=int(batch_size / 2), number_of_negative_examples=int(batch_size / 2))
 
-        # all_label = np.hstack([other_meta_data['raw_data']['valid_y'], other_meta_data['raw_data']['train_y']])
-        # all_aux = np.vstack([other_meta_data['raw_data']['valid_s'], other_meta_data['raw_data']['train_s']])
-        # all_input = np.vstack([other_meta_data['raw_data']['valid_X'], other_meta_data['raw_data']['train_X']])
+        all_label = np.hstack([other_meta_data['raw_data']['valid_y'], other_meta_data['raw_data']['train_y']])
+        all_aux = np.vstack([other_meta_data['raw_data']['valid_s'], other_meta_data['raw_data']['train_s']])
+        all_input = np.vstack([other_meta_data['raw_data']['valid_X'], other_meta_data['raw_data']['train_X']])
         #
-        all_label = other_meta_data['raw_data']['train_y']
-        all_aux = other_meta_data['raw_data']['train_s']
-        all_input = other_meta_data['raw_data']['train_X']
+        # all_label = other_meta_data['raw_data']['train_y']
+        # all_aux = other_meta_data['raw_data']['train_s']
+        # all_input = other_meta_data['raw_data']['train_X']
         #
         # all_label = other_meta_data['raw_data']['valid_y']
         # all_aux = other_meta_data['raw_data']['valid_s']
@@ -480,7 +480,7 @@ if __name__ == '__main__':
         X = np.vstack([all_generated_examples, real_examples])
         y = np.hstack([generated_example_label, real_example_label])
 
-        clf = MLPClassifier(solver="adam", learning_rate_init=0.01, hidden_layer_sizes=(25, 5), random_state=1)
+        clf = MLPClassifier(solver="adam", learning_rate_init=0.01, hidden_layer_sizes=(50, 20), random_state=1)
         X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.33, random_state=42, shuffle=True)
         clf.fit(X_train, y_train)
         y_pred = clf.predict(X_test)

@@ -6,7 +6,7 @@ from pathlib import Path
 from typing import Tuple, List
 from sklearn.preprocessing import StandardScaler
 from transformers import PreTrainedTokenizer, PreTrainedModel
-from .common_functionality import CreateIterators, IteratorData, AugmentData
+from .common_functionality import CreateIterators, IteratorData, AugmentData, create_mask
 from utils.encode_text_via_lm import load_lm, batch_tokenize, encode_text_batch
 
 
@@ -158,9 +158,12 @@ class DatasetTwitterHateSpeech:
 
     def set_dataframes(self):
         # Set the data frame.
-        self.train_df = self.dataset_helper.remove_x_from_data(self.dataset_helper.read_data_from_path(data_path=self.dataset_location, split='train'))
-        self.valid_df = self.dataset_helper.remove_x_from_data(self.dataset_helper.read_data_from_path(data_path=self.dataset_location, split='valid'))
-        self.test_df = self.dataset_helper.remove_x_from_data(self.dataset_helper.read_data_from_path(data_path=self.dataset_location, split='test'))
+        self.train_df = self.dataset_helper.remove_x_from_data(
+            self.dataset_helper.read_data_from_path(data_path=self.dataset_location, split='train'))
+        self.valid_df = self.dataset_helper.remove_x_from_data(
+            self.dataset_helper.read_data_from_path(data_path=self.dataset_location, split='valid'))
+        self.test_df = self.dataset_helper.remove_x_from_data(
+            self.dataset_helper.read_data_from_path(data_path=self.dataset_location, split='test'))
 
     @staticmethod
     def get_private_attribute(df: pd.DataFrame) -> np.array:
@@ -196,6 +199,40 @@ class DatasetTwitterHateSpeech:
         if self.dataset_name == 'twitter_hate_speech_v3':
             train_s, valid_s, test_s = train_s[:, :3], valid_s[:, :3], test_s[:, :3]
 
+        # now we add or remove some data!
+
+        all_groups = np.unique(test_s, axis=0)
+        all_labels = np.unique(test_y)
+
+        minimum_group_size_test = 100
+        minimum_group_size_valid = 100
+        new_test_examples_index = []
+
+        for group in all_groups:
+            for label in all_labels:
+                group_mask = create_mask(test_s, group)
+                label_mask = test_y == label
+                final_mask = np.logical_and(group_mask, label_mask)
+                if np.sum(final_mask) < minimum_group_size_test:
+                    # new_test_examples.append((group, label, minimum_group_size_test-np.sum(final_mask)))
+
+                    train_group_mask = create_mask(train_s, group)
+                    train_label_mask = train_y == label
+                    final_train_mask = np.logical_and(train_group_mask, train_label_mask)
+
+
+                    new_test_examples_index += np.random.choice(np.where(final_train_mask == True)[0],
+                                                                size=minimum_group_size_test-np.sum(final_mask),
+                                                                replace=False).tolist()
+
+        test_X = np.vstack([test_X, train_X[new_test_examples_index]])
+        test_y = np.hstack([test_y, train_y[new_test_examples_index]])
+        test_s = np.vstack([test_s, train_s[new_test_examples_index]])
+
+        train_X = np.delete(train_X, new_test_examples_index, axis=0)
+        train_s = np.delete(train_s, new_test_examples_index, axis=0)
+        train_y = np.delete(train_y, new_test_examples_index, axis=0)
+
         scaler = StandardScaler().fit(train_X)
         train_X = scaler.transform(train_X)
         valid_X = scaler.transform(valid_X)
@@ -204,10 +241,9 @@ class DatasetTwitterHateSpeech:
         if "augmented" in self.dataset_name:
             augment_data = AugmentData(self.dataset_name, train_X, train_y, train_s,
                                        self.max_number_of_generated_examples,
-                                       max_number_of_positive_examples=3000,
-                                       max_number_of_negative_examples=3000)
+                                       max_number_of_positive_examples=1000,
+                                       max_number_of_negative_examples=1000)
             train_X, train_y, train_s = augment_data.run()
-
 
         # Step3: Create iterators - This can be abstracted out to dataset iterators.
         create_iterator = CreateIterators()
@@ -222,14 +258,14 @@ class DatasetTwitterHateSpeech:
 
         iterators = [iterator_set]  # If it was k-fold. One could append k iterators here.
 
-
         iterators.append(iterator_set)
 
         other_meta_data = {}
         other_meta_data['task'] = 'simple_classification'
         other_meta_data['dataset_name'] = self.dataset_name
         other_meta_data['number_of_main_task_label'] = len(np.unique(train_y))
-        other_meta_data['number_of_aux_label_per_attribute'] = [len(np.unique(train_s[:,i])) for i in range(train_s.shape[1])]
+        other_meta_data['number_of_aux_label_per_attribute'] = [len(np.unique(train_s[:, i])) for i in
+                                                                range(train_s.shape[1])]
         other_meta_data['input_dim'] = train_X.shape[1]
         other_meta_data['s_flatten_lookup'] = s_flatten_lookup
         if self.return_numpy_array:
@@ -269,7 +305,6 @@ def test_batch_shape_hate_speech():
     assert label_shape == torch.Size([64]), "there is a shape mis match in label"
     assert input_shape == torch.Size([64, 768]), "there is a shape mis match in input"
     assert aux_shape == torch.Size([64, 4]), "there is a shape mis match in aux"
-
 
 
 if __name__ == '__main__':

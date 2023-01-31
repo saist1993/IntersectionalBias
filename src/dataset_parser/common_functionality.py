@@ -453,7 +453,7 @@ class AugmentDataCommonFunctionality:
 
 
     @staticmethod
-    def generate_examples_mmd(s, gen_model, number_of_examples, other_meta_data, classifier_models, confidence_score=0.8):
+    def generate_examples_mmd(s, gen_model, number_of_examples, other_meta_data, classifier_models, confidence_score=0.2):
         # other_leaf_node = AugmentDataCommonFunctionality.generate_combinations_only_leaf_node(s, k=1)
         other_leaf_node = AugmentDataCommonFunctionality.generate_abstract_node(s, k=1)
         assert number_of_examples >= 1
@@ -478,7 +478,7 @@ class AugmentDataCommonFunctionality:
                     all_other_leaf_node_example_positive.append(batch_input)
 
                 generated_examples = gen_model(all_other_leaf_node_example_positive)['prediction'].detach().numpy()
-                if counter < 10:
+                if counter < 100:
                     # the classifier is confident that this is real. Which means fake looks very much like real
                     relevant_index = np.where((classifier_models.predict_proba(generated_examples)[:, 1] > confidence_score))
                 else:
@@ -495,6 +495,22 @@ class AugmentDataCommonFunctionality:
         return positive_examples, negative_examples
 
 
+def create_mask(data, condition):
+    keep_indices = []
+
+    for index, i in enumerate(condition):
+        if i != 'x':
+            keep_indices.append(i == data[:, index])
+        else:
+            keep_indices.append(np.ones_like(data[:, 0], dtype='bool'))
+
+    mask = np.ones_like(data[:, 0], dtype='bool')
+
+    # mask = [np.logical_and(mask, i) for i in keep_indices]
+
+    for i in keep_indices:
+        mask = np.logical_and(mask, i)
+    return mask
 
 
 class AugmentData:
@@ -631,8 +647,9 @@ class AugmentData:
             total_negative_examples = np.sum(group_mask) - total_positive_examples
 
             def sub_routine(label_mask, total_examples, max_number_of_examples, example_type):
+                total_examples = 0
 
-                if total_examples > max_number_of_examples:
+                if False:   #total_examples > max_number_of_examples
                     # then we only generate fake data
                     index_of_selected_examples = np.random.choice(np.where(label_mask == True)[0],
                                                                   size=max_number_of_examples,
@@ -648,6 +665,7 @@ class AugmentData:
                 else:
                     number_of_examples_to_generate = int(min(max_number_of_examples - total_examples,
                                                              max_ratio_of_generated_examples * total_examples))
+                    number_of_examples_to_generate = max_number_of_examples - 1
                     index_of_selected_examples = np.random.choice(np.where(label_mask == True)[0],
                                                                   size=max_number_of_examples - number_of_examples_to_generate,
                                                                   replace=True)  # sample remaining
