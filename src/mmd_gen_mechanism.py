@@ -133,7 +133,7 @@ class AuxilaryFunction:
 
         # other_leaf_group = [train_tilted_params.other_params['s_to_flattened_s'][i]
         # for i in generate_combinations_only_leaf_node(flattened_s_to_s[current_group], k=1)]
-        other_leaf_group = [i for i in AuxilaryFunction.generate_abstract_node(flattened_s_to_s[current_group], k=1)]
+        other_leaf_group = [i for i in AuxilaryFunction.generate_abstract_node(flattened_s_to_s[current_group], k=2)]
         # other_leaf_group = [i for i in AuxilaryFunction.generate_
         # combinations_only_leaf_node(flattened_s_to_s[current_group], k=1)]
         #
