@@ -647,7 +647,6 @@ class AugmentData:
             total_negative_examples = np.sum(group_mask) - total_positive_examples
 
             def sub_routine(label_mask, total_examples, max_number_of_examples, example_type):
-                total_examples = 0
 
                 if total_examples > max_number_of_examples:   #
                     # then we only generate fake data
@@ -659,8 +658,6 @@ class AugmentData:
                     augmented_train_y.append(self.other_meta_data['raw_data']['train_y'][index_of_selected_examples])
                     augmented_train_s.append(self.other_meta_data['raw_data']['train_s'][index_of_selected_examples])
                     is_instance_real.append(np.ones(max_number_of_examples))
-
-
 
                 else:
                     number_of_examples_to_generate = int(min(max_number_of_examples - total_examples,
