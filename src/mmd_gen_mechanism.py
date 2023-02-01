@@ -23,11 +23,14 @@ from sklearn.metrics import balanced_accuracy_score, accuracy_score
 from utils.misc import resolve_device, set_seed, make_opt, CustomError
 from training_loops.dro_and_erm import group_sampling_procedure_func, create_group, example_sampling_procedure_func
 
-dataset_name = 'twitter_hate_speech'
+dataset_name = 'adult_multi_group'
 batch_size = 1024
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 import numpy as np
 
+
+import mkl
+mkl.set_num_threads(3)
 
 class AuxilaryFunction:
 
@@ -133,7 +136,7 @@ class AuxilaryFunction:
 
         # other_leaf_group = [train_tilted_params.other_params['s_to_flattened_s'][i]
         # for i in generate_combinations_only_leaf_node(flattened_s_to_s[current_group], k=1)]
-        other_leaf_group = [i for i in AuxilaryFunction.generate_abstract_node(flattened_s_to_s[current_group], k=2)]
+        other_leaf_group = [i for i in AuxilaryFunction.generate_abstract_node(flattened_s_to_s[current_group], k=1)]
         # other_leaf_group = [i for i in AuxilaryFunction.generate_
         # combinations_only_leaf_node(flattened_s_to_s[current_group], k=1)]
         #
@@ -492,5 +495,5 @@ if __name__ == '__main__':
             worst_accuracy = balanced_accuracy_score(y_test, y_pred)
             # torch.save(gen_model_positive.state_dict(), "dummy.pth")
             # torch.save(gen_model_negative.state_dict(), "dummy.pth")
-            pickle.dump(all_models, open(f"all_{dataset_name}.pt", 'wb'))
-            pickle.dump(clf, open(f"real_vs_fake_{dataset_name}.sklearn", 'wb'))
+            # pickle.dump(all_models, open(f"all_{dataset_name}.pt", 'wb'))
+            # pickle.dump(clf, open(f"real_vs_fake_{dataset_name}.sklearn", 'wb'))
