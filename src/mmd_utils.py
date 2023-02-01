@@ -69,7 +69,7 @@ class SimpleModelGenerator(nn.Module):
     def __init__(self, input_dim, number_of_params=None):
         super().__init__()
 
-        self.layer_1 = nn.Linear(input_dim, input_dim, bias=False)
+        self.layer_1 = nn.Linear(input_dim, 125, bias=False)
         self.layer_2 = nn.Linear(125, 50)
         self.layer_3 = nn.Linear(50, input_dim)
         self.leaky_relu = nn.LeakyReLU()
