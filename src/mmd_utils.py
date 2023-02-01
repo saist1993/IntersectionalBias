@@ -165,16 +165,16 @@ class SimpleModelGenerator(nn.Module):
 
     def forward(self, other_examples, current_group=1):
         temp_output = []
-        for param, group, more_params in zip(self.lambda_params, other_examples, self.more_lambda_params_encoder):
+        for group, more_params in zip(other_examples, self.more_lambda_params_encoder):
             x = group['input']
-            temp_output.append(x*more_params + x*param)
+            temp_output.append(x*more_params)
 
 
         final_output = torch.tensor(0.0, requires_grad=True)
-        for param, group in zip(self.multi_head_classifier[current_group], temp_output):
-            final_output = final_output + group*param
+        for more_param, group, orignal_representation, param in zip(self.multi_head_classifier[current_group], temp_output, other_examples, self.lambda_params):
+            x = orignal_representation['input']
+            final_output = final_output + x*more_param + group*param
 
-        # final_output = final_output*self.multi_head_classifier[current_group]
 
         output = {
             'prediction': final_output,

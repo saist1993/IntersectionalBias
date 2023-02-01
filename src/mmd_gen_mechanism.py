@@ -299,8 +299,8 @@ if __name__ == '__main__':
         gen_model_positive = SimpleModelGenerator(input_dim=input_dim, number_of_params=len(flattened_s_to_s[1]), number_of_groups=len(flattened_s_to_s))
         gen_model_negative = SimpleModelGenerator(input_dim=input_dim, number_of_params=len(flattened_s_to_s[1]), number_of_groups=len(flattened_s_to_s))
 
-        optimizer_positive = torch.optim.Adam(gen_model_positive.parameters(), lr=0.01)
-        optimizer_negative = torch.optim.Adam(gen_model_negative.parameters(), lr=0.01)
+        optimizer_positive = torch.optim.Adam(gen_model_positive.parameters(), lr=0.1)
+        optimizer_negative = torch.optim.Adam(gen_model_negative.parameters(), lr=0.1)
 
         all_models['a'] = {
             'gen_model_positive': gen_model_positive,
