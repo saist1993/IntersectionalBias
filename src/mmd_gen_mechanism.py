@@ -298,8 +298,8 @@ if __name__ == '__main__':
         gen_model_positive = SimpleModelGenerator(input_dim=input_dim, number_of_params=len(flattened_s_to_s[1]))
         gen_model_negative = SimpleModelGenerator(input_dim=input_dim, number_of_params=len(flattened_s_to_s[1]))
 
-        optimizer_positive = torch.optim.SGD(gen_model_positive.parameters(), lr=1.0)
-        optimizer_negative = torch.optim.SGD(gen_model_negative.parameters(), lr=1.0)
+        optimizer_positive = torch.optim.SGD(gen_model_positive.parameters(), lr=0.1)
+        optimizer_negative = torch.optim.SGD(gen_model_negative.parameters(), lr=0.1)
 
         all_models['a'] = {
             'gen_model_positive': gen_model_positive,
