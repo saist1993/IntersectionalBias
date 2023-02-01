@@ -32,6 +32,9 @@ import numpy as np
 import mkl
 mkl.set_num_threads(3)
 
+torch.set_num_threads(2)
+torch.set_num_interop_threads(2)
+
 class AuxilaryFunction:
 
     @staticmethod
