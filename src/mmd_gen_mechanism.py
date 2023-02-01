@@ -294,6 +294,7 @@ if __name__ == '__main__':
     sigma_list = [1.0, 10.0, 15.0, 20.0, 50.0]
 
 
+
     for current_group_flat, current_group in flattened_s_to_s.items():
         gen_model_positive = SimpleModelGenerator(input_dim=input_dim, number_of_params=len(flattened_s_to_s[1]))
         gen_model_negative = SimpleModelGenerator(input_dim=input_dim, number_of_params=len(flattened_s_to_s[1]))
@@ -301,7 +302,14 @@ if __name__ == '__main__':
         optimizer_positive = torch.optim.Adam(gen_model_positive.parameters(), lr=0.1)
         optimizer_negative = torch.optim.Adam(gen_model_negative.parameters(), lr=0.1)
 
-        all_models['a'] = {
+        # all_models['a'] = {
+        #     'gen_model_positive': gen_model_positive,
+        #     'gen_model_negative': gen_model_negative,
+        #     'optimizer_positive': optimizer_positive,
+        #     'optimizer_negative': optimizer_negative
+        # }
+
+        all_models[current_group] = {
             'gen_model_positive': gen_model_positive,
             'gen_model_negative': gen_model_negative,
             'optimizer_positive': optimizer_positive,
@@ -322,11 +330,17 @@ if __name__ == '__main__':
         for i in tqdm(range(train_tilted_params.other_params['number_of_iterations'])):
             current_group = np.random.choice(train_tilted_params.other_params['groups'], 1)[0]
 
+            # gen_model_positive, gen_model_negative, optimizer_positive, optimizer_negative = \
+            #     all_models['a']['gen_model_positive'], \
+            #         all_models['a']['gen_model_negative'], \
+            #         all_models['a']['optimizer_positive'], \
+            #         all_models['a']['optimizer_negative']
+
             gen_model_positive, gen_model_negative, optimizer_positive, optimizer_negative = \
-                all_models['a']['gen_model_positive'], \
-                    all_models['a']['gen_model_negative'], \
-                    all_models['a']['optimizer_positive'], \
-                    all_models['a']['optimizer_negative']
+                all_models[flattened_s_to_s[current_group]]['gen_model_positive'], \
+                    all_models[flattened_s_to_s[current_group]]['gen_model_negative'], \
+                    all_models[flattened_s_to_s[current_group]]['optimizer_positive'], \
+                    all_models[flattened_s_to_s[current_group]]['optimizer_negative']
 
             positive_size, negative_size = 0, 0
 
@@ -432,11 +446,17 @@ if __name__ == '__main__':
         for flat_current_group, current_group in other_meta_data['s_flatten_lookup'].items():
             positive_size, negative_size = 0, 0
 
+            # gen_model_positive, gen_model_negative, optimizer_positive, optimizer_negative = \
+            #     all_models['a']['gen_model_positive'], \
+            #         all_models['a']['gen_model_negative'], \
+            #         all_models['a']['optimizer_positive'], \
+            #         all_models['a']['optimizer_negative']
+
             gen_model_positive, gen_model_negative, optimizer_positive, optimizer_negative = \
-                all_models['a']['gen_model_positive'], \
-                    all_models['a']['gen_model_negative'], \
-                    all_models['a']['optimizer_positive'], \
-                    all_models['a']['optimizer_negative']
+                all_models[flat_current_group]['gen_model_positive'], \
+                    all_models[flat_current_group]['gen_model_negative'], \
+                    all_models[flat_current_group]['optimizer_positive'], \
+                    all_models[flat_current_group]['optimizer_negative']
 
             negative_examples_current_group, positive_examples_current_group, examples_other_leaf_group_negative, examples_other_leaf_group_positive = aux_func.sample_batch(
                 current_group, other_meta_data, batch_sizes=1024)
