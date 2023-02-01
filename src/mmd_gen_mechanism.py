@@ -432,10 +432,10 @@ if __name__ == '__main__':
                 total_loss_negative += negative_loss.data
 
 
-            all_models['a']['gen_model_positive'], \
-                    all_models['a']['gen_model_negative'], \
-                    all_models['a']['optimizer_positive'], \
-                    all_models['a']['optimizer_negative'] = gen_model_positive, gen_model_negative, optimizer_positive, optimizer_negative
+            # all_models['a']['gen_model_positive'], \
+            #         all_models['a']['gen_model_negative'], \
+            #         all_models['a']['optimizer_positive'], \
+            #         all_models['a']['optimizer_negative'] = gen_model_positive, gen_model_negative, optimizer_positive, optimizer_negative
 
         print(total_loss_positive / train_tilted_params.other_params['number_of_iterations'])
         print(total_loss_negative / train_tilted_params.other_params['number_of_iterations'])
