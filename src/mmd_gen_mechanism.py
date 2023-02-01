@@ -32,8 +32,8 @@ import numpy as np
 import mkl
 mkl.set_num_threads(3)
 
-torch.set_num_threads(2)
-torch.set_num_interop_threads(2)
+torch.set_num_threads(4)
+torch.set_num_interop_threads(4)
 
 class AuxilaryFunction:
 
@@ -288,7 +288,8 @@ if __name__ == '__main__':
 
     all_models = {}
     input_dim = all_input_valid.shape[1]
-    sigma_list = [1.0, 2.0, 4.0, 8.0, 16.0]
+    # sigma_list = [1.0, 2.0, 4.0, 8.0, 16.0]
+    sigma_list = [10.0, 20.0, 30.0, 40.0, 50.0]
 
 
     for current_group_flat, current_group in flattened_s_to_s.items():
