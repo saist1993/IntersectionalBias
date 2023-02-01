@@ -158,18 +158,23 @@ class SimpleModelGenerator(nn.Module):
         self.more_lambda_params_encoder = [torch.nn.Parameter(torch.FloatTensor(torch.ones(input_dim))) for i in
                                    range(len(self.lambda_params))]
 
-        self.multi_head_classifier = [torch.nn.Parameter(torch.FloatTensor(torch.ones(input_dim)))
-                                      for _ in range(number_of_groups)]
+        self.multi_head_classifier = [[torch.nn.Parameter(torch.FloatTensor(torch.ones(input_dim))) for i in
+                                   range(len(self.lambda_params))] for _ in range(number_of_groups)]
 
 
 
     def forward(self, other_examples, current_group=1):
-        final_output = torch.tensor(0.0, requires_grad=True)
+        temp_output = []
         for param, group, more_params in zip(self.lambda_params, other_examples, self.more_lambda_params_encoder):
             x = group['input']
-            final_output = final_output + (x*more_params) + x*param
+            temp_output.append(x*more_params + x*param)
 
-        final_output = final_output*self.multi_head_classifier[current_group]
+
+        final_output = torch.tensor(0.0, requires_grad=True)
+        for param, group in zip(self.multi_head_classifier[current_group], temp_output):
+            final_output = final_output + group*param
+
+        # final_output = final_output*self.multi_head_classifier[current_group]
 
         output = {
             'prediction': final_output,
