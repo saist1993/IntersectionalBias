@@ -108,43 +108,6 @@ def MMD(x, y, kernel):
 #     #     return torch.nn.ModuleList([self.layer_1, self.layer_2, self.layer_3])
 
 
-# class SimpleModelGenerator(nn.Module):
-#     """Fairgrad uses this as complex non linear model"""
-#
-#     def __init__(self, input_dim, number_of_params=3):
-#         super().__init__()
-#
-#         if number_of_params == 3:
-#             self.lambda_params = torch.nn.Parameter(torch.FloatTensor([0.33, 0.33, 0.33]))
-#         elif number_of_params == 4:
-#             self.lambda_params = torch.nn.Parameter(torch.FloatTensor([0.25, 0.25, 0.25, 0.25]))
-#
-#         self.more_lambda_params = [torch.nn.Parameter(torch.FloatTensor(torch.ones(input_dim))) for i in
-#                                    range(len(self.lambda_params))]
-#
-#     def forward(self, other_examples):
-#         final_output = torch.tensor(0.0, requires_grad=True)
-#         for param, group, more_params in zip(self.lambda_params, other_examples, self.more_lambda_params):
-#             x = group['input']
-#             final_output = final_output + (x*more_params)*param
-#
-#         output = {
-#             'prediction': final_output,
-#             'adv_output': None,
-#             'hidden': x,  # just for compatabilit
-#             'classifier_hiddens': None,
-#             'adv_hiddens': None
-#         }
-#
-#         return output
-#
-#     @property
-#     def layers(self):
-#         return torch.nn.ModuleList([self.layer_1, self.layer_2])
-
-
-
-
 class SimpleModelGenerator(nn.Module):
     """Fairgrad uses this as complex non linear model"""
 
@@ -156,13 +119,14 @@ class SimpleModelGenerator(nn.Module):
         elif number_of_params == 4:
             self.lambda_params = torch.nn.Parameter(torch.FloatTensor([0.25, 0.25, 0.25, 0.25]))
 
-        self.more_lambda_params = torch.nn.Parameter(torch.FloatTensor(torch.ones(input_dim)))
+        self.more_lambda_params = [torch.nn.Parameter(torch.FloatTensor(torch.ones(input_dim))) for i in
+                                   range(len(self.lambda_params))]
 
     def forward(self, other_examples):
         final_output = torch.tensor(0.0, requires_grad=True)
-        for param, group in zip(self.lambda_params, other_examples):
+        for param, group, more_params in zip(self.lambda_params, other_examples, self.more_lambda_params):
             x = group['input']
-            final_output = final_output + (x*self.more_lambda_params)*param
+            final_output = final_output + (x*more_params)*param
 
         output = {
             'prediction': final_output,
@@ -177,6 +141,42 @@ class SimpleModelGenerator(nn.Module):
     @property
     def layers(self):
         return torch.nn.ModuleList([self.layer_1, self.layer_2])
+
+
+
+
+# class SimpleModelGenerator(nn.Module):
+#     """Fairgrad uses this as complex non linear model"""
+#
+#     def __init__(self, input_dim, number_of_params=3):
+#         super().__init__()
+#
+#         if number_of_params == 3:
+#             self.lambda_params = torch.nn.Parameter(torch.FloatTensor([0.33, 0.33, 0.33]))
+#         elif number_of_params == 4:
+#             self.lambda_params = torch.nn.Parameter(torch.FloatTensor([0.25, 0.25, 0.25, 0.25]))
+#
+#         self.more_lambda_params = torch.nn.Parameter(torch.FloatTensor(torch.ones(input_dim)))
+#
+#     def forward(self, other_examples):
+#         final_output = torch.tensor(0.0, requires_grad=True)
+#         for param, group in zip(self.lambda_params, other_examples):
+#             x = group['input']
+#             final_output = final_output + (x*self.more_lambda_params)*param
+#
+#         output = {
+#             'prediction': final_output,
+#             'adv_output': None,
+#             'hidden': x,  # just for compatabilit
+#             'classifier_hiddens': None,
+#             'adv_hiddens': None
+#         }
+#
+#         return output
+#
+#     @property
+#     def layers(self):
+#         return torch.nn.ModuleList([self.layer_1, self.layer_2])
 
 class SimpleClassifier(nn.Module):
 
