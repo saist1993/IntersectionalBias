@@ -556,6 +556,44 @@ def sample_data(train_tilted_params, s_group_0, s_group_1):
     return items_group_0, items_group_1
 
 
+def augment_current_data_via_mixup(train_tilted_params, s_group_0, s_group_1, items_group_0, items_group_1):
+     # 'input': torch.FloatTensor(all_input[relevant_index])
+
+    def custom_routine(s, items):
+        augmented_X, augmented_s, augmented_y, augmented_s_flat =\
+            train_tilted_params.other_params['all_input_augmented'], train_tilted_params.other_params['all_aux_augmented'],\
+                train_tilted_params.other_params['all_label_augmented'],\
+                train_tilted_params.other_params['all_aux_flatten_augmented']
+
+        size_of_data = int(len(items['input'])/2)
+        index_0 = np.where(np.logical_and(augmented_s_flat==s, augmented_y==0) == True)[0]
+        index_1 = np.where(np.logical_and(augmented_s_flat==s, augmented_y==1) == True)[0]
+        relevant_index = np.random.choice(index_0, size=size_of_data, replace=True).tolist()
+        relevant_index = relevant_index + np.random.choice(index_1, size=size_of_data, replace=True).tolist()
+
+        relevent_augmented_X = augmented_X[relevant_index]
+
+        alpha = 1.0
+        gamma = beta(alpha, alpha)
+
+        if gamma > (1-gamma):
+            input_x_mix = items['input']*gamma + torch.FloatTensor(relevent_augmented_X)*(1-gamma)
+        else:
+            input_x_mix = items['input'] * (1-gamma) + torch.FloatTensor(relevent_augmented_X) * gamma
+
+        items['input'] = input_x_mix
+
+        return items
+
+    if s_group_0:
+        items_group_0 = custom_routine(s_group_0, items_group_0)
+
+    if s_group_1:
+        items_group_1 = custom_routine(s_group_1, items_group_1)
+
+    return items_group_0, items_group_1
+
+
 def augmented_sampling(train_tilted_params, s_group_0, s_group_1):
     flattened_s_to_s = {value: key for key, value in train_tilted_params.other_params['s_to_flattened_s'].items()}
     input_group_0, input_group_1 = sample_data(train_tilted_params, s_group_0, s_group_1)

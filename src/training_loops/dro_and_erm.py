@@ -334,6 +334,8 @@ def erm_optimization_procedure(train_tilted_params):
 
     group_sampling_procedure = train_tilted_params.other_params['group_sampling_procedure']
 
+    use_mixup_augmentation = True   # @TODO: set this up correctly.
+
     if "distance" in group_sampling_procedure:
         flattened_s_to_s = {value: key for key, value in train_tilted_params.other_params['s_to_flattened_s'].items()}
         similarity_matrix = generate_similarity_matrix(train_tilted_params.other_params['valid_iterator'], model,
@@ -362,6 +364,10 @@ def erm_optimization_procedure(train_tilted_params):
             group0=s_group_0,
             group1=s_group_1
         )
+
+        if use_mixup_augmentation:
+            items_group_0, items_group_1 = \
+                augment_current_data_via_mixup(train_tilted_params, s_group_0, s_group_1, items_group_0, items_group_1)
 
         if group_sampling_procedure == 'random_single_group':
             assert s_group_1 is None
@@ -587,12 +593,18 @@ def orchestrator(training_loop_parameters: TrainingLoopParameters):
 
         training_loop_parameters.other_params['all_label_augmented'] = all_label_augmented
         training_loop_parameters.other_params['all_aux_augmented'] = all_aux_augmented
+
+        training_loop_parameters.other_params['all_aux_flatten_augmented'] = \
+            [training_loop_parameters.other_params['s_to_flattened_s'][tuple(i)]
+             for i in training_loop_parameters.other_params['all_aux_augmented']]
+
         training_loop_parameters.other_params['all_input_augmented'] = all_input_augmented
+
 
 
         training_loop_parameters.other_params['valid_iterator'] = training_loop_parameters.iterators[0][
             'valid_iterator']
-        training_loop_parameters.other_params['scalar'] = training_loop_parameters.iterators[0]['scalar']
+        training_loop_parameters.other_params['scaler'] = training_loop_parameters.iterators[0]['scaler']
         training_loop_parameters.other_params['train_iterator'] = training_loop_parameters.iterators[0][
             'train_iterator']
         training_loop_parameters.other_params['groups'] = [i for i in range(total_no_groups)]

@@ -241,8 +241,8 @@ class DatasetTwitterHateSpeech:
         if "augmented" in self.dataset_name:
             augment_data = AugmentData(self.dataset_name, train_X, train_y, train_s,
                                        self.max_number_of_generated_examples,
-                                       max_number_of_positive_examples=3000,
-                                       max_number_of_negative_examples=3000)
+                                       max_number_of_positive_examples=2000,
+                                       max_number_of_negative_examples=2000)
             train_X_augmented, train_y_augmented, train_s_augmented = augment_data.run()
 
         # Step3: Create iterators - This can be abstracted out to dataset iterators.
@@ -256,11 +256,12 @@ class DatasetTwitterHateSpeech:
         )
         iterator_set, vocab, s_flatten_lookup = create_iterator.get_iterators(iterator_data)
 
-        scaler = iterator_set['scaler']
-        train_X_augmented = scaler.transform(train_X_augmented)
-        iterator_set['train_X_augmented'] = train_X_augmented
-        iterator_set['train_y_augmented'] = train_y_augmented
-        iterator_set['train_s_augmented'] = train_s_augmented
+        if "augmented" in self.dataset_name:
+            iterator_set['scaler'] = scaler
+            train_X_augmented = scaler.transform(train_X_augmented)
+            iterator_set['train_X_augmented'] = train_X_augmented
+            iterator_set['train_y_augmented'] = train_y_augmented
+            iterator_set['train_s_augmented'] = train_s_augmented
 
         iterators = [iterator_set]  # If it was k-fold. One could append k iterators here.
 
