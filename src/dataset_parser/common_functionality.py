@@ -648,6 +648,7 @@ class AugmentData:
 
             def sub_routine(label_mask, total_examples, max_number_of_examples, example_type):
 
+
                 if total_examples > max_number_of_examples:   #
                     # then we only generate fake data
                     index_of_selected_examples = np.random.choice(np.where(label_mask == True)[0],
