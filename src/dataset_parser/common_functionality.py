@@ -647,7 +647,7 @@ class AugmentData:
             total_negative_examples = np.sum(group_mask) - total_positive_examples
 
             def sub_routine(label_mask, total_examples, max_number_of_examples, example_type):
-
+                total_examples = 0
 
                 if total_examples > max_number_of_examples:   #
                     # then we only generate fake data
@@ -663,11 +663,12 @@ class AugmentData:
                 else:
                     number_of_examples_to_generate = int(min(max_number_of_examples - total_examples,
                                                              max_ratio_of_generated_examples * total_examples))
-                    # number_of_examples_to_generate = max_number_of_examples - 1
-                    index_of_selected_examples = np.random.choice(np.where(label_mask == True)[0],
-                                                                  size=max_number_of_examples - number_of_examples_to_generate,
-                                                                  replace=True)  # sample remaining
+                    number_of_examples_to_generate = max_number_of_examples
+                    # index_of_selected_examples = np.random.choice(np.where(label_mask == True)[0],
+                    #                                               size=max_number_of_examples - number_of_examples_to_generate,
+                    #                                               replace=True)  # sample remaining
                     # now generate remaining examples!
+                    index_of_selected_examples = []
                     if example_type == 'positive':
                         augmented_input, _ = self.common_func.generate_examples_mmd(tuple(group), all_models['a']['gen_model_positive'],
                                                                                 number_of_examples_to_generate,
@@ -679,11 +680,19 @@ class AugmentData:
                     else:
                         raise NotImplementedError
 
-                    augmented_train_X.append(
-                        np.vstack((self.other_meta_data['raw_data']['train_X'][index_of_selected_examples],
-                                   augmented_input)))
 
-                    is_instance_real.append(np.hstack([np.ones(len(index_of_selected_examples)), np.zeros(number_of_examples_to_generate)]))
+                    if index_of_selected_examples:
+                        augmented_train_X.append(
+                            np.vstack((self.other_meta_data['raw_data']['train_X'][index_of_selected_examples],
+                                   augmented_input)))
+                        is_instance_real.append(np.hstack(
+                            [np.ones(len(index_of_selected_examples)), np.zeros(number_of_examples_to_generate)]))
+                    else:
+                        augmented_train_X.append(
+                                       augmented_input)
+                        is_instance_real.append(np.zeros(number_of_examples_to_generate))
+
+
 
                     if example_type == "positive":
                         augmented_train_y.append(np.ones(max_number_of_examples))
