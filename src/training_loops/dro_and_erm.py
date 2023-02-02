@@ -489,6 +489,13 @@ def orchestrator(training_loop_parameters: TrainingLoopParameters):
     method = training_loop_parameters.other_params['method']
     total_no_groups = len(np.unique(all_aux_flatten))
 
+
+    # add augmnetation information
+
+    all_input_augmented = training_loop_parameters.iterators[0]['train_X_augmented']
+    all_label_augmented = training_loop_parameters.iterators[0]['train_y_augmented']
+    all_aux_augmented = training_loop_parameters.iterators[0]['train_s_augmented']
+
     # set group sampling proecdure
     if "super_group_and_distance" in method:
         group_sampling_procedure = "super_group_and_distance"
@@ -577,6 +584,12 @@ def orchestrator(training_loop_parameters: TrainingLoopParameters):
         training_loop_parameters.other_params['all_aux'] = all_aux
         training_loop_parameters.other_params['all_aux_flatten'] = all_aux_flatten
         training_loop_parameters.other_params['all_input'] = all_input
+
+        training_loop_parameters.other_params['all_label_augmented'] = all_label_augmented
+        training_loop_parameters.other_params['all_aux_augmented'] = all_aux_augmented
+        training_loop_parameters.other_params['all_input_augmented'] = all_input_augmented
+
+
         training_loop_parameters.other_params['valid_iterator'] = training_loop_parameters.iterators[0][
             'valid_iterator']
         training_loop_parameters.other_params['scalar'] = training_loop_parameters.iterators[0]['scalar']
