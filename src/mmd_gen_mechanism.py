@@ -254,7 +254,9 @@ if __name__ == '__main__':
         'lm_encoding_to_use': 'use_cls',
         'return_numpy_array': True,
         'dataset_size': 1000,
-        'max_number_of_generated_examples': 1000
+        'max_number_of_generated_examples': 1000,
+        'per_group_label_number_of_examples': 100
+
     }
 
     iterators, other_meta_data = generate_data_iterators(dataset_name=dataset_name, **iterator_params)
