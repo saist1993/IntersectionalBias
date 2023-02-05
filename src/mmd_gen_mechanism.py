@@ -184,13 +184,13 @@ class AuxilaryFunction:
         # all_aux = np.vstack([other_meta_data['raw_data']['valid_s'], other_meta_data['raw_data']['train_s']])
         # all_input = np.vstack([other_meta_data['raw_data']['valid_X'], other_meta_data['raw_data']['train_X']])
         #
-        all_label = other_meta_data['raw_data']['train_y']
-        all_aux = other_meta_data['raw_data']['train_s']
-        all_input = other_meta_data['raw_data']['train_X']
+        # all_label = other_meta_data['raw_data']['train_y']
+        # all_aux = other_meta_data['raw_data']['train_s']
+        # all_input = other_meta_data['raw_data']['train_X']
 
-        # all_label = other_meta_data['raw_data']['valid_y']
-        # all_aux = other_meta_data['raw_data']['valid_s']
-        # all_input = other_meta_data['raw_data']['valid_X']
+        all_label = other_meta_data['raw_data']['valid_y']
+        all_aux = other_meta_data['raw_data']['valid_s']
+        all_input = other_meta_data['raw_data']['valid_X']
 
         negative_examples_current_group, positive_examples_current_group = AuxilaryFunction.custom_sample_data(
             group=flattened_s_to_s[current_group], all_label=all_label,
