@@ -274,14 +274,15 @@ if __name__ == '__main__':
     all_groups = np.unique(other_meta_data['raw_data']['train_s'], axis=0)
     size_of_groups = {tuple(group): np.sum(generate_mask(other_meta_data['raw_data']['train_s'], group)) for group in all_groups}
 
-    deleted_group = [0,1,0,0]
-    group_to_remove_index = np.where(generate_mask(other_meta_data['raw_data']['train_s'], deleted_group))[0]
-    print(f"deleted group is {deleted_group} and flat version"
-          f" {other_meta_data['s_flatten_lookup'][tuple(deleted_group)]}")
+    if False:
+        deleted_group = [0,1,0,0]
+        group_to_remove_index = np.where(generate_mask(other_meta_data['raw_data']['train_s'], deleted_group))[0]
+        print(f"deleted group is {deleted_group} and flat version"
+              f" {other_meta_data['s_flatten_lookup'][tuple(deleted_group)]}")
 
-    other_meta_data['raw_data']['train_X'] = np.delete(other_meta_data['raw_data']['train_X'] , group_to_remove_index, 0)
-    other_meta_data['raw_data']['train_s'] = np.delete(other_meta_data['raw_data']['train_s'] , group_to_remove_index, 0)
-    other_meta_data['raw_data']['train_y'] = np.delete(other_meta_data['raw_data']['train_y'] , group_to_remove_index, 0)
+        other_meta_data['raw_data']['train_X'] = np.delete(other_meta_data['raw_data']['train_X'] , group_to_remove_index, 0)
+        other_meta_data['raw_data']['train_s'] = np.delete(other_meta_data['raw_data']['train_s'] , group_to_remove_index, 0)
+        other_meta_data['raw_data']['train_y'] = np.delete(other_meta_data['raw_data']['train_y'] , group_to_remove_index, 0)
 
     #other groups -> [0,1,1,1] and [1,1,0,0]
 
@@ -377,8 +378,8 @@ if __name__ == '__main__':
         for i in tqdm(range(train_tilted_params.other_params['number_of_iterations'])):
             current_group = np.random.choice(train_tilted_params.other_params['groups'], 1)[0]
 
-            if current_group == train_tilted_params.other_params['s_to_flattened_s'][tuple(deleted_group)]:
-                continue
+            # if current_group == train_tilted_params.other_params['s_to_flattened_s'][tuple(deleted_group)]:
+            #     continue
 
             gen_model_positive, gen_model_negative, optimizer_positive, optimizer_negative = \
                 all_models['a']['gen_model_positive'], \
@@ -559,6 +560,9 @@ if __name__ == '__main__':
 
         # group wise accuracy
 
+        average_accuracy = []
+
+
         for flat_current_group, current_group in other_meta_data['s_flatten_lookup'].items():
             positive_size, negative_size = 0, 0
 
@@ -584,5 +588,15 @@ if __name__ == '__main__':
             y_test = np.zeros(len(examples))
             y_pred = clf.predict(examples)
             print(current_group, accuracy_score(y_test, y_pred), balanced_accuracy_score(y_test, y_pred))
+
+            average_accuracy.append(accuracy_score(y_test, y_pred))
+
+
+        if np.mean(average_accuracy) < worst_accuracy:
+            worst_accuracy = np.mean(average_accuracy)
+            # torch.save(gen_model_positive.state_dict(), "dummy.pth")
+            # torch.save(gen_model_negative.state_dict(), "dummy.pth")
+            pickle.dump(all_models, open(f"all_{dataset_name}.pt", 'wb'))
+            pickle.dump(clf, open(f"real_vs_fake_{dataset_name}.sklearn", 'wb'))
 
 

@@ -517,13 +517,15 @@ class AugmentData:
     """A static data augmentation mechanism. Currently not very general purpose"""
 
     def __init__(self, dataset_name, X, y, s, max_number_of_generated_examples=0.75,
-                 max_number_of_positive_examples=500, max_number_of_negative_examples=500):
+                 max_number_of_positive_examples=500, max_number_of_negative_examples=500,
+                 mmd_augmentation_mechanism="only_generated_data"):
         self.dataset_name = dataset_name
         # scaler = StandardScaler().fit(X)
         self.X, self.y, self.s = X, y, s
         self.max_number_of_generated_examples = max_number_of_generated_examples
         self.max_number_of_positive_examples = max_number_of_positive_examples
         self.max_number_of_negative_examples = max_number_of_negative_examples
+        self.mmd_augmentation_mechanism = mmd_augmentation_mechanism # alternative - both_generated_and_real_data
 
         # formating data in a specific way for legacy purpose!
         self.other_meta_data = {
@@ -582,7 +584,7 @@ class AugmentData:
                                                              max_ratio_of_generated_examples * total_examples))
                     index_of_selected_examples = np.random.choice(np.where(label_mask == True)[0],
                                                                   size=max_number_of_examples - number_of_examples_to_generate,
-                                                                  replace=True)  # sample remaining
+                                                                  replace=False)  # sample remaining
                     # now generate remaining examples!
                     if example_type == 'positive':
                         augmented_input, _ = self.common_func.generate_examples(tuple(group), group_to_lambda_weights,
@@ -646,8 +648,10 @@ class AugmentData:
             total_positive_examples = np.sum(label_1_group_mask)
             total_negative_examples = np.sum(group_mask) - total_positive_examples
 
-            def sub_routine(label_mask, total_examples, max_number_of_examples, example_type):
-                total_examples = 0
+            def sub_routine(label_mask, total_examples, max_number_of_examples, example_type, mechanism="only_generated_data"):
+
+                if mechanism == "only_generated_data":
+                    total_examples = 0
 
                 if total_examples > max_number_of_examples:   #
                     # then we only generate fake data
@@ -661,12 +665,18 @@ class AugmentData:
                     is_instance_real.append(np.ones(max_number_of_examples))
 
                 else:
+
                     number_of_examples_to_generate = int(min(max_number_of_examples - total_examples,
                                                              max_ratio_of_generated_examples * total_examples))
-                    number_of_examples_to_generate = max_number_of_examples
-                    # index_of_selected_examples = np.random.choice(np.where(label_mask == True)[0],
-                    #                                               size=max_number_of_examples - number_of_examples_to_generate,
-                    #                                               replace=True)  # sample remaining
+
+                    index_of_selected_examples = np.random.choice(np.where(label_mask == True)[0],
+                                                                  size=max_number_of_examples - number_of_examples_to_generate,
+                                                                  replace=True)  # sample remaining
+
+                    if mechanism == "only_generated_data":
+                        number_of_examples_to_generate = max_number_of_examples
+                        index_of_selected_examples = None
+
                     # now generate remaining examples!
                     index_of_selected_examples = []
                     if example_type == 'positive':

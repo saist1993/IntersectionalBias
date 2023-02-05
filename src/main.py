@@ -261,6 +261,12 @@ def runner(runner_arguments:RunnerArguments):
 
 
 
+
+    if "mixup_generated_and_real_data" in runner_arguments.method:
+        mmd_augmentation_mechanism = "only_generated_data"
+    else:
+        mmd_augmentation_mechanism = "both_generated_and_real_data"
+
     # Create iterator
     iterator_params = {
         'batch_size': runner_arguments.batch_size,
@@ -269,7 +275,8 @@ def runner(runner_arguments:RunnerArguments):
         'return_numpy_array': True,
         'dataset_size': 1000,
         'max_number_of_generated_examples': runner_arguments.max_number_of_generated_examples,
-        'per_group_label_number_of_examples': runner_arguments.per_group_label_number_of_examples
+        'per_group_label_number_of_examples': runner_arguments.per_group_label_number_of_examples,
+        'mmd_augmentation_mechanism': mmd_augmentation_mechanism
     }
     iterators, other_meta_data = generate_data_iterators(dataset_name=runner_arguments.dataset_name, **iterator_params)
 
@@ -455,7 +462,7 @@ if __name__ == '__main__':
     parser.add_argument('--per_group_label_number_of_examples', '-per_group_label_number_of_examples',
                         help="number of example to generate per group and label = 000+ -> 1000",
                         type=int,
-                        default=1000)
+                        default=100)
 
 
 
@@ -491,7 +498,8 @@ if __name__ == '__main__':
         mixup_rg=args.mixup_rg,
         max_number_of_generated_examples=args.max_number_of_generated_examples,
         use_dropout=args.use_dropout,
-        use_batch_norm=args.use_batch_norm
+        use_batch_norm=args.use_batch_norm,
+        per_group_label_number_of_examples=args.per_group_label_number_of_examples
     )
 
 

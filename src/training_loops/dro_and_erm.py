@@ -334,7 +334,7 @@ def erm_optimization_procedure(train_tilted_params):
 
     group_sampling_procedure = train_tilted_params.other_params['group_sampling_procedure']
 
-    use_mixup_augmentation = True   # @TODO: set this up correctly.
+    use_mixup_augmentation = False   # @TODO: set this up correctly.
 
     if "distance" in group_sampling_procedure:
         flattened_s_to_s = {value: key for key, value in train_tilted_params.other_params['s_to_flattened_s'].items()}
@@ -365,7 +365,7 @@ def erm_optimization_procedure(train_tilted_params):
             group1=s_group_1
         )
 
-        if use_mixup_augmentation:
+        if train_tilted_params.other_params['use_mixup_augmentation']:
             items_group_0, items_group_1 = \
                 augment_current_data_via_mixup(train_tilted_params, s_group_0, s_group_1, items_group_0, items_group_1)
 
@@ -566,11 +566,18 @@ def orchestrator(training_loop_parameters: TrainingLoopParameters):
     else:
         update_only_via_reg = False
 
+
+    if "only_generated_data" in method:
+        use_mixup_augmentation = True
+    else:
+        use_mixup_augmentation = False
+
     training_loop_parameters.other_params['groups_matrix'] = groups_matrix
     training_loop_parameters.other_params['distance_mechanism'] = distance_mechanism
     training_loop_parameters.other_params['integrate_reg_loss'] = integrate_reg_loss
     training_loop_parameters.other_params['update_only_via_reg'] = update_only_via_reg
     training_loop_parameters.other_params['optimization_procedure'] = optimization_procedure
+    training_loop_parameters.other_params['use_mixup_augmentation'] = use_mixup_augmentation
     training_loop_parameters.other_params['group_sampling_procedure'] = group_sampling_procedure
     training_loop_parameters.other_params['example_sampling_procedure'] = example_sampling_procedure
     training_loop_parameters.other_params['fairness_regularization_procedure'] = fairness_regularization_procedure

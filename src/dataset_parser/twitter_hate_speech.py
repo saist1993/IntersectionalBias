@@ -129,7 +129,7 @@ class DatasetTwitterHateSpeech:
         self.per_group_label_number_of_examples = params['per_group_label_number_of_examples']
 
         self.max_number_of_generated_examples = params['max_number_of_generated_examples']
-
+        self.mmd_augmentation_mechanism = params['mmd_augmentation_mechanism']
     def _check_if_encodings_are_present(self):
         location_avg = self.dataset_location / Path('train' + f'{self.lm_encoder_type}_encoding_avg.npy')
         location_cls = self.dataset_location / Path('train' + f'{self.lm_encoder_type}_encoding_cls.npy')
@@ -243,10 +243,16 @@ class DatasetTwitterHateSpeech:
             augment_data = AugmentData(self.dataset_name, train_X, train_y, train_s,
                                        self.max_number_of_generated_examples,
                                        max_number_of_positive_examples=self.per_group_label_number_of_examples,
-                                       max_number_of_negative_examples=self.per_group_label_number_of_examples)
-            train_X_augmented, train_y_augmented, train_s_augmented = augment_data.run()
+                                       max_number_of_negative_examples=self.per_group_label_number_of_examples,
+                                       )
 
-        # Step3: Create iterators - This can be abstracted out to dataset iterators.
+            if self.mmd_augmentation_mechanism == 'only_generated_data':
+                train_X_augmented, train_y_augmented, train_s_augmented = augment_data.run()
+            else:
+                train_X, train_y, train_s = augment_data.run()
+                train_X_augmented, train_y_augmented, train_s_augmented = train_X, train_y, train_s
+
+                # Step3: Create iterators - This can be abstracted out to dataset iterators.
         create_iterator = CreateIterators()
         iterator_data = IteratorData(
             train_X=train_X, train_y=train_y, train_s=train_s,
