@@ -8,16 +8,22 @@ import torch.nn as nn
 class SimpleModelGenerator(nn.Module):
     """Fairgrad uses this as complex non linear model"""
 
-    def __init__(self, input_dim):
+    def __init__(self, input_dim, number_of_params=3):
         super().__init__()
 
-        self.lambda_params = torch.nn.Parameter(torch.FloatTensor([0.25, 0.25, 0.25, 0.25]))
+        if number_of_params == 3:
+            self.lambda_params = torch.nn.Parameter(torch.FloatTensor([0.33, 0.33, 0.33]))
+        elif number_of_params == 4:
+            self.lambda_params = torch.nn.Parameter(torch.FloatTensor([0.25, 0.25, 0.25, 0.25]))
+
+        self.more_lambda_params = [torch.nn.Parameter(torch.FloatTensor(torch.ones(input_dim))) for i in
+                                   range(len(self.lambda_params))]
 
     def forward(self, other_examples):
         final_output = torch.tensor(0.0, requires_grad=True)
-        for param, group in zip(self.lambda_params, other_examples):
+        for param, group, more_params in zip(self.lambda_params, other_examples, self.more_lambda_params):
             x = group['input']
-            final_output = final_output + x*param
+            final_output = final_output + (x*more_params)*param
 
         output = {
             'prediction': final_output,
