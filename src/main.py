@@ -114,6 +114,7 @@ class RunnerArguments(NamedTuple):
     max_number_of_generated_examples: float = 1.0
     use_dropout: float = 0.2  # 0.0 corresponds to no dropout being applied
     use_batch_norm: float = 0.0  # 0.0 corresponds to no batch norm being applied
+    per_group_label_number_of_examples: int = 1000
 
 
 def get_fairness_related_meta_dict(train_iterator, fairness_measure, fairness_rate, epsilon):
@@ -267,7 +268,8 @@ def runner(runner_arguments:RunnerArguments):
         'lm_encoding_to_use': 'use_cls',
         'return_numpy_array': True,
         'dataset_size': 1000,
-        'max_number_of_generated_examples': runner_arguments.max_number_of_generated_examples
+        'max_number_of_generated_examples': runner_arguments.max_number_of_generated_examples,
+        'per_group_label_number_of_examples': runner_arguments.per_group_label_number_of_examples
     }
     iterators, other_meta_data = generate_data_iterators(dataset_name=runner_arguments.dataset_name, **iterator_params)
 
@@ -449,6 +451,11 @@ if __name__ == '__main__':
                         help="batch norm of 0.0 means no norm else batch norm is applied",
                         type=float,
                         default=0.0)
+
+    parser.add_argument('--per_group_label_number_of_examples', '-per_group_label_number_of_examples',
+                        help="number of example to generate per group and label = 000+ -> 1000",
+                        type=int,
+                        default=1000)
 
 
 

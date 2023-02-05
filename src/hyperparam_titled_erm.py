@@ -52,6 +52,7 @@ if __name__ == '__main__':
     parser.add_argument('--fairness_function', '-fairness_function', help="fairness_function", type=str, default='equal_opportunity')
     parser.add_argument('--version', '-version', help="version number", type=float, default=0.0)
     parser.add_argument('--use_dropout', '-use_dropout', help="version number", type=float, default=0.0)
+    parser.add_argument('--per_group_label_number_of_examples', '-per_group_label_number_of_examples', help="version number", type=int, default=1000)
 
 
     torch.set_num_threads(2)
@@ -312,7 +313,8 @@ if __name__ == '__main__':
                             titled_t=titled_scale,
                             mixup_rg=mixup_scale,
                             max_number_of_generated_examples=examples_to_generate,
-                            use_dropout=args.use_dropout
+                            use_dropout=args.use_dropout,
+                            per_group_label_number_of_examples=args.per_group_label_number_of_examples
                         )
                         output = runner(runner_arguments=runner_arguments)
                     except KeyboardInterrupt:
