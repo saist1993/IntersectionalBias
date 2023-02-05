@@ -255,7 +255,8 @@ if __name__ == '__main__':
         'return_numpy_array': True,
         'dataset_size': 1000,
         'max_number_of_generated_examples': 1000,
-        'per_group_label_number_of_examples': 100
+        'per_group_label_number_of_examples': 100,
+        'mmd_augmentation_mechanism': None
 
     }
 
