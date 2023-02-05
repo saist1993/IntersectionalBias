@@ -551,8 +551,8 @@ if __name__ == '__main__':
 
 
 
-        if balanced_accuracy_score(y_test, y_pred) < worst_accuracy:
-            worst_accuracy = balanced_accuracy_score(y_test, y_pred)
+        # if balanced_accuracy_score(y_test, y_pred) < worst_accuracy:
+            # worst_accuracy = balanced_accuracy_score(y_test, y_pred)
             # torch.save(gen_model_positive.state_dict(), "dummy.pth")
             # torch.save(gen_model_negative.state_dict(), "dummy.pth")
             # pickle.dump(all_models, open(f"all_{dataset_name}.pt", 'wb'))
@@ -594,7 +594,7 @@ if __name__ == '__main__':
 
             average_accuracy.append(accuracy_score(y_test, y_pred))
 
-
+        print(np.mean(average_accuracy))
         if np.mean(average_accuracy) < worst_accuracy:
             worst_accuracy = np.mean(average_accuracy)
             # torch.save(gen_model_positive.state_dict(), "dummy.pth")
