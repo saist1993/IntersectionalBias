@@ -234,6 +234,21 @@ class DatasetTwitterHateSpeech:
         train_s = np.delete(train_s, new_test_examples_index, axis=0)
         train_y = np.delete(train_y, new_test_examples_index, axis=0)
 
+
+        deleted_group = [0,1,0,0]
+        group_to_remove_index = np.where(create_mask(train_s, deleted_group))[0]
+
+        train_X = np.delete(train_X, group_to_remove_index, 0)
+        train_s = np.delete(train_s, group_to_remove_index, 0)
+        train_y = np.delete(train_y, group_to_remove_index, 0)
+
+        # deleted_group = [1, 1, 0, 0]
+        # group_to_remove_index = np.where(create_mask(train_s, deleted_group))[0]
+        #
+        # train_X = np.delete(train_X, group_to_remove_index, 0)
+        # train_s = np.delete(train_s, group_to_remove_index, 0)
+        # train_y = np.delete(train_y, group_to_remove_index, 0)
+
         scaler = StandardScaler().fit(train_X)
         train_X = scaler.transform(train_X)
         valid_X = scaler.transform(valid_X)
@@ -251,6 +266,9 @@ class DatasetTwitterHateSpeech:
             else:
                 train_X, train_y, train_s = augment_data.run()
                 train_X_augmented, train_y_augmented, train_s_augmented = train_X, train_y, train_s
+
+        else:
+            train_X_augmented, train_y_augmented, train_s_augmented = train_X, train_y, train_s
 
                 # Step3: Create iterators - This can be abstracted out to dataset iterators.
         create_iterator = CreateIterators()

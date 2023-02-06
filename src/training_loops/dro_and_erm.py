@@ -498,9 +498,7 @@ def orchestrator(training_loop_parameters: TrainingLoopParameters):
 
     # add augmnetation information
 
-    all_input_augmented = training_loop_parameters.iterators[0]['train_X_augmented']
-    all_label_augmented = training_loop_parameters.iterators[0]['train_y_augmented']
-    all_aux_augmented = training_loop_parameters.iterators[0]['train_s_augmented']
+
 
     # set group sampling proecdure
     if "super_group_and_distance" in method:
@@ -569,6 +567,15 @@ def orchestrator(training_loop_parameters: TrainingLoopParameters):
 
     if "only_generated_data" in method:
         use_mixup_augmentation = True
+        all_input_augmented = training_loop_parameters.iterators[0]['train_X_augmented']
+        all_label_augmented = training_loop_parameters.iterators[0]['train_y_augmented']
+        all_aux_augmented = training_loop_parameters.iterators[0]['train_s_augmented']
+        training_loop_parameters.other_params['all_label_augmented'] = all_label_augmented
+        training_loop_parameters.other_params['all_aux_augmented'] = all_aux_augmented
+        training_loop_parameters.other_params['all_aux_flatten_augmented'] = \
+            [training_loop_parameters.other_params['s_to_flattened_s'][tuple(i)]
+             for i in training_loop_parameters.other_params['all_aux_augmented']]
+        training_loop_parameters.other_params['all_input_augmented'] = all_input_augmented
     else:
         use_mixup_augmentation = False
 
@@ -598,14 +605,11 @@ def orchestrator(training_loop_parameters: TrainingLoopParameters):
         training_loop_parameters.other_params['all_aux_flatten'] = all_aux_flatten
         training_loop_parameters.other_params['all_input'] = all_input
 
-        training_loop_parameters.other_params['all_label_augmented'] = all_label_augmented
-        training_loop_parameters.other_params['all_aux_augmented'] = all_aux_augmented
 
-        training_loop_parameters.other_params['all_aux_flatten_augmented'] = \
-            [training_loop_parameters.other_params['s_to_flattened_s'][tuple(i)]
-             for i in training_loop_parameters.other_params['all_aux_augmented']]
 
-        training_loop_parameters.other_params['all_input_augmented'] = all_input_augmented
+
+
+
 
 
 
