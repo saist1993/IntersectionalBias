@@ -298,7 +298,8 @@ class EpsFairness(fairness_utils.FairnessTemplateClass):
             eps = self.es.simple_bayesian_estimate_rate_parity(self.prediction, self.label, group_masks, use_tpr=False)
 
         elif robust_estimation_method == 'bootstrap_empirical_estimate':
-            eps = self.es.bootstrap_estimate_rate_parity(self.prediction, self.label, group_masks, use_tpr=False)
+            eps = self.es.bootstrap_estimate_rate_parity(self.prediction, self.label, group_masks, use_tpr=False,
+                                                         all_possible_groups=all_possible_groups)
 
         else:
             raise NotImplementedError
@@ -317,8 +318,10 @@ class EpsFairness(fairness_utils.FairnessTemplateClass):
             eps_tpr = self.es.simple_bayesian_estimate_rate_parity(self.prediction, self.label, group_masks,
                                                                    use_tpr=True)
         elif robust_estimation_method == 'bootstrap_empirical_estimate':
-            eps_fpr = self.es.bootstrap_estimate_rate_parity(self.prediction, self.label, group_masks, use_tpr=False)
-            eps_tpr = self.es.bootstrap_estimate_rate_parity(self.prediction, self.label, group_masks, use_tpr=True)
+            eps_fpr = self.es.bootstrap_estimate_rate_parity(self.prediction, self.label, group_masks, use_tpr=False,
+                                                         all_possible_groups=all_possible_groups)
+            eps_tpr = self.es.bootstrap_estimate_rate_parity(self.prediction, self.label, group_masks, use_tpr=True,
+                                                         all_possible_groups=all_possible_groups)
 
         else:
             raise NotImplementedError

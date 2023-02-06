@@ -43,7 +43,7 @@ class SimpleModelGenerator(nn.Module):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--seeds', '-seeds', nargs="*", help="seed", type=int, default=42)
-    parser.add_argument('--dataset_name', '-dataset_name', help="dataset name", type=str, default='adult_multi_group')
+    parser.add_argument('--dataset_name', '-dataset_name', help="dataset name", type=str, default='twitter_multi_group_augmented')
     parser.add_argument('--batch_size', '-batch_size', help="batch size", type=int, default=1000)
     parser.add_argument('--model', '-model', help="simple_non_linear/simple_linear", type=str, default='simple_non_linear')
     parser.add_argument('--epochs', '-epochs', help="epochs", type=int, default=50)
