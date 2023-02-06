@@ -132,6 +132,8 @@ def temp_table_generator(dataset_name, fairness_function):
     level_2_strategy_params = {'relaxation_threshold': 0.03,
                                'fairness_function': fairness_function}
 
+
+
     rows = []
     average_rows = []
     rows.append(['method', 'balanced accuracy', 'fairness', 'confidence_interval', 'seed'])
