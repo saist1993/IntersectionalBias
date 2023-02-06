@@ -678,7 +678,6 @@ class AugmentData:
                         index_of_selected_examples = None
 
                     # now generate remaining examples!
-                    index_of_selected_examples = []
                     if example_type == 'positive':
                         augmented_input, _ = self.common_func.generate_examples_mmd(tuple(group), all_models['a']['gen_model_positive'],
                                                                                 number_of_examples_to_generate,

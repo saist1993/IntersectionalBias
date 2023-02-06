@@ -89,7 +89,7 @@ class EstimateProbability:
 
         return [np.mean(all_eps), self.get_confidence_interval(all_eps)]
 
-    def smoothed_empirical_estimate_rate_parity(self, preds, labels, masks, use_tpr=True):
+    def smoothed_empirical_estimate_rate_parity(self, preds, labels, masks, use_tpr=True, all_possible_groups=None):
         '''
             - if use_tpr is False, then return fpr
             mask gives us access to specific attribute - s.
@@ -122,8 +122,14 @@ class EstimateProbability:
                 prob = 0.0
             all_probs.append(prob)
 
-        max_prob = max(all_probs)
-        min_prob = min(all_probs)
+        max_index = np.argmax(all_probs)
+        min_index = np.argmin(all_probs)
+
+        max_prob = all_probs[max_index]
+        min_prob = all_probs[min_index]
+
+        max_group = all_possible_groups[max_index]
+        min_group = all_possible_groups[min_index]
         # average_prob = [max(i/j , j/i) for i,j in combinations(all_probs , 2 )]
 
         average_prob = []
@@ -142,7 +148,7 @@ class EstimateProbability:
             warnings.warn("There is something fishy in the data. There was no example atleast for one group at all.")
             return [0.0, [0.0, 0.0], average_prob]
 
-        return [np.log(max_prob / min_prob), [0.0, 0.0], average_prob]
+        return [np.log(max_prob / min_prob), [0.0, 0.0], average_prob, (min_group, max_group)]
 
     def simple_bayesian_estimate_rate_parity(self, preds, labels, masks, use_tpr=True):
 
@@ -189,19 +195,29 @@ class EstimateProbability:
         # np.percentile(all_eps, [97.5])
         return [np.mean(all_eps), self.get_confidence_interval(all_eps)]
 
-    def bootstrap_estimate_rate_parity(self, preds:np.ndarray, labels:np.ndarray, masks:np.ndarray, use_tpr:bool=True):
+    def bootstrap_estimate_rate_parity(self, preds:np.ndarray, labels:np.ndarray, masks:np.ndarray, use_tpr:bool=True,
+                                       all_possible_groups=None):
         """ Similar to bagging. Performed via smoothing"""
         all_eps = []
         all_average_prob = []
+        all_min_max_groups = []
         for _ in range(self.number_of_bootstrap_dataset):
             index_select = np.random.choice(len(preds), len(preds), replace=True)
 
-            eps, _, average_prob = self.smoothed_empirical_estimate_rate_parity(preds[index_select], labels[index_select],
-                                                               [m[index_select] for m in masks], use_tpr=use_tpr)
+            eps, _, average_prob, min_max_group = self.smoothed_empirical_estimate_rate_parity(preds[index_select], labels[index_select],
+                                                               [m[index_select] for m in masks], use_tpr=use_tpr,
+                                                                                all_possible_groups=all_possible_groups)
             all_eps.append(eps)
             all_average_prob.append(average_prob)
+            all_min_max_groups.append(min_max_group)
 
-        return [np.mean(all_eps), self.get_confidence_interval(all_eps), np.mean(all_average_prob)]
+        min_group, min_group_count = np.unique(np.asarray(all_min_max_groups)[:, 0], axis=0, return_counts=True)
+        min_group = min_group[np.argmax(min_group_count)]
+
+        max_group, max_group_count = np.unique(np.asarray(all_min_max_groups)[:, 1], axis=0, return_counts=True)
+        max_group = max_group[np.argmax(max_group_count)]
+
+        return [np.mean(all_eps), self.get_confidence_interval(all_eps), np.mean(all_average_prob), min_group, max_group]
 
 
 @dataclass
@@ -225,7 +241,7 @@ class EpsFairness(fairness_utils.FairnessTemplateClass):
 
         self.es = EstimateProbability()
 
-    def demographic_parity(self, group_masks, robust_estimation_method='smoothed_empirical_estimate'):
+    def demographic_parity(self, group_masks, robust_estimation_method='smoothed_empirical_estimate', all_possible_groups=None):
         """
         Following steps will be done
             -> Calculate p(y_hat=1/S=s) for all s
@@ -243,7 +259,7 @@ class EpsFairness(fairness_utils.FairnessTemplateClass):
             raise NotImplementedError
         return eps
 
-    def tpr_parity(self, group_masks, robust_estimation_method='smoothed_empirical_estimate'):
+    def tpr_parity(self, group_masks, robust_estimation_method='smoothed_empirical_estimate', all_possible_groups=None):
         """
         - This measure is also called equal opportunity with y=1 being the default!
         - We need to estimate p(y_hat=1/y=1,S=s) for all s
@@ -259,13 +275,14 @@ class EpsFairness(fairness_utils.FairnessTemplateClass):
             eps = self.es.simple_bayesian_estimate_rate_parity(self.prediction, self.label, group_masks, use_tpr=True)
 
         elif robust_estimation_method == 'bootstrap_empirical_estimate':
-            eps = self.es.bootstrap_estimate_rate_parity(self.prediction, self.label, group_masks, use_tpr=True)
+            eps = self.es.bootstrap_estimate_rate_parity(self.prediction, self.label, group_masks, use_tpr=True,
+                                                         all_possible_groups=all_possible_groups)
 
         else:
             raise NotImplementedError
         return eps
 
-    def fpr_parity(self, group_masks, robust_estimation_method='smoothed_empirical_estimate'):
+    def fpr_parity(self, group_masks, robust_estimation_method='smoothed_empirical_estimate', all_possible_groups=None):
         """
         - This measure is also called equal opportunity with y=1 being the default!
         - We need to estimate p(y_hat=1/y=1,S=s) for all s
@@ -287,7 +304,8 @@ class EpsFairness(fairness_utils.FairnessTemplateClass):
             raise NotImplementedError
         return eps
 
-    def equal_odds(self, group_masks, robust_estimation_method='smoothed_empirical_estimate'):
+    def equal_odds(self, group_masks, robust_estimation_method='smoothed_empirical_estimate',
+                   all_possible_groups=None):
         if robust_estimation_method == 'smoothed_empirical_estimate':
             eps_fpr = self.es.smoothed_empirical_estimate_rate_parity(self.prediction, self.label, group_masks,
                                                                       use_tpr=False)
@@ -324,13 +342,13 @@ class EpsFairness(fairness_utils.FairnessTemplateClass):
             _, group_index = fairness_utils.get_groups(self.all_possible_groups, type_of_group)
             if fairness_mode == 'demographic_parity':
                 output = self.demographic_parity(np.asarray(self.all_possible_groups_mask)[group_index],
-                                                 robust_estimation_method)
+                                                 robust_estimation_method, self.all_possible_groups)
             elif fairness_mode == 'equal_opportunity':
                 output = self.tpr_parity(np.asarray(self.all_possible_groups_mask)[group_index],
-                                         robust_estimation_method)
+                                         robust_estimation_method, self.all_possible_groups)
             elif fairness_mode == 'equal_odds':
                 output = self.equal_odds(np.asarray(self.all_possible_groups_mask)[group_index],
-                                         robust_estimation_method)
+                                         robust_estimation_method, self.all_possible_groups)
             else:
                 raise NotImplementedError
 

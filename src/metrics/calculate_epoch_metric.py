@@ -38,9 +38,11 @@ class CalculateEpochMetric:
             self.all_possible_groups = self.other_meta_data['all_possible_groups']
             self.all_possible_groups_mask = self.other_meta_data['all_possible_groups_mask']
         except KeyError:
-            self.all_possible_groups = \
-                fairness_utils.create_all_possible_groups \
-                    (attributes=[list(np.unique(self.aux[:, i])) for i in range(aux.shape[1])])
+            # self.all_possible_groups = \
+            #     fairness_utils.create_all_possible_groups \
+            #         (attributes=[list(np.unique(self.aux[:, i])) for i in range(aux.shape[1])])
+
+            self.all_possible_groups = np.unique(aux, axis=0)
             self.all_possible_groups_mask = [fairness_utils.create_mask(data=aux, condition=group) for group in
                                              self.all_possible_groups]
 
