@@ -235,12 +235,12 @@ class DatasetTwitterHateSpeech:
         train_y = np.delete(train_y, new_test_examples_index, axis=0)
 
 
-        deleted_group = [0,1,0,0]
-        group_to_remove_index = np.where(create_mask(train_s, deleted_group))[0]
-
-        train_X = np.delete(train_X, group_to_remove_index, 0)
-        train_s = np.delete(train_s, group_to_remove_index, 0)
-        train_y = np.delete(train_y, group_to_remove_index, 0)
+        # deleted_group = [0,1,0,0]
+        # group_to_remove_index = np.where(create_mask(train_s, deleted_group))[0]
+        #
+        # train_X = np.delete(train_X, group_to_remove_index, 0)
+        # train_s = np.delete(train_s, group_to_remove_index, 0)
+        # train_y = np.delete(train_y, group_to_remove_index, 0)
 
         # deleted_group = [1, 1, 0, 0]
         # group_to_remove_index = np.where(create_mask(train_s, deleted_group))[0]

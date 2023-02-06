@@ -28,9 +28,9 @@ batch_size = 1024
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 import numpy as np
 
-
-import mkl
-mkl.set_num_threads(3)
+#
+# import mkl
+# mkl.set_num_threads(3)
 
 torch.set_num_threads(4)
 torch.set_num_interop_threads(4)
