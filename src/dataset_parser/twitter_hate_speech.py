@@ -256,6 +256,7 @@ class DatasetTwitterHateSpeech:
 
         if "augmented" in self.dataset_name:
             augment_data = AugmentData(self.dataset_name, train_X, train_y, train_s,
+                                       np.unique(valid_s, axis=0),
                                        self.max_number_of_generated_examples,
                                        max_number_of_positive_examples=self.per_group_label_number_of_examples,
                                        max_number_of_negative_examples=self.per_group_label_number_of_examples,

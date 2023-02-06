@@ -516,7 +516,7 @@ def create_mask(data, condition):
 class AugmentData:
     """A static data augmentation mechanism. Currently not very general purpose"""
 
-    def __init__(self, dataset_name, X, y, s, max_number_of_generated_examples=0.75,
+    def __init__(self, dataset_name, X, y, s, all_unique_group, max_number_of_generated_examples=0.75,
                  max_number_of_positive_examples=500, max_number_of_negative_examples=500,
                  mmd_augmentation_mechanism="only_generated_data"):
         self.dataset_name = dataset_name
@@ -526,6 +526,7 @@ class AugmentData:
         self.max_number_of_positive_examples = max_number_of_positive_examples
         self.max_number_of_negative_examples = max_number_of_negative_examples
         self.mmd_augmentation_mechanism = mmd_augmentation_mechanism # alternative - both_generated_and_real_data
+        self.all_unique_group = all_unique_group
 
         # formating data in a specific way for legacy purpose!
         self.other_meta_data = {
@@ -633,7 +634,7 @@ class AugmentData:
 
         classifier_models = pickle.load(open(f"real_vs_fake_{self.dataset_name.replace('_augmented', '')}.sklearn", "rb"))
 
-        all_unique_groups = np.unique(self.other_meta_data['raw_data']['train_s'], axis=0)
+        # all_unique_groups = np.unique(self.other_meta_data['raw_data']['train_s'], axis=0)
 
         max_number_of_positive_examples = self.max_number_of_positive_examples
         max_number_of_negative_examples = self.max_number_of_negative_examples
@@ -641,7 +642,7 @@ class AugmentData:
 
         augmented_train_X, augmented_train_y, augmented_train_s, is_instance_real = [], [], [], [] # generated - 0  and real is 1
 
-        for group in all_unique_groups:
+        for group in self.all_unique_group:
             group_mask = self.common_func.generate_mask(self.other_meta_data['raw_data']['train_s'], group)
             label_1_group_mask = np.logical_and(group_mask, self.other_meta_data['raw_data']['train_y'] == 1)
             label_0_group_mask = np.logical_and(group_mask, self.other_meta_data['raw_data']['train_y'] == 0)
@@ -666,12 +667,18 @@ class AugmentData:
 
                 else:
 
-                    number_of_examples_to_generate = int(min(max_number_of_examples - total_examples,
-                                                             max_ratio_of_generated_examples * total_examples))
+                    # number_of_examples_to_generate = int(min(max_number_of_examples - total_examples,
+                    #                                          max_ratio_of_generated_examples * total_examples))
 
-                    index_of_selected_examples = np.random.choice(np.where(label_mask == True)[0],
-                                                                  size=max_number_of_examples - number_of_examples_to_generate,
-                                                                  replace=True)  # sample remaining
+                    number_of_examples_to_generate = max_number_of_examples - total_examples
+
+                    try:
+
+                        index_of_selected_examples = np.random.choice(np.where(label_mask == True)[0],
+                                                                      size=max_number_of_examples - number_of_examples_to_generate,
+                                                                      replace=True)  # sample remaining
+                    except ValueError:
+                        print("here")
 
                     if mechanism == "only_generated_data":
                         number_of_examples_to_generate = max_number_of_examples
