@@ -130,7 +130,7 @@ class SimpleModelGenerator(nn.Module):
             x = group['input']
             final_output = final_output + x
 
-        final_output = self.more_lambda_params*final_output
+        final_output = self.more_lambda_params[0]*final_output
 
         output = {
             'prediction': final_output,
