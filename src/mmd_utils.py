@@ -126,7 +126,7 @@ class SimpleModelGenerator(nn.Module):
 
         # self.more_lambda_params = torch.nn.Parameter(torch.FloatTensor(torch.ones(input_dim)))
 
-        self.dropout = nn.Dropout(p=0.2)
+
 
     def forward(self, other_examples):
         final_output = torch.tensor(0.0, requires_grad=True)
@@ -134,7 +134,6 @@ class SimpleModelGenerator(nn.Module):
             x = group['input']
             final_output = final_output + x*param
 
-        # final_output = self.more_lambda_params*self.dropout(final_output)
 
         output = {
             'prediction': final_output,

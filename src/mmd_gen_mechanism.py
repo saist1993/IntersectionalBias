@@ -180,13 +180,13 @@ class AuxilaryFunction:
         #         [other_meta_data['s_flatten_lookup'][tuple(i)] for i in other_meta_data['raw_data']['valid_s']]),
         #     number_of_positive_examples=int(batch_size / 2), number_of_negative_examples=int(batch_size / 2))
 
-        # all_label = np.hstack([other_meta_data['raw_data']['valid_y'], other_meta_data['raw_data']['train_y']])
-        # all_aux = np.vstack([other_meta_data['raw_data']['valid_s'], other_meta_data['raw_data']['train_s']])
-        # all_input = np.vstack([other_meta_data['raw_data']['valid_X'], other_meta_data['raw_data']['train_X']])
+        all_label = np.hstack([other_meta_data['raw_data']['valid_y'], other_meta_data['raw_data']['train_y']])
+        all_aux = np.vstack([other_meta_data['raw_data']['valid_s'], other_meta_data['raw_data']['train_s']])
+        all_input = np.vstack([other_meta_data['raw_data']['valid_X'], other_meta_data['raw_data']['train_X']])
         #
-        all_label = other_meta_data['raw_data']['train_y']
-        all_aux = other_meta_data['raw_data']['train_s']
-        all_input = other_meta_data['raw_data']['train_X']
+        # all_label = other_meta_data['raw_data']['train_y']
+        # all_aux = other_meta_data['raw_data']['train_s']
+        # all_input = other_meta_data['raw_data']['train_X']
 
         # all_label = other_meta_data['raw_data']['valid_y']
         # all_aux = other_meta_data['raw_data']['valid_s']
@@ -332,8 +332,8 @@ if __name__ == '__main__':
 
     all_models = {}
     input_dim = all_input_valid.shape[1]
-    sigma_list = [1.0, 2.0, 4.0, 8.0, 16.0]
-    # sigma_list = [1.0, 10.0, 20.0, 30.0, 40.0, 50.0]
+    # sigma_list = [1.0, 2.0, 4.0, 8.0, 16.0]
+    sigma_list = [1.0, 10.0, 20.0, 30.0, 40.0, 50.0]
     # sigma_list = [1.0, 5.0, 10.0, 20.0, 30.0]
     # sigma_list = [1.0, 10.0, 15.0, 20.0, 50.0]
 
