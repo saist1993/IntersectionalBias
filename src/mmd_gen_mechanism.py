@@ -337,6 +337,8 @@ if __name__ == '__main__':
     # sigma_list = [1.0, 5.0, 10.0, 20.0, 30.0]
     # sigma_list = [1.0, 10.0, 15.0, 20.0, 50.0]
 
+    per_group_accuracy = [1.0 for i in train_tilted_params.other_params['groups']]
+
 
 
     for current_group_flat, current_group in flattened_s_to_s.items():
@@ -378,7 +380,7 @@ if __name__ == '__main__':
     for _ in range(100):
         total_loss_positive, total_loss_negative = 0.0, 0.0
         for i in tqdm(range(train_tilted_params.other_params['number_of_iterations'])):
-            current_group = np.random.choice(train_tilted_params.other_params['groups'], 1)[0]
+            current_group = np.random.choice(train_tilted_params.other_params['groups'], p=per_group_accuracy/np.linalg.norm(per_group_accuracy,1), size=1)[0]
 
             # if current_group == train_tilted_params.other_params['s_to_flattened_s'][tuple(deleted_group)]:
             #     continue
@@ -592,6 +594,8 @@ if __name__ == '__main__':
             print(current_group, accuracy_score(y_test, y_pred), balanced_accuracy_score(y_test, y_pred))
 
             average_accuracy.append(accuracy_score(y_test, y_pred))
+
+        per_group_accuracy = average_accuracy
 
         print(f"average accuracy is {np.mean(average_accuracy)}")
         if np.mean(average_accuracy) < worst_accuracy:
