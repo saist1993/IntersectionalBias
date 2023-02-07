@@ -275,6 +275,7 @@ class DatasetTwitterHateSpeech:
                                        self.max_number_of_generated_examples,
                                        max_number_of_positive_examples=self.per_group_label_number_of_examples,
                                        max_number_of_negative_examples=self.per_group_label_number_of_examples,
+                                       mmd_augmentation_mechanism=self.mmd_augmentation_mechanism
                                        )
 
             if self.mmd_augmentation_mechanism == 'only_generated_data':
