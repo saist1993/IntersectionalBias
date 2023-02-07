@@ -277,15 +277,15 @@ if __name__ == '__main__':
     all_groups = np.unique(other_meta_data['raw_data']['train_s'], axis=0)
     size_of_groups = {tuple(group): np.sum(generate_mask(other_meta_data['raw_data']['train_s'], group)) for group in all_groups}
 
-    if True:
-        deleted_group = [0,1,0,0]
-        group_to_remove_index = np.where(generate_mask(other_meta_data['raw_data']['train_s'], deleted_group))[0]
-        print(f"deleted group is {deleted_group} and flat version"
-              f" {other_meta_data['s_flatten_lookup'][tuple(deleted_group)]}")
-
-        other_meta_data['raw_data']['train_X'] = np.delete(other_meta_data['raw_data']['train_X'] , group_to_remove_index, 0)
-        other_meta_data['raw_data']['train_s'] = np.delete(other_meta_data['raw_data']['train_s'] , group_to_remove_index, 0)
-        other_meta_data['raw_data']['train_y'] = np.delete(other_meta_data['raw_data']['train_y'] , group_to_remove_index, 0)
+    # if True:
+    #     deleted_group = [0,1,0,0]
+    #     group_to_remove_index = np.where(generate_mask(other_meta_data['raw_data']['train_s'], deleted_group))[0]
+    #     print(f"deleted group is {deleted_group} and flat version"
+    #           f" {other_meta_data['s_flatten_lookup'][tuple(deleted_group)]}")
+    #
+    #     other_meta_data['raw_data']['train_X'] = np.delete(other_meta_data['raw_data']['train_X'] , group_to_remove_index, 0)
+    #     other_meta_data['raw_data']['train_s'] = np.delete(other_meta_data['raw_data']['train_s'] , group_to_remove_index, 0)
+    #     other_meta_data['raw_data']['train_y'] = np.delete(other_meta_data['raw_data']['train_y'] , group_to_remove_index, 0)
 
     #other groups -> [0,1,1,1] and [1,1,0,0]
 
@@ -381,8 +381,8 @@ if __name__ == '__main__':
         for i in tqdm(range(train_tilted_params.other_params['number_of_iterations'])):
             current_group = np.random.choice(train_tilted_params.other_params['groups'], 1)[0]
 
-            if current_group == train_tilted_params.other_params['s_to_flattened_s'][tuple(deleted_group)]:
-                continue
+            # if current_group == train_tilted_params.other_params['s_to_flattened_s'][tuple(deleted_group)]:
+            #     continue
 
             gen_model_positive, gen_model_negative, optimizer_positive, optimizer_negative = \
                 all_models['a']['gen_model_positive'], \
