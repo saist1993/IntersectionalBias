@@ -128,7 +128,9 @@ class SimpleModelGenerator(nn.Module):
         final_output = torch.tensor(0.0, requires_grad=True)
         for param, group, more_params in zip(self.lambda_params, other_examples, self.more_lambda_params):
             x = group['input']
-            final_output = final_output + (x*self.more_lambda_params[0])
+            final_output = final_output + x
+
+        final_output = self.more_lambda_params*final_output
 
         output = {
             'prediction': final_output,
