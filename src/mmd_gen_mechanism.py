@@ -28,7 +28,7 @@ batch_size = 1024
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 import numpy as np
 
-#
+
 # import mkl
 # mkl.set_num_threads(3)
 
@@ -255,9 +255,8 @@ if __name__ == '__main__':
         'return_numpy_array': True,
         'dataset_size': 1000,
         'max_number_of_generated_examples': 1000,
-        'per_group_label_number_of_examples': 100,
-        'mmd_augmentation_mechanism': None
-
+        'per_group_label_number_of_examples': 1000,
+        'mmd_augmentation_mechanism': "asd"
     }
 
     iterators, other_meta_data = generate_data_iterators(dataset_name=dataset_name, **iterator_params)
@@ -277,15 +276,15 @@ if __name__ == '__main__':
     all_groups = np.unique(other_meta_data['raw_data']['train_s'], axis=0)
     size_of_groups = {tuple(group): np.sum(generate_mask(other_meta_data['raw_data']['train_s'], group)) for group in all_groups}
 
-    # if True:
-    #     deleted_group = [0,1,0,0]
-    #     group_to_remove_index = np.where(generate_mask(other_meta_data['raw_data']['train_s'], deleted_group))[0]
-    #     print(f"deleted group is {deleted_group} and flat version"
-    #           f" {other_meta_data['s_flatten_lookup'][tuple(deleted_group)]}")
-    #
-    #     other_meta_data['raw_data']['train_X'] = np.delete(other_meta_data['raw_data']['train_X'] , group_to_remove_index, 0)
-    #     other_meta_data['raw_data']['train_s'] = np.delete(other_meta_data['raw_data']['train_s'] , group_to_remove_index, 0)
-    #     other_meta_data['raw_data']['train_y'] = np.delete(other_meta_data['raw_data']['train_y'] , group_to_remove_index, 0)
+    if False:
+        deleted_group = [0,1,0,0]
+        group_to_remove_index = np.where(generate_mask(other_meta_data['raw_data']['train_s'], deleted_group))[0]
+        print(f"deleted group is {deleted_group} and flat version"
+              f" {other_meta_data['s_flatten_lookup'][tuple(deleted_group)]}")
+
+        other_meta_data['raw_data']['train_X'] = np.delete(other_meta_data['raw_data']['train_X'] , group_to_remove_index, 0)
+        other_meta_data['raw_data']['train_s'] = np.delete(other_meta_data['raw_data']['train_s'] , group_to_remove_index, 0)
+        other_meta_data['raw_data']['train_y'] = np.delete(other_meta_data['raw_data']['train_y'] , group_to_remove_index, 0)
 
     #other groups -> [0,1,1,1] and [1,1,0,0]
 
@@ -333,8 +332,8 @@ if __name__ == '__main__':
 
     all_models = {}
     input_dim = all_input_valid.shape[1]
-    # sigma_list = [1.0, 2.0, 4.0, 8.0, 16.0]
-    sigma_list = [1.0, 10.0, 20.0, 30.0, 40.0, 50.0]
+    sigma_list = [1.0, 2.0, 4.0, 8.0, 16.0]
+    # sigma_list = [1.0, 10.0, 20.0, 30.0, 40.0, 50.0]
     # sigma_list = [1.0, 5.0, 10.0, 20.0, 30.0]
     # sigma_list = [1.0, 10.0, 15.0, 20.0, 50.0]
 
@@ -551,8 +550,8 @@ if __name__ == '__main__':
 
 
 
-        # if balanced_accuracy_score(y_test, y_pred) < worst_accuracy:
-            # worst_accuracy = balanced_accuracy_score(y_test, y_pred)
+        if balanced_accuracy_score(y_test, y_pred) < worst_accuracy:
+            worst_accuracy = balanced_accuracy_score(y_test, y_pred)
             # torch.save(gen_model_positive.state_dict(), "dummy.pth")
             # torch.save(gen_model_negative.state_dict(), "dummy.pth")
             # pickle.dump(all_models, open(f"all_{dataset_name}.pt", 'wb'))
@@ -594,7 +593,7 @@ if __name__ == '__main__':
 
             average_accuracy.append(accuracy_score(y_test, y_pred))
 
-        print(np.mean(average_accuracy))
+        print(f"average accuracy is {np.mean(average_accuracy)}")
         if np.mean(average_accuracy) < worst_accuracy:
             worst_accuracy = np.mean(average_accuracy)
             # torch.save(gen_model_positive.state_dict(), "dummy.pth")

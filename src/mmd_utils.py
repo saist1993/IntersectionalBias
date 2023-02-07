@@ -121,16 +121,20 @@ class SimpleModelGenerator(nn.Module):
         elif number_of_params == 4:
             self.lambda_params = torch.nn.Parameter(torch.FloatTensor([0.25, 0.25, 0.25, 0.25]))
 
-        self.more_lambda_params = nn.ParameterList([torch.nn.Parameter(torch.FloatTensor(torch.ones(input_dim))) for i in
-                                   range(len(self.lambda_params))])
+        # self.more_lambda_params = nn.ParameterList([torch.nn.Parameter(torch.FloatTensor(torch.ones(input_dim))) for i in
+        #                            range(len(self.lambda_params))])
+
+        # self.more_lambda_params = torch.nn.Parameter(torch.FloatTensor(torch.ones(input_dim)))
+
+        self.dropout = nn.Dropout(p=0.2)
 
     def forward(self, other_examples):
         final_output = torch.tensor(0.0, requires_grad=True)
-        for param, group, more_params in zip(self.lambda_params, other_examples, self.more_lambda_params):
+        for param, group in zip(self.lambda_params, other_examples):
             x = group['input']
-            final_output = final_output + x
+            final_output = final_output + x*param
 
-        final_output = self.more_lambda_params[0]*final_output
+        # final_output = self.more_lambda_params*self.dropout(final_output)
 
         output = {
             'prediction': final_output,

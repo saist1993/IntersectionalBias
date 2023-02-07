@@ -722,10 +722,12 @@ class AugmentData:
 
 
             sub_routine(label_mask=label_1_group_mask, total_examples=total_positive_examples,
-                        max_number_of_examples=max_number_of_positive_examples, example_type="positive")
+                        max_number_of_examples=max_number_of_positive_examples, example_type="positive",
+                        mechanism=self.mmd_augmentation_mechanism)
 
             sub_routine(label_mask=label_0_group_mask, total_examples=total_negative_examples,
-                        max_number_of_examples=max_number_of_negative_examples, example_type='negative')
+                        max_number_of_examples=max_number_of_negative_examples, example_type='negative',
+                        mechanism=self.mmd_augmentation_mechanism)
 
         augmented_train_X = np.vstack(augmented_train_X)
         augmented_train_s = np.vstack(augmented_train_s)
