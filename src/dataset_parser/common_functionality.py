@@ -665,7 +665,7 @@ class AugmentData:
                     number_of_examples_to_sample = total_examples
 
                     index_of_selected_examples = np.random.choice(np.where(label_mask == True)[0],
-                                                                  size=max_number_of_examples,
+                                                                  size=number_of_examples_to_sample,
                                                                   replace=True)  # sample max number of positive examples
 
 
