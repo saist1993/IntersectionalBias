@@ -541,7 +541,7 @@ class AugmentData:
         self.common_func = AugmentDataCommonFunctionality()
 
         self.groups_not_to_augment = self.all_unique_group.tolist()
-        self.groups_not_to_augment.remove([1,0,0,1])
+        # self.groups_not_to_augment.remove([1,0,0,1])
         # self.groups_not_to_augment.remove([1, 1, 0, 1])
 
         #[1, 0, 0, 1]
@@ -662,8 +662,8 @@ class AugmentData:
 
                 if total_examples > max_number_of_examples or group.tolist() in self.groups_not_to_augment:   #
                     # then we only generate fake data
-                    # number_of_examples_to_sample = max_number_of_examples
-                    number_of_examples_to_sample = total_examples
+                    number_of_examples_to_sample = max_number_of_examples
+                    # number_of_examples_to_sample = total_examples
 
                     index_of_selected_examples = np.random.choice(np.where(label_mask == True)[0],
                                                                   size=number_of_examples_to_sample,
