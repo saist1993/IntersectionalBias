@@ -1,5 +1,6 @@
 # This file will simplify and make things more clear.
 import torch
+import random
 import numpy as np
 from tqdm.auto import tqdm
 
@@ -350,7 +351,29 @@ def erm_optimization_procedure(train_tilted_params):
 
     all_groups = []
 
+    all_label_augmented, all_aux_augmented, all_input_augmented, all_aux_flatten_augmented = train_tilted_params.other_params['all_label_augmented'],\
+        train_tilted_params.other_params['all_aux_augmented'],\
+        train_tilted_params.other_params['all_input_augmented'], train_tilted_params.other_params['all_aux_flatten_augmented']
+
+
+    all_label, all_aux, all_input, all_aux_flatten =  train_tilted_params.other_params['all_label'],\
+        train_tilted_params.other_params['all_aux'],\
+        train_tilted_params.other_params['all_input'], train_tilted_params.other_params['all_aux_flatten']
+
     for i in tqdm(range(train_tilted_params.other_params['number_of_iterations'])):
+
+        if bool(random.getrandbits(1)):
+            train_tilted_params.other_params['all_label'] = all_label_augmented
+            train_tilted_params.other_params['all_aux'] = all_aux_augmented
+            train_tilted_params.other_params['all_aux_flatten'] = np.asarray(all_aux_flatten_augmented)
+            train_tilted_params.other_params['all_input'] = all_input_augmented
+        else:
+            train_tilted_params.other_params['all_label'] = all_label
+            train_tilted_params.other_params['all_aux'] = all_aux
+            train_tilted_params.other_params['all_aux_flatten'] = np.asarray(all_aux_flatten)
+            train_tilted_params.other_params['all_input'] = all_input
+
+
         s_group_0, s_group_1 = group_sampling_procedure_func(
             train_tilted_params=train_tilted_params,
             global_weight=global_weight,
@@ -621,12 +644,12 @@ def orchestrator(training_loop_parameters: TrainingLoopParameters):
         training_loop_parameters.other_params['groups'] = [i for i in range(total_no_groups)]
 
 
-        if ep > 3:
-            training_loop_parameters.other_params['all_label'] = all_label_augmented
-            training_loop_parameters.other_params['all_aux'] = all_aux_augmented
-            training_loop_parameters.other_params['all_aux_flatten'] = np.asarray([training_loop_parameters.other_params['s_to_flattened_s'][tuple(i)]
-             for i in training_loop_parameters.other_params['all_aux_augmented']])
-            training_loop_parameters.other_params['all_input'] = all_input_augmented
+        # if ep%2 != 0:
+        #     training_loop_parameters.other_params['all_label'] = all_label_augmented
+        #     training_loop_parameters.other_params['all_aux'] = all_aux_augmented
+        #     training_loop_parameters.other_params['all_aux_flatten'] = np.asarray([training_loop_parameters.other_params['s_to_flattened_s'][tuple(i)]
+        #      for i in training_loop_parameters.other_params['all_aux_augmented']])
+        #     training_loop_parameters.other_params['all_input'] = all_input_augmented
 
 
         train_parameters = TrainParameters(
