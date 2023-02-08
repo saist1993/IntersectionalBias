@@ -57,7 +57,7 @@ if __name__ == '__main__':
     parser.add_argument('--log_file_name', '-log_file_name', help="log_file_name", type=Optional[str], default=None)
     parser.add_argument('--fairness_function', '-fairness_function', help="fairness_function", type=str, default='equal_opportunity')
     parser.add_argument('--version', '-version', help="version number", type=float, default=0.0)
-    parser.add_argument('--use_dropout', '-use_dropout', help="version number", type=float, default=0.0)
+    parser.add_argument('--use_dropout', '-use_dropout', help="version number", type=float, default=0.5)
     parser.add_argument('--per_group_label_number_of_examples', '-per_group_label_number_of_examples', help="version number", type=int, default=1000)
 
 
