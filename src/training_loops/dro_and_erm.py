@@ -365,9 +365,9 @@ def erm_optimization_procedure(train_tilted_params):
             group1=s_group_1
         )
 
-        if train_tilted_params.other_params['use_mixup_augmentation']:
-            items_group_0, items_group_1 = \
-                augment_current_data_via_mixup(train_tilted_params, s_group_0, s_group_1, items_group_0, items_group_1)
+        # if train_tilted_params.other_params['use_mixup_augmentation']:
+        #     items_group_0, items_group_1 = \
+        #         augment_current_data_via_mixup(train_tilted_params, s_group_0, s_group_1, items_group_0, items_group_1)
 
         if group_sampling_procedure == 'random_single_group':
             assert s_group_1 is None
@@ -565,7 +565,7 @@ def orchestrator(training_loop_parameters: TrainingLoopParameters):
         update_only_via_reg = False
 
 
-    if "only_generated_data" in method:
+    if "mixup_generated_and_real_data" in method:
         use_mixup_augmentation = True
         all_input_augmented = training_loop_parameters.iterators[0]['train_X_augmented']
         all_label_augmented = training_loop_parameters.iterators[0]['train_y_augmented']
@@ -619,6 +619,14 @@ def orchestrator(training_loop_parameters: TrainingLoopParameters):
         training_loop_parameters.other_params['train_iterator'] = training_loop_parameters.iterators[0][
             'train_iterator']
         training_loop_parameters.other_params['groups'] = [i for i in range(total_no_groups)]
+
+
+        if True:
+            training_loop_parameters.other_params['all_label'] = all_label_augmented
+            training_loop_parameters.other_params['all_aux'] = all_aux_augmented
+            training_loop_parameters.other_params['all_aux_flatten'] = np.asarray([training_loop_parameters.other_params['s_to_flattened_s'][tuple(i)]
+             for i in training_loop_parameters.other_params['all_aux_augmented']])
+            training_loop_parameters.other_params['all_input'] = all_input_augmented
 
 
         train_parameters = TrainParameters(

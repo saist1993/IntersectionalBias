@@ -549,9 +549,9 @@ class AugmentData:
         self.common_func = AugmentDataCommonFunctionality()
 
         self.groups_not_to_augment = self.all_unique_group.tolist()
-        self.groups_not_to_augment.remove([1,0,0,1])
-        # self.groups_not_to_augment = []
-        self.groups_not_to_augment.remove([1, 0, 0, 0])
+        # self.groups_not_to_augment.remove([1,0,0,1])
+        self.groups_not_to_augment = []
+        # self.groups_not_to_augment.remove([1, 0, 0, 0])
 
         #[1, 0, 0, 1]
 
@@ -667,8 +667,8 @@ class AugmentData:
 
             def sub_routine(label_mask, total_examples, max_number_of_examples, example_type, mechanism="only_generated_data"):
 
-                # if mechanism == "only_generated_data":
-                #     total_examples = 0
+                if mechanism == "only_generated_data":
+                    total_examples = 0
 
                 if total_examples > max_number_of_examples or group.tolist() in self.groups_not_to_augment:   #
                     # then we only generate fake data
