@@ -462,7 +462,7 @@ if __name__ == '__main__':
     parser.add_argument('--per_group_label_number_of_examples', '-per_group_label_number_of_examples',
                         help="number of example to generate per group and label = 000+ -> 1000",
                         type=int,
-                        default=1000)
+                        default=3000)
 
 
 

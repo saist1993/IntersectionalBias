@@ -453,10 +453,12 @@ class AugmentDataCommonFunctionality:
 
 
     @staticmethod
-    def generate_examples_mmd(s, gen_model, number_of_examples, other_meta_data, classifier_models, label, confidence_score=0.5):
+    def generate_examples_mmd(s, gen_model, number_of_examples, other_meta_data, classifier_models, label, confidence_score=0.3):
         # other_leaf_node = AugmentDataCommonFunctionality.generate_combinations_only_leaf_node(s, k=1)
         other_leaf_node = AugmentDataCommonFunctionality.generate_abstract_node(s, k=1)
         assert number_of_examples >= 1
+
+        real_vs_fake, task = classifier_models
         def common_procedure(label):
 
 
@@ -480,7 +482,9 @@ class AugmentDataCommonFunctionality:
                 generated_examples = gen_model(all_other_leaf_node_example_positive)['prediction'].detach().numpy()
                 if counter < 100:
                     # the classifier is confident that this is real. Which means fake looks very much like real
-                    relevant_index = np.where((classifier_models.predict_proba(generated_examples)[:, label] < confidence_score))
+                    # relevant_index = np.where((real_vs_fake.predict_proba(generated_examples)[:, 1] > confidence_score) & (task.predict_proba(generated_examples)[:, label] < 0.7))
+                    # relevant_index = np.where(classifier_models.predict(generated_examples) != label)
+                    relevant_index = np.where((real_vs_fake.predict_proba(generated_examples)[:, 1] > confidence_score))
                 else:
                     relevant_index = np.where(
                         classifier_models.predict_proba(generated_examples)[:, label] > 0.0)
@@ -546,7 +550,8 @@ class AugmentData:
 
         self.groups_not_to_augment = self.all_unique_group.tolist()
         self.groups_not_to_augment.remove([1,0,0,1])
-        # self.groups_not_to_augment.remove([1, 1, 0, 1])
+        # self.groups_not_to_augment = []
+        self.groups_not_to_augment.remove([1, 0, 0, 0])
 
         #[1, 0, 0, 1]
 
@@ -642,8 +647,8 @@ class AugmentData:
         all_models = pickle.load(open(f"all_{self.dataset_name.replace('_augmented', '')}.pt", "rb"))
 
 
-        # classifier_models = pickle.load(open(f"real_vs_fake_{self.dataset_name.replace('_augmented', '')}.sklearn", "rb"))
-        classifier_models = pickle.load(open(f"task_classifier_{self.dataset_name.replace('_augmented', '')}.sklearn", "rb"))
+        classifier_models = pickle.load(open(f"real_vs_fake_{self.dataset_name.replace('_augmented', '')}.sklearn", "rb"))
+        classifier_models_2 = pickle.load(open(f"task_classifier_{self.dataset_name.replace('_augmented', '')}.sklearn", "rb"))
 
         # all_unique_groups = np.unique(self.other_meta_data['raw_data']['train_s'], axis=0)
 
@@ -667,8 +672,8 @@ class AugmentData:
 
                 if total_examples > max_number_of_examples or group.tolist() in self.groups_not_to_augment:   #
                     # then we only generate fake data
-                    # number_of_examples_to_sample = max_number_of_examples
-                    number_of_examples_to_sample = total_examples
+                    number_of_examples_to_sample = max_number_of_examples
+                    # number_of_examples_to_sample = total_examples
 
                     index_of_selected_examples = np.random.choice(np.where(label_mask == True)[0],
                                                                   size=number_of_examples_to_sample,
@@ -703,11 +708,11 @@ class AugmentData:
                     if example_type == 'positive':
                         augmented_input = self.common_func.generate_examples_mmd(tuple(group), all_models['a']['gen_model_positive'],
                                                                                 number_of_examples_to_generate,
-                                                                                self.other_meta_data, classifier_models, 1)
+                                                                                self.other_meta_data, [classifier_models, classifier_models_2], 1)
                     elif example_type == 'negative':
                         augmented_input = self.common_func.generate_examples_mmd(tuple(group), all_models['a']['gen_model_negative'],
                                                                                 number_of_examples_to_generate,
-                                                                                self.other_meta_data, classifier_models, 0)
+                                                                                self.other_meta_data, [classifier_models, classifier_models_2], 0)
                     else:
                         raise NotImplementedError
 
