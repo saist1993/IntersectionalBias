@@ -621,7 +621,7 @@ def orchestrator(training_loop_parameters: TrainingLoopParameters):
         training_loop_parameters.other_params['groups'] = [i for i in range(total_no_groups)]
 
 
-        if True:
+        if ep > 3:
             training_loop_parameters.other_params['all_label'] = all_label_augmented
             training_loop_parameters.other_params['all_aux'] = all_aux_augmented
             training_loop_parameters.other_params['all_aux_flatten'] = np.asarray([training_loop_parameters.other_params['s_to_flattened_s'][tuple(i)]
