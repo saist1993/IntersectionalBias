@@ -453,7 +453,7 @@ class AugmentDataCommonFunctionality:
 
 
     @staticmethod
-    def generate_examples_mmd(s, gen_model, number_of_examples, other_meta_data, classifier_models, label, confidence_score=0.1):
+    def generate_examples_mmd(s, gen_model, number_of_examples, other_meta_data, classifier_models, label, confidence_score=0.5):
         # other_leaf_node = AugmentDataCommonFunctionality.generate_combinations_only_leaf_node(s, k=1)
         other_leaf_node = AugmentDataCommonFunctionality.generate_abstract_node(s, k=1)
         assert number_of_examples >= 1
@@ -480,10 +480,10 @@ class AugmentDataCommonFunctionality:
                 generated_examples = gen_model(all_other_leaf_node_example_positive)['prediction'].detach().numpy()
                 if counter < 100:
                     # the classifier is confident that this is real. Which means fake looks very much like real
-                    relevant_index = np.where((classifier_models.predict_proba(generated_examples)[:, 1] > confidence_score))
+                    relevant_index = np.where((classifier_models.predict_proba(generated_examples)[:, label] < confidence_score))
                 else:
                     relevant_index = np.where(
-                        classifier_models.predict_proba(generated_examples)[:, 1] > 0.0)
+                        classifier_models.predict_proba(generated_examples)[:, label] > 0.0)
                 selected_examples += generated_examples[relevant_index].tolist()
                 # selected_examples += generated_examples.tolist()
                 counter += 1
@@ -642,7 +642,8 @@ class AugmentData:
         all_models = pickle.load(open(f"all_{self.dataset_name.replace('_augmented', '')}.pt", "rb"))
 
 
-        classifier_models = pickle.load(open(f"real_vs_fake_{self.dataset_name.replace('_augmented', '')}.sklearn", "rb"))
+        # classifier_models = pickle.load(open(f"real_vs_fake_{self.dataset_name.replace('_augmented', '')}.sklearn", "rb"))
+        classifier_models = pickle.load(open(f"task_classifier_{self.dataset_name.replace('_augmented', '')}.sklearn", "rb"))
 
         # all_unique_groups = np.unique(self.other_meta_data['raw_data']['train_s'], axis=0)
 
