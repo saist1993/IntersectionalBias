@@ -542,6 +542,7 @@ class AugmentData:
 
         self.groups_not_to_augment = self.all_unique_group.tolist()
         self.groups_not_to_augment.remove([1,0,0,1])
+        self.groups_not_to_augment.remove([1, 1, 0, 1])
 
         #[1, 0, 0, 1]
 
