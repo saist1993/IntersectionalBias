@@ -362,7 +362,7 @@ def erm_optimization_procedure(train_tilted_params):
 
     for i in tqdm(range(train_tilted_params.other_params['number_of_iterations'])):
 
-        if bool(random.getrandbits(1)):
+        if True:
             train_tilted_params.other_params['all_label'] = all_label_augmented
             train_tilted_params.other_params['all_aux'] = all_aux_augmented
             train_tilted_params.other_params['all_aux_flatten'] = np.asarray(all_aux_flatten_augmented)
