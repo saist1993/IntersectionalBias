@@ -453,7 +453,7 @@ class AugmentDataCommonFunctionality:
 
 
     @staticmethod
-    def generate_examples_mmd(s, gen_model, number_of_examples, other_meta_data, classifier_models, confidence_score=0.1):
+    def generate_examples_mmd(s, gen_model, number_of_examples, other_meta_data, classifier_models, label, confidence_score=0.1):
         # other_leaf_node = AugmentDataCommonFunctionality.generate_combinations_only_leaf_node(s, k=1)
         other_leaf_node = AugmentDataCommonFunctionality.generate_abstract_node(s, k=1)
         assert number_of_examples >= 1
@@ -489,10 +489,14 @@ class AugmentDataCommonFunctionality:
                 counter += 1
             return selected_examples[:number_of_examples]
 
-        positive_examples = common_procedure(label=1)
-        negative_examples = common_procedure(label=0)
+        if label == 1:
+            augmented_examples = common_procedure(label=1)
+        elif label == 0:
+            augmented_examples = common_procedure(label=0)
+        else:
+            raise NotImplementedError
 
-        return positive_examples, negative_examples
+        return augmented_examples
 
 
 def create_mask(data, condition):
@@ -541,7 +545,7 @@ class AugmentData:
         self.common_func = AugmentDataCommonFunctionality()
 
         self.groups_not_to_augment = self.all_unique_group.tolist()
-        # self.groups_not_to_augment.remove([1,0,0,1])
+        self.groups_not_to_augment.remove([1,0,0,1])
         # self.groups_not_to_augment.remove([1, 1, 0, 1])
 
         #[1, 0, 0, 1]
@@ -662,8 +666,8 @@ class AugmentData:
 
                 if total_examples > max_number_of_examples or group.tolist() in self.groups_not_to_augment:   #
                     # then we only generate fake data
-                    number_of_examples_to_sample = max_number_of_examples
-                    # number_of_examples_to_sample = total_examples
+                    # number_of_examples_to_sample = max_number_of_examples
+                    number_of_examples_to_sample = total_examples
 
                     index_of_selected_examples = np.random.choice(np.where(label_mask == True)[0],
                                                                   size=number_of_examples_to_sample,
@@ -696,13 +700,13 @@ class AugmentData:
 
                     # now generate remaining examples!
                     if example_type == 'positive':
-                        augmented_input, _ = self.common_func.generate_examples_mmd(tuple(group), all_models['a']['gen_model_positive'],
+                        augmented_input = self.common_func.generate_examples_mmd(tuple(group), all_models['a']['gen_model_positive'],
                                                                                 number_of_examples_to_generate,
-                                                                                self.other_meta_data, classifier_models)
+                                                                                self.other_meta_data, classifier_models, 1)
                     elif example_type == 'negative':
-                        _, augmented_input = self.common_func.generate_examples_mmd(tuple(group), all_models['a']['gen_model_negative'],
+                        augmented_input = self.common_func.generate_examples_mmd(tuple(group), all_models['a']['gen_model_negative'],
                                                                                 number_of_examples_to_generate,
-                                                                                self.other_meta_data, classifier_models)
+                                                                                self.other_meta_data, classifier_models, 0)
                     else:
                         raise NotImplementedError
 
