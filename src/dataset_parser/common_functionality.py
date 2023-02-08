@@ -453,7 +453,7 @@ class AugmentDataCommonFunctionality:
 
 
     @staticmethod
-    def generate_examples_mmd(s, gen_model, number_of_examples, other_meta_data, classifier_models, confidence_score=0.8):
+    def generate_examples_mmd(s, gen_model, number_of_examples, other_meta_data, classifier_models, confidence_score=0.1):
         # other_leaf_node = AugmentDataCommonFunctionality.generate_combinations_only_leaf_node(s, k=1)
         other_leaf_node = AugmentDataCommonFunctionality.generate_abstract_node(s, k=1)
         assert number_of_examples >= 1
@@ -542,7 +542,7 @@ class AugmentData:
 
         self.groups_not_to_augment = self.all_unique_group.tolist()
         self.groups_not_to_augment.remove([1,0,0,1])
-        self.groups_not_to_augment.remove([1, 1, 0, 1])
+        # self.groups_not_to_augment.remove([1, 1, 0, 1])
 
         #[1, 0, 0, 1]
 

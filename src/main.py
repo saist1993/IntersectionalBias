@@ -452,7 +452,7 @@ if __name__ == '__main__':
     parser.add_argument('--use_dropout', '-use_dropout',
                         help="dropout(p=use_dropout)",
                         type=float,
-                        default=0.2)
+                        default=0.5)
 
     parser.add_argument('--use_batch_norm', '-use_batch_norm',
                         help="batch norm of 0.0 means no norm else batch norm is applied",
