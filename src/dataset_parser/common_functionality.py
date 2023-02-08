@@ -540,6 +540,11 @@ class AugmentData:
 
         self.common_func = AugmentDataCommonFunctionality()
 
+        self.groups_not_to_augment = self.all_unique_group.tolist()
+        self.groups_not_to_augment.remove([1,0,0,1])
+
+        #[1, 0, 0, 1]
+
     def run(self):
 
         train_X, train_y, train_s = self.data_augmentation_via_mmd()
@@ -654,11 +659,11 @@ class AugmentData:
                 # if mechanism == "only_generated_data":
                 #     total_examples = 0
 
-                if total_examples > max_number_of_examples:   #
+                if total_examples > max_number_of_examples or group.tolist() in self.groups_not_to_augment:   #
                     # then we only generate fake data
                     index_of_selected_examples = np.random.choice(np.where(label_mask == True)[0],
                                                                   size=max_number_of_examples,
-                                                                  replace=False)  # sample max number of positive examples
+                                                                  replace=True)  # sample max number of positive examples
 
                     augmented_train_X.append(self.other_meta_data['raw_data']['train_X'][index_of_selected_examples])
                     augmented_train_y.append(self.other_meta_data['raw_data']['train_y'][index_of_selected_examples])
