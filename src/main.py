@@ -262,7 +262,7 @@ def runner(runner_arguments:RunnerArguments):
 
 
 
-    if "mixup_generated_and_real_data" in runner_arguments.method:
+    if "only_generated_data" in runner_arguments.method:
         mmd_augmentation_mechanism = "only_generated_data"
     else:
         mmd_augmentation_mechanism = "both_generated_and_real_data"
@@ -421,7 +421,7 @@ if __name__ == '__main__':
     parser.add_argument('--fairness_lambda', '-fairness_lambda', help="the lambda in the fairness loss equation", type=float,
                         default=0.0)
     parser.add_argument('--method', '-method', help="unconstrained/adversarial_single/adversarial_group", type=str,
-                        default='erm_random_single_group_equal_sampling')
+                        default='erm_random_single_group_equal_sampling_only_generated_data')
     parser.add_argument('--save_model_as', '-save_model_as', help="unconstrained/adversarial_single/adversarial_group", type=str,
                         default=None)
     parser.add_argument('--dataset_name', '-dataset_name', help="twitter_hate_speech/adult_multi_group/celeb_multigroup_v3",

@@ -644,12 +644,24 @@ def orchestrator(training_loop_parameters: TrainingLoopParameters):
         training_loop_parameters.other_params['groups'] = [i for i in range(total_no_groups)]
 
 
-        # if ep%2 != 0:
-        #     training_loop_parameters.other_params['all_label'] = all_label_augmented
-        #     training_loop_parameters.other_params['all_aux'] = all_aux_augmented
-        #     training_loop_parameters.other_params['all_aux_flatten'] = np.asarray([training_loop_parameters.other_params['s_to_flattened_s'][tuple(i)]
-        #      for i in training_loop_parameters.other_params['all_aux_augmented']])
-        #     training_loop_parameters.other_params['all_input'] = all_input_augmented
+        if "only_generated_data" in method:
+
+            all_input_augmented = training_loop_parameters.iterators[0]['train_X_augmented']
+            all_label_augmented = training_loop_parameters.iterators[0]['train_y_augmented']
+            all_aux_augmented = training_loop_parameters.iterators[0]['train_s_augmented']
+            training_loop_parameters.other_params['all_label_augmented'] = all_label_augmented
+            training_loop_parameters.other_params['all_aux_augmented'] = all_aux_augmented
+            training_loop_parameters.other_params['all_aux_flatten_augmented'] = \
+                [training_loop_parameters.other_params['s_to_flattened_s'][tuple(i)]
+                 for i in training_loop_parameters.other_params['all_aux_augmented']]
+            training_loop_parameters.other_params['all_input_augmented'] = all_input_augmented
+
+
+            training_loop_parameters.other_params['all_label'] = all_label_augmented
+            training_loop_parameters.other_params['all_aux'] = all_aux_augmented
+            training_loop_parameters.other_params['all_aux_flatten'] = np.asarray([training_loop_parameters.other_params['s_to_flattened_s'][tuple(i)]
+             for i in training_loop_parameters.other_params['all_aux_augmented']])
+            training_loop_parameters.other_params['all_input'] = all_input_augmented
 
 
         train_parameters = TrainParameters(
