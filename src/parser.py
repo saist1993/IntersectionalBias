@@ -88,7 +88,7 @@ def temp_table_generator(dataset_name, fairness_function):
                'train_only_group_dro_with_data_augmentation_via_mixup_super_group_and_example_similarity_v1',
                'train_only_group_dro_with_data_augmentation_via_mixup_super_group_and_example_similarity_v2',
                'erm_random_single_group_equal_sampling_only_generated_data_mixup_generated_and_real_data',
-        'erm_random_group_equal_sampling_only_generated_data_mixup_generated_and_real_data_mixup_regularizer',
+               'erm_random_group_equal_sampling_only_generated_data_mixup_generated_and_real_data_mixup_regularizer',
                ]
 
     methods = [
@@ -186,8 +186,8 @@ def temp_table_generator(dataset_name, fairness_function):
 # adult_multi_group_equal_odds = temp_table_generator('adult_multi_group', 'equal_odds')
 # adult_multi_group_equal_opportunity = temp_table_generator('adult_multi_group', 'equal_opportunity')
 # #
-twitter_hate_speech_equal_odds = temp_table_generator('twitter_hate_speech_augmented', 'equal_odds')
-twitter_hate_speech_equal_opportunity = temp_table_generator('twitter_hate_speech_augmented', 'equal_opportunity')
+twitter_hate_speech_equal_odds = temp_table_generator('twitter_hate_speech', 'equal_odds')
+twitter_hate_speech_equal_opportunity = temp_table_generator('twitter_hate_speech', 'equal_opportunity')
 # # #
 # celeb_multigroup_v3_equal_odds = temp_table_generator('celeb_multigroup_v3', 'equal_odds')
 # celeb_multigroup_v3_equal_opportunity = temp_table_generator('celeb_multigroup_v3', 'equal_opportunity')
