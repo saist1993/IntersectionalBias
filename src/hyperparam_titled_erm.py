@@ -266,7 +266,10 @@ if __name__ == '__main__':
             mixup_scales = [0.01, 0.001, 0.02, 0.005]
             titled_scales = [0.01, 0.001]
 
-    if args.method in ['erm_random_single_group_random_sampling', 'erm_random_single_group_equal_sampling', 'erm_random_single_group_equal_sampling_only_generated_data_mixup_generated_and_real_data']:
+    if args.method in ['erm_random_single_group_random_sampling',
+                       'erm_random_single_group_equal_sampling',
+                       'erm_random_single_group_equal_sampling_only_generated_data_mixup_generated_and_real_data',
+                       'erm_random_single_group_equal_sampling_only_generated_data']:
         mixup_scales = [0.0]
         titled_scales = [0.0]
 
