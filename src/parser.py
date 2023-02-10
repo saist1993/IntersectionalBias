@@ -101,7 +101,7 @@ def temp_table_generator(dataset_name, fairness_function):
         # 'only_mixup_based_on_distance'
         # 'erm_random_single_group_random_sampling',
         'erm_random_single_group_equal_sampling',
-        # 'erm_random_group_equal_sampling_mixup_regularizer',
+        'erm_random_group_equal_sampling_mixup_regularizer',
         # 'erm_distance_group_equal_sampling_mixup_regularizer_dynamic_distance',
         # 'erm_distance_group_equal_sampling_mixup_regularizer_static_distance',
         # 'dro_random_single_group_random_sampling',
