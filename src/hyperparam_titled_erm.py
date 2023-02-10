@@ -280,7 +280,8 @@ if __name__ == '__main__':
 
     if args.method in ['erm_random_group_equal_sampling_mixup_regularizer',
                        'erm_distance_group_equal_sampling_mixup_regularizer_dynamic_distance',
-                       'erm_distance_group_equal_sampling_mixup_regularizer_static_distance']:
+                       'erm_distance_group_equal_sampling_mixup_regularizer_static_distance',
+                       'erm_random_group_equal_sampling_only_generated_data_mixup_generated_and_real_data_mixup_regularizer']:
         mixup_scales = [1.0, 5.0, 10.0, 20.0, 30.0, 40.0, 50.0]
         titled_scales = [0.0]
 
