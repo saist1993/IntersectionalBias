@@ -361,17 +361,17 @@ def erm_optimization_procedure(train_tilted_params):
         train_tilted_params.other_params['all_input'], train_tilted_params.other_params['all_aux_flatten']
 
     for i in tqdm(range(train_tilted_params.other_params['number_of_iterations'])):
-
-        if True:
-            train_tilted_params.other_params['all_label'] = all_label_augmented
-            train_tilted_params.other_params['all_aux'] = all_aux_augmented
-            train_tilted_params.other_params['all_aux_flatten'] = np.asarray(all_aux_flatten_augmented)
-            train_tilted_params.other_params['all_input'] = all_input_augmented
-        else:
-            train_tilted_params.other_params['all_label'] = all_label
-            train_tilted_params.other_params['all_aux'] = all_aux
-            train_tilted_params.other_params['all_aux_flatten'] = np.asarray(all_aux_flatten)
-            train_tilted_params.other_params['all_input'] = all_input
+        #
+        # if i%20 != 0:    # bool(random.getrandbits(1))
+        #     train_tilted_params.other_params['all_label'] = all_label_augmented
+        #     train_tilted_params.other_params['all_aux'] = all_aux_augmented
+        #     train_tilted_params.other_params['all_aux_flatten'] = np.asarray(all_aux_flatten_augmented)
+        #     train_tilted_params.other_params['all_input'] = all_input_augmented
+        # else:
+        #     train_tilted_params.other_params['all_label'] = all_label
+        #     train_tilted_params.other_params['all_aux'] = all_aux
+        #     train_tilted_params.other_params['all_aux_flatten'] = np.asarray(all_aux_flatten)
+        #     train_tilted_params.other_params['all_input'] = all_input
 
 
         s_group_0, s_group_1 = group_sampling_procedure_func(
@@ -388,9 +388,9 @@ def erm_optimization_procedure(train_tilted_params):
             group1=s_group_1
         )
 
-        # if train_tilted_params.other_params['use_mixup_augmentation']:
-        #     items_group_0, items_group_1 = \
-        #         augment_current_data_via_mixup(train_tilted_params, s_group_0, s_group_1, items_group_0, items_group_1)
+        if train_tilted_params.other_params['use_mixup_augmentation']:
+            items_group_0, items_group_1 = \
+                augment_current_data_via_mixup(train_tilted_params, s_group_0, s_group_1, items_group_0, items_group_1)
 
         if group_sampling_procedure == 'random_single_group':
             assert s_group_1 is None
@@ -619,7 +619,7 @@ def orchestrator(training_loop_parameters: TrainingLoopParameters):
         # training_loop_parameters.other_params['number_of_iterations'] = int(
         #     size_of_training_dataset / training_loop_parameters.other_params['batch_size'])
 
-        training_loop_parameters.other_params['number_of_iterations'] = 100
+        training_loop_parameters.other_params['number_of_iterations'] = 25
 
         training_loop_parameters.other_params['global_weight'] = global_weight
         training_loop_parameters.other_params['global_loss'] = global_loss

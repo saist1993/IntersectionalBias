@@ -452,7 +452,7 @@ if __name__ == '__main__':
     parser.add_argument('--use_dropout', '-use_dropout',
                         help="dropout(p=use_dropout)",
                         type=float,
-                        default=0.5)
+                        default=0.3)
 
     parser.add_argument('--use_batch_norm', '-use_batch_norm',
                         help="batch norm of 0.0 means no norm else batch norm is applied",
@@ -462,7 +462,7 @@ if __name__ == '__main__':
     parser.add_argument('--per_group_label_number_of_examples', '-per_group_label_number_of_examples',
                         help="number of example to generate per group and label = 000+ -> 1000",
                         type=int,
-                        default=1000)
+                        default=2000)
 
 
 

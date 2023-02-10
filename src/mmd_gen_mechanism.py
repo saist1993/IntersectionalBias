@@ -180,13 +180,13 @@ class AuxilaryFunction:
         #         [other_meta_data['s_flatten_lookup'][tuple(i)] for i in other_meta_data['raw_data']['valid_s']]),
         #     number_of_positive_examples=int(batch_size / 2), number_of_negative_examples=int(batch_size / 2))
 
-        # all_label = np.hstack([other_meta_data['raw_data']['valid_y'], other_meta_data['raw_data']['train_y']])
-        # all_aux = np.vstack([other_meta_data['raw_data']['valid_s'], other_meta_data['raw_data']['train_s']])
-        # all_input = np.vstack([other_meta_data['raw_data']['valid_X'], other_meta_data['raw_data']['train_X']])
+        all_label = np.hstack([other_meta_data['raw_data']['valid_y'], other_meta_data['raw_data']['train_y']])
+        all_aux = np.vstack([other_meta_data['raw_data']['valid_s'], other_meta_data['raw_data']['train_s']])
+        all_input = np.vstack([other_meta_data['raw_data']['valid_X'], other_meta_data['raw_data']['train_X']])
         #
-        all_label = other_meta_data['raw_data']['train_y']
-        all_aux = other_meta_data['raw_data']['train_s']
-        all_input = other_meta_data['raw_data']['train_X']
+        # all_label = other_meta_data['raw_data']['train_y']
+        # all_aux = other_meta_data['raw_data']['train_s']
+        # all_input = other_meta_data['raw_data']['train_X']
 
         # all_label = other_meta_data['raw_data']['valid_y']
         # all_aux = other_meta_data['raw_data']['valid_s']
@@ -602,7 +602,7 @@ if __name__ == '__main__':
             worst_accuracy = np.mean(average_accuracy)
             # torch.save(gen_model_positive.state_dict(), "dummy.pth")
             # torch.save(gen_model_negative.state_dict(), "dummy.pth")
-            pickle.dump(all_models, open(f"all_{dataset_name}.pt", 'wb'))
-            pickle.dump(clf, open(f"real_vs_fake_{dataset_name}.sklearn", 'wb'))
+            pickle.dump(all_models, open(f"train_and_valid_all_{dataset_name}.pt", 'wb'))
+            pickle.dump(clf, open(f"train_and_valid_real_vs_fake_{dataset_name}.sklearn", 'wb'))
 
 
