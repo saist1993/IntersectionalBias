@@ -644,12 +644,12 @@ class AugmentData:
         # gen_model_negative = SimpleModelGenerator(input_dim=51)
         # gen_model_negative.load_state_dict(torch.load("gen_model_adult_negative.pth"))
 
-        # all_models = pickle.load(open(f"all_{self.dataset_name.replace('_augmented', '')}.pt", "rb"))
-        all_models = pickle.load(open(f"train_and_valid_all_{self.dataset_name.replace('_augmented', '')}.pt", "rb"))
+        all_models = pickle.load(open(f"all_{self.dataset_name.replace('_augmented', '')}.pt", "rb"))
+        # all_models = pickle.load(open(f"train_and_valid_all_{self.dataset_name.replace('_augmented', '')}.pt", "rb"))
 
 
-        # classifier_models = pickle.load(open(f"real_vs_fake_{self.dataset_name.replace('_augmented', '')}.sklearn", "rb"))
-        classifier_models = pickle.load(open(f"train_and_valid_real_vs_fake_{self.dataset_name.replace('_augmented', '')}.sklearn", "rb"))
+        classifier_models = pickle.load(open(f"real_vs_fake_{self.dataset_name.replace('_augmented', '')}.sklearn", "rb"))
+        # classifier_models = pickle.load(open(f"train_and_valid_real_vs_fake_{self.dataset_name.replace('_augmented', '')}.sklearn", "rb"))
         classifier_models_2 = pickle.load(open(f"task_classifier_{self.dataset_name.replace('_augmented', '')}.sklearn", "rb"))
 
         # all_unique_groups = np.unique(self.other_meta_data['raw_data']['train_s'], axis=0)
