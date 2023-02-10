@@ -86,7 +86,9 @@ def temp_table_generator(dataset_name, fairness_function):
                'train_only_group_dro_with_super_group',
                'train_only_group_dro_with_mixup_regularizer_super_group',
                'train_only_group_dro_with_data_augmentation_via_mixup_super_group_and_example_similarity_v1',
-                'train_only_group_dro_with_data_augmentation_via_mixup_super_group_and_example_similarity_v2'
+               'train_only_group_dro_with_data_augmentation_via_mixup_super_group_and_example_similarity_v2',
+               'erm_random_single_group_equal_sampling_only_generated_data_mixup_generated_and_real_data',
+        'erm_random_group_equal_sampling_only_generated_data_mixup_generated_and_real_data_mixup_regularizer',
                ]
 
     methods = [

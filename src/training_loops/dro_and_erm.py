@@ -351,14 +351,14 @@ def erm_optimization_procedure(train_tilted_params):
 
     all_groups = []
 
-    all_label_augmented, all_aux_augmented, all_input_augmented, all_aux_flatten_augmented = train_tilted_params.other_params['all_label_augmented'],\
-        train_tilted_params.other_params['all_aux_augmented'],\
-        train_tilted_params.other_params['all_input_augmented'], train_tilted_params.other_params['all_aux_flatten_augmented']
+    # all_label_augmented, all_aux_augmented, all_input_augmented, all_aux_flatten_augmented = train_tilted_params.other_params['all_label_augmented'],\
+    #     train_tilted_params.other_params['all_aux_augmented'],\
+    #     train_tilted_params.other_params['all_input_augmented'], train_tilted_params.other_params['all_aux_flatten_augmented']
 
 
-    all_label, all_aux, all_input, all_aux_flatten =  train_tilted_params.other_params['all_label'],\
-        train_tilted_params.other_params['all_aux'],\
-        train_tilted_params.other_params['all_input'], train_tilted_params.other_params['all_aux_flatten']
+    # all_label, all_aux, all_input, all_aux_flatten =  train_tilted_params.other_params['all_label'],\
+    #     train_tilted_params.other_params['all_aux'],\
+    #     train_tilted_params.other_params['all_input'], train_tilted_params.other_params['all_aux_flatten']
 
     for i in tqdm(range(train_tilted_params.other_params['number_of_iterations'])):
         #
