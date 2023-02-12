@@ -351,9 +351,9 @@ def erm_optimization_procedure(train_tilted_params):
 
     all_groups = []
 
-    # all_label_augmented, all_aux_augmented, all_input_augmented, all_aux_flatten_augmented = train_tilted_params.other_params['all_label_augmented'],\
-    #     train_tilted_params.other_params['all_aux_augmented'],\
-    #     train_tilted_params.other_params['all_input_augmented'], train_tilted_params.other_params['all_aux_flatten_augmented']
+    all_label_augmented, all_aux_augmented, all_input_augmented, all_aux_flatten_augmented = train_tilted_params.other_params['all_label_augmented'],\
+        train_tilted_params.other_params['all_aux_augmented'],\
+        train_tilted_params.other_params['all_input_augmented'], train_tilted_params.other_params['all_aux_flatten_augmented']
 
 
     # all_label, all_aux, all_input, all_aux_flatten =  train_tilted_params.other_params['all_label'],\
@@ -362,16 +362,16 @@ def erm_optimization_procedure(train_tilted_params):
 
     for i in tqdm(range(train_tilted_params.other_params['number_of_iterations'])):
         #
-        # if i%20 != 0:    # bool(random.getrandbits(1))
+        # if False:    # bool(random.getrandbits(1)), i%20 != 0
         #     train_tilted_params.other_params['all_label'] = all_label_augmented
         #     train_tilted_params.other_params['all_aux'] = all_aux_augmented
         #     train_tilted_params.other_params['all_aux_flatten'] = np.asarray(all_aux_flatten_augmented)
         #     train_tilted_params.other_params['all_input'] = all_input_augmented
-        # else:
-        #     train_tilted_params.other_params['all_label'] = all_label
-        #     train_tilted_params.other_params['all_aux'] = all_aux
-        #     train_tilted_params.other_params['all_aux_flatten'] = np.asarray(all_aux_flatten)
-        #     train_tilted_params.other_params['all_input'] = all_input
+        # # else:
+        # #     train_tilted_params.other_params['all_label'] = all_label
+        # #     train_tilted_params.other_params['all_aux'] = all_aux
+        # #     train_tilted_params.other_params['all_aux_flatten'] = np.asarray(all_aux_flatten)
+        # #     train_tilted_params.other_params['all_input'] = all_input
 
 
         s_group_0, s_group_1 = group_sampling_procedure_func(
