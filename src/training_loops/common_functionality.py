@@ -576,12 +576,12 @@ def augment_current_data_via_mixup(train_tilted_params, s_group_0, s_group_1, it
         alpha = 1.0
         gamma = beta(alpha, alpha)
 
-        # if gamma > (1-gamma):
-        #     input_x_mix = items['input']*gamma + torch.FloatTensor(relevent_augmented_X)*(1-gamma)
-        # else:
-        #     input_x_mix = items['input'] * (1-gamma) + torch.FloatTensor(relevent_augmented_X) * gamma
+        if gamma > (1-gamma):
+            input_x_mix = items['input']*gamma + torch.FloatTensor(relevent_augmented_X)*(1-gamma)
+        else:
+            input_x_mix = items['input'] * (1-gamma) + torch.FloatTensor(relevent_augmented_X) * gamma
 
-        input_x_mix = items['input'] * gamma + torch.FloatTensor(relevent_augmented_X) * (1 - gamma)
+        # input_x_mix = items['input'] * gamma + torch.FloatTensor(relevent_augmented_X) * (1 - gamma)
 
         items['input'] = input_x_mix
 

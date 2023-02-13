@@ -335,7 +335,6 @@ def erm_optimization_procedure(train_tilted_params):
 
     group_sampling_procedure = train_tilted_params.other_params['group_sampling_procedure']
 
-    use_mixup_augmentation = False   # @TODO: set this up correctly.
 
     if "distance" in group_sampling_procedure:
         flattened_s_to_s = {value: key for key, value in train_tilted_params.other_params['s_to_flattened_s'].items()}
@@ -351,9 +350,9 @@ def erm_optimization_procedure(train_tilted_params):
 
     all_groups = []
 
-    all_label_augmented, all_aux_augmented, all_input_augmented, all_aux_flatten_augmented = train_tilted_params.other_params['all_label_augmented'],\
-        train_tilted_params.other_params['all_aux_augmented'],\
-        train_tilted_params.other_params['all_input_augmented'], train_tilted_params.other_params['all_aux_flatten_augmented']
+    # all_label_augmented, all_aux_augmented, all_input_augmented, all_aux_flatten_augmented = train_tilted_params.other_params['all_label_augmented'],\
+    #     train_tilted_params.other_params['all_aux_augmented'],\
+    #     train_tilted_params.other_params['all_input_augmented'], train_tilted_params.other_params['all_aux_flatten_augmented']
 
 
     # all_label, all_aux, all_input, all_aux_flatten =  train_tilted_params.other_params['all_label'],\
@@ -602,6 +601,7 @@ def orchestrator(training_loop_parameters: TrainingLoopParameters):
     else:
         use_mixup_augmentation = False
 
+
     training_loop_parameters.other_params['groups_matrix'] = groups_matrix
     training_loop_parameters.other_params['distance_mechanism'] = distance_mechanism
     training_loop_parameters.other_params['integrate_reg_loss'] = integrate_reg_loss
@@ -644,7 +644,7 @@ def orchestrator(training_loop_parameters: TrainingLoopParameters):
         training_loop_parameters.other_params['groups'] = [i for i in range(total_no_groups)]
 
 
-        if "only_generated_data" in method:
+        if "only_generated_data" in method:   #"only_generated_data" in method
 
             all_input_augmented = training_loop_parameters.iterators[0]['train_X_augmented']
             all_label_augmented = training_loop_parameters.iterators[0]['train_y_augmented']
@@ -656,6 +656,8 @@ def orchestrator(training_loop_parameters: TrainingLoopParameters):
                  for i in training_loop_parameters.other_params['all_aux_augmented']]
             training_loop_parameters.other_params['all_input_augmented'] = all_input_augmented
 
+
+        if "train_on_only_generated_data" in method:
 
             training_loop_parameters.other_params['all_label'] = all_label_augmented
             training_loop_parameters.other_params['all_aux'] = all_aux_augmented

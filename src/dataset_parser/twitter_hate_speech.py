@@ -314,7 +314,7 @@ class DatasetTwitterHateSpeech:
 
         if "augmented" in self.dataset_name:
             iterator_set['scaler'] = scaler
-            train_X_augmented = scaler.transform(train_X_augmented)
+            # train_X_augmented = scaler.transform(train_X_augmented)
             iterator_set['train_X_augmented'] = train_X_augmented
             iterator_set['train_y_augmented'] = train_y_augmented
             iterator_set['train_s_augmented'] = train_s_augmented
