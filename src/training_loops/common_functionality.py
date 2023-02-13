@@ -577,6 +577,16 @@ def augment_current_data_via_mixup(train_tilted_params, s_group_0, s_group_1, it
         alpha = 1.0
         gamma = beta(alpha, alpha)
 
+        shuffle_input = torch.randperm(len(items['input']))
+        items['input'] = items['input'][shuffle_input]
+        items['labels'] = items['labels'][shuffle_input]
+
+        shuffle_generated_data = torch.randperm(len(relevant_index))
+        relevent_augmented_X = relevent_augmented_X[shuffle_generated_data]
+        relevent_augmented_y  = relevent_augmented_y [shuffle_generated_data]
+
+
+
         if gamma > (1-gamma):
             input_x_mix = items['input']*gamma + torch.FloatTensor(relevent_augmented_X)*(1-gamma)
 
@@ -598,7 +608,7 @@ def augment_current_data_via_mixup(train_tilted_params, s_group_0, s_group_1, it
     if s_group_0 is not None:
         items_group_0 = custom_routine(s_group_0, items_group_0)
 
-    if s_group_1:
+    if s_group_1 is not None:
         items_group_1 = custom_routine(s_group_1, items_group_1)
 
     return items_group_0, items_group_1
