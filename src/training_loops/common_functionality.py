@@ -572,22 +572,30 @@ def augment_current_data_via_mixup(train_tilted_params, s_group_0, s_group_1, it
         relevant_index = relevant_index + np.random.choice(index_1, size=size_of_data, replace=True).tolist()
 
         relevent_augmented_X = augmented_X[relevant_index]
+        relevent_augmented_y = augmented_y[relevant_index]
 
         alpha = 1.0
         gamma = beta(alpha, alpha)
 
         if gamma > (1-gamma):
             input_x_mix = items['input']*gamma + torch.FloatTensor(relevent_augmented_X)*(1-gamma)
+
+            input_label_mix = torch.nn.functional.one_hot(items['labels'])*gamma + torch.nn.functional.one_hot(torch.tensor(relevent_augmented_y).to(torch.int64))*(1-gamma)
         else:
             input_x_mix = items['input'] * (1-gamma) + torch.FloatTensor(relevent_augmented_X) * gamma
+            input_label_mix = torch.nn.functional.one_hot(items['labels']) * (1 - gamma) +  torch.nn.functional.one_hot(torch.tensor(relevent_augmented_y).to(torch.int64))*gamma
+
+
 
         # input_x_mix = items['input'] * gamma + torch.FloatTensor(relevent_augmented_X) * (1 - gamma)
 
         items['input'] = input_x_mix
+        items['original_labels'] = items['labels']
+        items['labels'] = input_label_mix
 
         return items
 
-    if s_group_0:
+    if s_group_0 is not None:
         items_group_0 = custom_routine(s_group_0, items_group_0)
 
     if s_group_1:

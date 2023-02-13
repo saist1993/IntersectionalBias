@@ -390,6 +390,8 @@ def erm_optimization_procedure(train_tilted_params):
         if train_tilted_params.other_params['use_mixup_augmentation']:
             items_group_0, items_group_1 = \
                 augment_current_data_via_mixup(train_tilted_params, s_group_0, s_group_1, items_group_0, items_group_1)
+        else:
+            print("here")
 
         if group_sampling_procedure == 'random_single_group':
             assert s_group_1 is None
@@ -457,9 +459,15 @@ def erm_optimization_procedure(train_tilted_params):
 
         output_group_0['loss_batch'] = torch.mean(loss).item()  # handel this better!
         track_output.append(output_group_0)
+        try:
+            items_group_0['labels'] = items_group_0['original_labels']
+        except KeyError:
+            print("here")
         track_input.append(items_group_0)
 
     all_groups = np.unique(all_groups)
+
+
 
     epoch_metric_tracker, loss = train_tilted_params.per_epoch_metric(track_output,
                                                                       track_input,
