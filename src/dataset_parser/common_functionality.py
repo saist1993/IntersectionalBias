@@ -687,8 +687,8 @@ class AugmentData:
 
 
                     # then we only generate fake data
-                    # number_of_examples_to_sample = max_number_of_examples
-                    number_of_examples_to_sample = total_examples
+                    number_of_examples_to_sample = max_number_of_examples
+                    # number_of_examples_to_sample = total_examples
 
                     index_of_selected_examples = np.random.choice(np.where(label_mask == True)[0],
                                                                   size=number_of_examples_to_sample,
