@@ -389,7 +389,7 @@ def erm_optimization_procedure(train_tilted_params):
 
         if train_tilted_params.other_params['use_mixup_augmentation']:
             items_group_0, items_group_1 = \
-                augment_current_data_via_mixup(train_tilted_params, s_group_0, s_group_1, items_group_0, items_group_1)
+                augment_current_data_via_mixup(train_tilted_params, s_group_0, s_group_1, items_group_0, items_group_1, train_tilted_params.other_params['epoch_number'])
 
 
         if group_sampling_procedure == 'random_single_group':
@@ -634,6 +634,8 @@ def orchestrator(training_loop_parameters: TrainingLoopParameters):
         training_loop_parameters.other_params['all_aux'] = all_aux
         training_loop_parameters.other_params['all_aux_flatten'] = all_aux_flatten
         training_loop_parameters.other_params['all_input'] = all_input
+        training_loop_parameters.other_params['epoch_number'] = ep
+
 
 
 

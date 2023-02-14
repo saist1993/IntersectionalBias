@@ -480,7 +480,7 @@ class AugmentDataCommonFunctionality:
                     all_other_leaf_node_example_positive.append(batch_input)
 
                 generated_examples = gen_model(all_other_leaf_node_example_positive)['prediction'].detach().numpy()
-                if counter < 100:
+                if counter < 1000:
                     # the classifier is confident that this is real. Which means fake looks very much like real
                     # relevant_index = np.where((real_vs_fake.predict_proba(generated_examples)[:, 1] > confidence_score) & (task.predict_proba(generated_examples)[:, label] < 0.7))
                     # relevant_index = np.where(classifier_models.predict(generated_examples) != label)

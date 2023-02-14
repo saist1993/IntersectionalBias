@@ -556,7 +556,7 @@ def sample_data(train_tilted_params, s_group_0, s_group_1):
     return items_group_0, items_group_1
 
 
-def augment_current_data_via_mixup(train_tilted_params, s_group_0, s_group_1, items_group_0, items_group_1):
+def augment_current_data_via_mixup(train_tilted_params, s_group_0, s_group_1, items_group_0, items_group_1, epoch_number=0):
      # 'input': torch.FloatTensor(all_input[relevant_index])
 
     def custom_routine(s, items):
@@ -568,6 +568,21 @@ def augment_current_data_via_mixup(train_tilted_params, s_group_0, s_group_1, it
         size_of_data = int(len(items['input'])/2)
         index_0 = np.where(np.logical_and(augmented_s_flat==s, augmented_y==0) == True)[0]
         index_1 = np.where(np.logical_and(augmented_s_flat==s, augmented_y==1) == True)[0]
+
+        length_of_index_0 = len(index_0)
+        length_of_index_1 = len(index_1)
+
+        # if epoch_number < 8:
+        #     index_0 = index_0[:int(length_of_index_0/3)]
+        #     index_1 = index_1[:int(length_of_index_1/3)]
+        # elif epoch_number > 8 and epoch_number < 16:
+        #     index_0 = index_0[int(length_of_index_0 / 3): 2*int(length_of_index_0 / 3)]
+        #     index_1 = index_1[int(length_of_index_1 / 3): 2*int(length_of_index_0 / 3)]
+        # else:
+        #     index_0 = index_0[2 * int(length_of_index_0 / 3):]
+        #     index_1 = index_1[2 * int(length_of_index_0 / 3):]
+
+
         relevant_index = np.random.choice(index_0, size=size_of_data, replace=True).tolist()
         relevant_index = relevant_index + np.random.choice(index_1, size=size_of_data, replace=True).tolist()
 
@@ -592,8 +607,13 @@ def augment_current_data_via_mixup(train_tilted_params, s_group_0, s_group_1, it
 
             input_label_mix = torch.nn.functional.one_hot(items['labels'])*gamma + torch.nn.functional.one_hot(torch.tensor(relevent_augmented_y).to(torch.int64))*(1-gamma)
         else:
-            input_x_mix = items['input'] * (1-gamma) + torch.FloatTensor(relevent_augmented_X) * gamma
-            input_label_mix = torch.nn.functional.one_hot(items['labels']) * (1 - gamma) +  torch.nn.functional.one_hot(torch.tensor(relevent_augmented_y).to(torch.int64))*gamma
+            # input_x_mix = items['input'] * (1-gamma) + torch.FloatTensor(relevent_augmented_X) * gamma
+            # input_label_mix = torch.nn.functional.one_hot(items['labels']) * (1 - gamma) +  torch.nn.functional.one_hot(torch.tensor(relevent_augmented_y).to(torch.int64))*gamma
+
+            input_x_mix = items['input'] * gamma + torch.FloatTensor(relevent_augmented_X) * (1 - gamma)
+
+            input_label_mix = torch.nn.functional.one_hot(items['labels']) * gamma + torch.nn.functional.one_hot(
+                torch.tensor(relevent_augmented_y).to(torch.int64)) * (1 - gamma)
 
 
 
