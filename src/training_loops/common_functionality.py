@@ -572,15 +572,15 @@ def augment_current_data_via_mixup(train_tilted_params, s_group_0, s_group_1, it
         length_of_index_0 = len(index_0)
         length_of_index_1 = len(index_1)
 
-        # if epoch_number < 8:
-        #     index_0 = index_0[:int(length_of_index_0/3)]
-        #     index_1 = index_1[:int(length_of_index_1/3)]
-        # elif epoch_number > 8 and epoch_number < 16:
-        #     index_0 = index_0[int(length_of_index_0 / 3): 2*int(length_of_index_0 / 3)]
-        #     index_1 = index_1[int(length_of_index_1 / 3): 2*int(length_of_index_0 / 3)]
-        # else:
-        #     index_0 = index_0[2 * int(length_of_index_0 / 3):]
-        #     index_1 = index_1[2 * int(length_of_index_0 / 3):]
+        if epoch_number < 5:
+            index_0 = index_0[:int(length_of_index_0/3)]
+            index_1 = index_1[:int(length_of_index_1/3)]
+        elif epoch_number > 5 and epoch_number < 10:
+            index_0 = index_0[int(length_of_index_0 / 3): 2*int(length_of_index_0 / 3)]
+            index_1 = index_1[int(length_of_index_1 / 3): 2*int(length_of_index_0 / 3)]
+        else:
+            index_0 = index_0[2 * int(length_of_index_0 / 3):]
+            index_1 = index_1[2 * int(length_of_index_0 / 3):]
 
 
         relevant_index = np.random.choice(index_0, size=size_of_data, replace=True).tolist()
