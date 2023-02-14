@@ -116,7 +116,7 @@ def temp_table_generator(dataset_name, fairness_function):
         # 'erm_super_group_with_simplified_fairness_loss',
         # 'train_only_group_dro_with_mixup_regularizer_super_group',
         # 'dro_random_group_equal_sampling',
-        'erm_random_single_group_equal_sampling_only_generated_data',
+        'erm_random_group_equal_sampling_only_generated_data_train_on_only_generated_data',
         'erm_random_single_group_equal_sampling_only_generated_data_mixup_generated_and_real_data'
     ]
 
