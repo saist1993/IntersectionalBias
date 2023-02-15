@@ -24,6 +24,7 @@ class TrainParameters:
     per_epoch_metric: Callable
     mode: str
     fairness_function:str
+    iterator_set: Optional[Dict]
 
 
 @dataclass
@@ -849,7 +850,8 @@ def training_loop_common(training_loop_parameters: TrainingLoopParameters, train
             other_params=training_loop_parameters.other_params,
             per_epoch_metric=per_epoch_metric,
             mode='train',
-            fairness_function=training_loop_parameters.fairness_function)
+            fairness_function=training_loop_parameters.fairness_function,
+            iterator_set=training_loop_parameters.iterators)
 
         train_epoch_metric, loss = train_function(train_parameters)
         log_epoch_metric(logger, start_message='train', epoch_metric=train_epoch_metric, epoch_number=ep, loss=loss)
@@ -869,7 +871,8 @@ def training_loop_common(training_loop_parameters: TrainingLoopParameters, train
             other_params=training_loop_parameters.other_params,
             per_epoch_metric=per_epoch_metric,
             mode='evaluate',
-            fairness_function=training_loop_parameters.fairness_function)
+            fairness_function=training_loop_parameters.fairness_function,
+            iterator_set=None)
 
         valid_epoch_metric, loss = train_function(valid_parameters)
         log_epoch_metric(logger, start_message='valid', epoch_metric=valid_epoch_metric, epoch_number=ep, loss=loss)
@@ -889,7 +892,8 @@ def training_loop_common(training_loop_parameters: TrainingLoopParameters, train
             other_params=training_loop_parameters.other_params,
             per_epoch_metric=per_epoch_metric,
             mode='evaluate',
-            fairness_function=training_loop_parameters.fairness_function)
+            fairness_function=training_loop_parameters.fairness_function,
+            iterator_set=None)
 
         test_epoch_metric, loss = train_function(test_parameters)
         if training_loop_parameters.use_wandb:

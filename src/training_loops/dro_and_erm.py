@@ -684,7 +684,8 @@ def orchestrator(training_loop_parameters: TrainingLoopParameters):
             other_params=training_loop_parameters.other_params,
             per_epoch_metric=per_epoch_metric,
             mode='train',
-            fairness_function=training_loop_parameters.fairness_function)
+            fairness_function=training_loop_parameters.fairness_function,
+            iterator_set=None)
 
         train_epoch_metric, loss, global_weight, global_loss = procedure(train_parameters)
 
@@ -697,7 +698,8 @@ def orchestrator(training_loop_parameters: TrainingLoopParameters):
             other_params=training_loop_parameters.other_params,
             per_epoch_metric=per_epoch_metric,
             mode='evaluate',
-            fairness_function=training_loop_parameters.fairness_function)
+            fairness_function=training_loop_parameters.fairness_function,
+            iterator_set=None)
 
         valid_epoch_metric, loss = test(valid_parameters)
 
@@ -717,7 +719,8 @@ def orchestrator(training_loop_parameters: TrainingLoopParameters):
             other_params=training_loop_parameters.other_params,
             per_epoch_metric=per_epoch_metric,
             mode='evaluate',
-            fairness_function=training_loop_parameters.fairness_function)
+            fairness_function=training_loop_parameters.fairness_function,
+            iterator_set=None)
 
         valid_epoch_metric, loss = test(valid_parameters)
         log_epoch_metric(logger, start_message='valid', epoch_metric=valid_epoch_metric, epoch_number=ep, loss=loss)
@@ -736,7 +739,8 @@ def orchestrator(training_loop_parameters: TrainingLoopParameters):
             other_params=training_loop_parameters.other_params,
             per_epoch_metric=per_epoch_metric,
             mode='evaluate',
-            fairness_function=training_loop_parameters.fairness_function)
+            fairness_function=training_loop_parameters.fairness_function,
+            iterator_set=None)
 
         test_epoch_metric, loss = test(test_parameters)
         if training_loop_parameters.use_wandb:

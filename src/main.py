@@ -235,6 +235,11 @@ def runner(runner_arguments:RunnerArguments):
     # sanity checks - method == unconstrained_with_fairness_loss - fairness_loss > 0.0
     if runner_arguments.method in ['unconstrained_with_fairness_loss', 'adversarial_group_with_fairness_loss']:
         assert runner_arguments.fairness_lambda > 0.0
+    #
+    # if "fairgrad" in runner_arguments.method:
+    #     assert runner_arguments.optimizer_name == 'sgd'
+    # else:
+    #     assert runner_arguments.optimizer_name == 'adam'
 
     # Setting up seeds for reproducibility and resolving device (cpu/gpu).
     set_seed(runner_arguments.seed)
@@ -325,7 +330,8 @@ def runner(runner_arguments:RunnerArguments):
                       'mixup_rg': runner_arguments.mixup_rg,
                       'dataset_name': runner_arguments.dataset_name,
                       'seed': runner_arguments.seed,
-                      's_to_flattened_s': other_meta_data['s_flatten_lookup']},
+                      's_to_flattened_s': other_meta_data['s_flatten_lookup'],
+                      'dataset_other_meta_data': other_meta_data},
         fairness_function=runner_arguments.fairness_function
     )
     # Combine everything
@@ -421,12 +427,12 @@ if __name__ == '__main__':
     parser.add_argument('--fairness_lambda', '-fairness_lambda', help="the lambda in the fairness loss equation", type=float,
                         default=0.0)
     parser.add_argument('--method', '-method', help="unconstrained/adversarial_single/adversarial_group", type=str,
-                        default='fairgrad')
+                        default='erm_random_group_equal_sampling_use_mixup_augmentation')
     parser.add_argument('--save_model_as', '-save_model_as', help="unconstrained/adversarial_single/adversarial_group", type=str,
                         default=None)
     parser.add_argument('--dataset_name', '-dataset_name', help="twitter_hate_speech/adult_multi_group/celeb_multigroup_v3",
                         type=str,
-                        default='twitter_hate_speech_augmented')
+                        default='twitter_hate_speech')
 
     parser.add_argument('--log_file_name', '-log_file_name', help="the name of the log file",
                         type=str,
@@ -462,7 +468,7 @@ if __name__ == '__main__':
     parser.add_argument('--per_group_label_number_of_examples', '-per_group_label_number_of_examples',
                         help="number of example to generate per group and label = 000+ -> 1000",
                         type=int,
-                        default=9000)
+                        default=1000)
 
 
 
@@ -486,8 +492,8 @@ if __name__ == '__main__':
         epochs=args.epochs,
         save_model_as=save_model_as,
         method=args.method, # unconstrained, adversarial_single
-        optimizer_name='sgd',
-        lr=0.1,
+        optimizer_name='adam',
+        lr=0.001,
         use_wandb=False,
         adversarial_lambda=args.adversarial_lambda,
         dataset_size=10000,

@@ -33,6 +33,18 @@ def train(train_parameters: TrainParameters):
     all_s = np.vstack(all_s)
     all_independent_group_patterns = fairness_utils.create_all_possible_groups \
         (attributes=[list(np.unique(all_s[:, i])) for i in range(all_s.shape[1])])
+
+    # generate mask for all pattern
+    augmented_mask_pattern = {}
+    if mode == 'train':
+        for independent_group in all_independent_group_patterns:
+            mask = generate_mask(all_s=train_parameters.iterator_set[0]['train_s_augmented'],
+                                 mask_pattern=independent_group)
+            augmented_mask_pattern[tuple(independent_group)] = mask
+
+        positive_augmented_label_mask = train_parameters.iterator_set[0]['train_y_augmented'] == 1
+        negative_augmented_label_mask = train_parameters.iterator_set[0]['train_y_augmented'] == 0
+
     all_independent_group_patterns = [torch.tensor(i) for i in all_independent_group_patterns if 'x' not in i]
 
 
@@ -45,6 +57,28 @@ def train(train_parameters: TrainParameters):
 
         if mode == 'train':
             optimizer.zero_grad()
+
+            augmentation_input = []
+
+            for label, input, aux in zip(items['labels'], items['input'], items['aux']) :
+                relevant_mask = augmented_mask_pattern[tuple(aux.data.detach().numpy())]
+                if label.item() == 1:
+                    final_mask = np.logical_and(relevant_mask, positive_augmented_label_mask)
+                elif label.item() == 0:
+                    final_mask = np.logical_and(relevant_mask, negative_augmented_label_mask)
+                else:
+                    pass
+                index = np.random.choice(np.where(final_mask==True)[0], 1)
+                augmentation_input.append(train_parameters.iterator_set[0]['train_X_augmented'][index])
+
+            augmentation_input = torch.FloatTensor(np.vstack(augmentation_input))
+
+            alpha = 1.0
+            gamma = beta(alpha, alpha)
+
+            items['input'] = items['input']*gamma + augmentation_input*(1-gamma)
+
+
             output = model(items)
 
             loss = criterion(output['prediction'], items['labels'], items['aux_flattened'], mode='train')

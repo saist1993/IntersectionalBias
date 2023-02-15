@@ -692,7 +692,7 @@ class AugmentData:
 
                     index_of_selected_examples = np.random.choice(np.where(label_mask == True)[0],
                                                                   size=number_of_examples_to_sample,
-                                                                  replace=False)  # sample max number of positive examples
+                                                                  replace=True)  # sample max number of positive examples
 
 
                     augmented_train_X.append(self.other_meta_data['raw_data']['train_X'][index_of_selected_examples])
@@ -702,8 +702,8 @@ class AugmentData:
 
                 else:
 
-                    # number_of_examples_to_generate = int(min(max_number_of_examples - total_examples,
-                    #                                          max_ratio_of_generated_examples * total_examples))
+                    number_of_examples_to_generate = int(min(max_number_of_examples - total_examples,
+                                                             max_ratio_of_generated_examples * total_examples))
                     # total_examples = 0
 
                     number_of_examples_to_generate = max_number_of_examples - total_examples

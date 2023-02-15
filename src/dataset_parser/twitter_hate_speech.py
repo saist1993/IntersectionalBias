@@ -312,12 +312,12 @@ class DatasetTwitterHateSpeech:
         )
         iterator_set, vocab, s_flatten_lookup = create_iterator.get_iterators(iterator_data)
 
-        if "augmented" in self.dataset_name:
-            iterator_set['scaler'] = scaler
-            # train_X_augmented = scaler.transform(train_X_augmented)
-            iterator_set['train_X_augmented'] = train_X_augmented
-            iterator_set['train_y_augmented'] = train_y_augmented
-            iterator_set['train_s_augmented'] = train_s_augmented
+        # if "augmented" in self.dataset_name:
+        #     iterator_set['scaler'] = scaler
+        #     # train_X_augmented = scaler.transform(train_X_augmented)
+        iterator_set['train_X_augmented'] = train_X_augmented
+        iterator_set['train_y_augmented'] = train_y_augmented
+        iterator_set['train_s_augmented'] = train_s_augmented
 
         iterators = [iterator_set]  # If it was k-fold. One could append k iterators here.
 
