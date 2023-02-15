@@ -272,7 +272,8 @@ if __name__ == '__main__':
                        'erm_random_single_group_equal_sampling_only_generated_data',
                        'erm_random_single_group_equal_sampling_only_generated_data_mixup_generated_and_real_data',
                        'erm_random_group_equal_sampling_only_generated_data_train_on_only_generated_data',
-                       'erm_random_group_equal_sampling_use_mixup_augmentation']:
+                       'erm_random_group_equal_sampling_use_mixup_augmentation',
+                       'erm_random_single_group_equal_sampling_use_mixup_augmentation']:
         mixup_scales = [0.0]
         titled_scales = [0.0]
 
