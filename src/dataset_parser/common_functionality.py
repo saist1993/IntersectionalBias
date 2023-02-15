@@ -601,7 +601,7 @@ class AugmentData:
                 if total_examples > max_number_of_examples:
                     index_of_selected_examples = np.random.choice(np.where(label_mask == True)[0],
                                                                   size=max_number_of_examples,
-                                                                  replace=False)  # sample max number of positive examples
+                                                                  replace=True)  # sample max number of positive examples
 
                     augmented_train_X.append(self.other_meta_data['raw_data']['train_X'][index_of_selected_examples])
                     augmented_train_y.append(self.other_meta_data['raw_data']['train_y'][index_of_selected_examples])
@@ -772,13 +772,13 @@ class AugmentData:
         augmented_train_y = np.hstack(augmented_train_y)
         is_instance_real = np.hstack(is_instance_real)
 
-        X, y = augmented_train_X, is_instance_real
-        clf = MLPClassifier(solver="adam", learning_rate_init=0.01, hidden_layer_sizes=(25, 5), random_state=1)
-        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.33, random_state=42, shuffle=True)
-        clf.fit(X_train, y_train)
-        y_pred = clf.predict(X_test)
-        print("****")
-        print(clf.score(X_train, y_train), accuracy_score(y_test, y_pred), balanced_accuracy_score(y_test, y_pred))
-        print("***")
+        # X, y = augmented_train_X, is_instance_real
+        # clf = MLPClassifier(solver="adam", learning_rate_init=0.01, hidden_layer_sizes=(25, 5), random_state=1)
+        # X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.33, random_state=42, shuffle=True)
+        # clf.fit(X_train, y_train)
+        # y_pred = clf.predict(X_test)
+        # print("****")
+        # print(clf.score(X_train, y_train), accuracy_score(y_test, y_pred), balanced_accuracy_score(y_test, y_pred))
+        # print("***")
 
         return augmented_train_X, augmented_train_y, augmented_train_s

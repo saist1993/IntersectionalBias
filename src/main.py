@@ -421,7 +421,7 @@ if __name__ == '__main__':
     parser.add_argument('--fairness_lambda', '-fairness_lambda', help="the lambda in the fairness loss equation", type=float,
                         default=0.0)
     parser.add_argument('--method', '-method', help="unconstrained/adversarial_single/adversarial_group", type=str,
-                        default='erm_random_single_group_equal_sampling_only_generated_data_mixup_generated_and_real_data')
+                        default='fairgrad')
     parser.add_argument('--save_model_as', '-save_model_as', help="unconstrained/adversarial_single/adversarial_group", type=str,
                         default=None)
     parser.add_argument('--dataset_name', '-dataset_name', help="twitter_hate_speech/adult_multi_group/celeb_multigroup_v3",
@@ -486,8 +486,8 @@ if __name__ == '__main__':
         epochs=args.epochs,
         save_model_as=save_model_as,
         method=args.method, # unconstrained, adversarial_single
-        optimizer_name='adam',
-        lr=0.001,
+        optimizer_name='sgd',
+        lr=0.1,
         use_wandb=False,
         adversarial_lambda=args.adversarial_lambda,
         dataset_size=10000,
