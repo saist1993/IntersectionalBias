@@ -304,6 +304,11 @@ if __name__ == '__main__':
         mixup_scales = [1.0, 10.0, 20.0, 30.0]
         titled_scales = [0.1, 0.5]
 
+
+    if "fairgrad" in args.method:
+        mixup_scales = [0.0]
+        titled_scales = [0.0]
+
     for examples_to_generate in max_number_of_generated_examples:
         for seed in args.seeds:
             for titled_scale in titled_scales:

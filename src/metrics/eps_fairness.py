@@ -148,7 +148,7 @@ class EstimateProbability:
             warnings.warn("There is something fishy in the data. There was no example atleast for one group at all.")
             return [0.0, [0.0, 0.0], average_prob]
 
-        return [np.log(max_prob / min_prob), [0.0, 0.0], average_prob, (min_group, max_group)]
+        return [np.log(max_prob / min_prob), [0.0, 0.0], all_probs, (min_group, max_group)]
 
     def simple_bayesian_estimate_rate_parity(self, preds, labels, masks, use_tpr=True):
 
@@ -217,6 +217,7 @@ class EstimateProbability:
         max_group, max_group_count = np.unique(np.asarray(all_min_max_groups)[:, 1], axis=0, return_counts=True)
         max_group = max_group[np.argmax(max_group_count)]
 
+        probs = np.mean(all_average_prob, axis=0)
         return [np.mean(all_eps), self.get_confidence_interval(all_eps), np.mean(all_average_prob), min_group, max_group]
 
 
