@@ -6,6 +6,7 @@ from .common_functionality import *
 from typing import NamedTuple, List
 from utils.iterator import TextClassificationDataset, sequential_transforms
 
+
 class CreateIterators:
     """ A general purpose iterators. Takes numpy matrix for train, dev, and test matrix and creates iterator."""
 
@@ -56,7 +57,6 @@ class CreateIterators:
     def get_iterators(self, train_X, train_s, train_y, batch_size):
         train_X, train_s, train_y = train_X, train_s, train_y
 
-
         vocab = {'<pad>': 1}  # no need of vocab in these dataset. It is there for code compatibility purposes.
 
         # need to add flatten here! And that too in the process itself!
@@ -68,17 +68,15 @@ class CreateIterators:
                                                      collate_fn=self.collate
                                                      )
 
-
-
         return train_iterator
 
 
-def get_subset_of_data(X,y,model):
-    preds = torch.argmax(model({"input":torch.FloatTensor(np.asarray(X))})['prediction'], axis=1)
-    return torch.eq(preds,torch.LongTensor(y)).detach().numpy()
+def get_subset_of_data(X, y, model):
+    preds = torch.argmax(model({"input": torch.FloatTensor(np.asarray(X))})['prediction'], axis=1)
+    return torch.eq(preds, torch.LongTensor(y)).detach().numpy()
 
 
-def resample_dataset(all_X, all_s, all_y, size_of_each_group, model=None):
+def resample_dataset_older(all_X, all_s, all_y, size_of_each_group, model=None):
     resampled_X, resampled_s, resampled_y, size = [], [], [], {}
     all_unique_s = np.unique(all_s, axis=0)
     all_unique_label = np.unique(all_y)
@@ -112,15 +110,62 @@ def resample_dataset(all_X, all_s, all_y, size_of_each_group, model=None):
     return resampled_X[index], resampled_s[index], resampled_y[index]
 
 
+def resample_dataset(all_X, all_s, all_y, size_of_each_group, model=None):
+    resampled_X, resampled_s, resampled_y, size = [], [], [], {}
+    all_unique_s = np.unique(all_s, axis=0)
+    all_unique_label = np.unique(all_y)
+
+    for s in all_unique_s:
+        for label in all_unique_label:
+            # sample number_of_examples_per_group with s and label from the dataset
+            mask_s = generate_mask(all_s=all_s, mask_pattern=s)
+            mask_label = all_y == label
+            final_mask = np.logical_and(mask_s, mask_label)
+            index = np.where(final_mask)[0]
+            if model:
+                subset_mask = get_subset_of_data(all_X[final_mask], all_y[final_mask], model)
+                index = index[subset_mask == True]
+            # index are all the possible examples one can use.
+            group_size, all_members_of_the_group = size_of_each_group[tuple(s.tolist())][label]
+
+            if len(all_members_of_the_group) > group_size:
+                k = len(all_members_of_the_group) - group_size
+                all_members_of_the_group = all_members_of_the_group[k:]
+                size_of_each_group[tuple(s.tolist())][label] = [group_size, all_members_of_the_group]
+            else:
+                # need to add examples
+                k = group_size - len(all_members_of_the_group)
+                all_members_of_the_group.extend(np.random.choice(index,
+                                                          size=k,
+                                                          replace=True))
+
+                size_of_each_group[tuple(s.tolist())][label] = [group_size, all_members_of_the_group]
+
+            index_of_selected_examples = np.random.choice(all_members_of_the_group,
+                                                          size=size_of_each_group[tuple(s.tolist())][label][0],
+                                                          replace=True)
+
+            resampled_X.append(all_X[index_of_selected_examples])
+            resampled_s.append(all_s[index_of_selected_examples])
+            resampled_y.append(all_y[index_of_selected_examples])
+
+    resampled_X = np.vstack(resampled_X)
+    resampled_s = np.vstack(resampled_s)
+    resampled_y = np.hstack(resampled_y)
+
+    # shuffle the samples here
+    index = np.arange(len(resampled_X))
+    np.random.shuffle(index)
+
+    return resampled_X[index], resampled_s[index], resampled_y[index], size_of_each_group
+
 def test(train_parameters: TrainParameters):
     """Trains the model for one epoch"""
     model, optimizer, device, criterion, mode = \
         train_parameters.model, train_parameters.optimizer, train_parameters.device, train_parameters.criterion, train_parameters.mode
 
-
     model.eval()
     track_output = []
-
 
     for items in tqdm(train_parameters.iterator):
 
@@ -128,11 +173,9 @@ def test(train_parameters: TrainParameters):
         for key in items.keys():
             items[key] = items[key].to(device)
 
-
         with torch.no_grad():
             output = model(items)
             loss = torch.mean(criterion(output['prediction'], items['labels']))  # As reduction is None.
-
 
         # Save all batch stuff for further analysis
         output['loss_batch'] = loss.item()
@@ -146,7 +189,6 @@ def test(train_parameters: TrainParameters):
 
 
 def train(train_parameters: TrainParameters):
-
     model, optimizer, device, criterion, mode = \
         train_parameters.model, train_parameters.optimizer, train_parameters.device, train_parameters.criterion, train_parameters.mode
 
@@ -166,30 +208,31 @@ def train(train_parameters: TrainParameters):
 
 def update_size(train_other_info, valid_other_info, size_of_groups):
     def get_median(other_info):
-        all_groups_accuracy = [value[-1] for key,value in other_info.items()]
-        all_groups_accuracy.extend([value[-2] for key,value in other_info.items()])
+        all_groups_accuracy = [value[-1] for key, value in other_info.items()]
+        all_groups_accuracy.extend([value[-2] for key, value in other_info.items()])
         return statistics.median(all_groups_accuracy)
 
     train_accuracy_median = get_median(train_other_info)
     valid_accuracy_median = get_median(valid_other_info)
 
-    for group,value in size_of_groups.items():
+    for group, value in size_of_groups.items():
         for label, current_size in size_of_groups[group].items():
+            current_size = current_size[0]
             if label == 1:
                 current_accuracy = valid_other_info[group][-2]
             else:
                 current_accuracy = valid_other_info[group][-1]
 
             if current_accuracy > valid_accuracy_median:
-                    updated_size = current_size #max(1,current_size - 50)
+                updated_size = current_size  # max(1,current_size - 50)
             else:
                 updated_size = current_size + 50
-            size_of_groups[group][label] = updated_size
+            size_of_groups[group][label] = [updated_size, size_of_groups[group][label][1]]
 
     return size_of_groups
 
-def orchestrator(training_loop_parameters: TrainingLoopParameters):
 
+def orchestrator(training_loop_parameters: TrainingLoopParameters):
     ##### Get the original data from the iterators #####
     _labels, _input, _lengths, _aux, _aux_flattened = [], [], [], [], []
     for items in (training_loop_parameters.iterators[0]['train_iterator']):
@@ -211,7 +254,8 @@ def orchestrator(training_loop_parameters: TrainingLoopParameters):
     for s in all_unique_s:
         size_of_each_group[tuple(s.tolist())] = {}
         for label in all_unique_label:
-            size_of_each_group[tuple(s.tolist())][label] = 100
+            size_of_each_group[tuple(s.tolist())][label] = [100,
+                                                            []]  # [size of group, all current members of the group]
 
     '''
         Steps to Follow. A rough procedure 
@@ -221,15 +265,14 @@ def orchestrator(training_loop_parameters: TrainingLoopParameters):
         - Send this resampled iterator through the system and get the output 
     '''
 
-    resampled_X, resampled_s, resampled_y = resample_dataset(all_X=original_train_input,
-                                                                                all_s=original_train_aux,
-                                                                                all_y=original_train_label,
-                                                                                size_of_each_group=size_of_each_group)
+    resampled_X, resampled_s, resampled_y, size_of_each_group = resample_dataset(all_X=original_train_input,
+                                                             all_s=original_train_aux,
+                                                             all_y=original_train_label,
+                                                             size_of_each_group=size_of_each_group)
 
     create_iterators = CreateIterators(s_to_flattened_s=training_loop_parameters.other_params['s_to_flattened_s'])
     resampled_iterator = create_iterators.get_iterators(train_X=resampled_X, train_s=resampled_s, train_y=resampled_y,
                                                         batch_size=training_loop_parameters.other_params['batch_size'])
-
 
     logger = logging.getLogger(training_loop_parameters.unique_id_for_run)
     output = {}
@@ -239,7 +282,6 @@ def orchestrator(training_loop_parameters: TrainingLoopParameters):
 
     for ep in range(training_loop_parameters.n_epochs):
         logger.info("start of epoch block  ")
-
 
         train_parameters = TrainParameters(
             model=training_loop_parameters.model,
@@ -291,10 +333,10 @@ def orchestrator(training_loop_parameters: TrainingLoopParameters):
         valid_epoch_metric, loss = test(valid_parameters)
         log_epoch_metric(logger, start_message='valid', epoch_metric=valid_epoch_metric, epoch_number=ep, loss=loss)
 
-
         size_of_each_group = \
-            update_size(train_other_info=train_epoch_metric.other_info, valid_other_info=valid_epoch_metric.other_info, size_of_groups=size_of_each_group)
-        resampled_X, resampled_s, resampled_y = resample_dataset(all_X=original_train_input,
+            update_size(train_other_info=train_epoch_metric.other_info, valid_other_info=valid_epoch_metric.other_info,
+                        size_of_groups=size_of_each_group)
+        resampled_X, resampled_s, resampled_y, size_of_each_group = resample_dataset(all_X=original_train_input,
                                                                  all_s=original_train_aux,
                                                                  all_y=original_train_label,
                                                                  size_of_each_group=size_of_each_group,
@@ -327,8 +369,7 @@ def orchestrator(training_loop_parameters: TrainingLoopParameters):
         log_epoch_metric(logger, start_message='test', epoch_metric=test_epoch_metric, epoch_number=ep, loss=loss)
         all_test_eps_metrics.append(test_epoch_metric)
 
-
-        print(size_of_each_group)
+        # print(size_of_each_group)
 
         logger.info("end of epoch block")
 
@@ -337,13 +378,3 @@ def orchestrator(training_loop_parameters: TrainingLoopParameters):
     output['all_valid_eps_metric'] = all_valid_eps_metrics
 
     return output
-
-
-
-
-
-
-
-
-
-
