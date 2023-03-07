@@ -108,8 +108,8 @@ def MMD(x, y, kernel):
 #     #     return torch.nn.ModuleList([self.layer_1, self.layer_2, self.layer_3])
 
 
-
-
+#
+#
 class SimpleModelGenerator(nn.Module):
     """Fairgrad uses this as complex non linear model"""
 
@@ -162,8 +162,9 @@ class SimpleModelGenerator(nn.Module):
 #         elif number_of_params == 4:
 #             self.lambda_params = torch.nn.Parameter(torch.FloatTensor([0.1, 0.1, 0.1, 0.1]))
 #
-#         self.more_lambda_params = torch.nn.Linear(input_dim, input_dim, bias=False)
-#         nn.init.constant_(self.more_lambda_params.weight, 1.0)
+#         # self.more_lambda_params = torch.nn.Linear(input_dim, input_dim, bias=False)
+#         self.more_lambda_params = torch.nn.Parameter(torch.FloatTensor(torch.randn(input_dim)))
+#         # nn.init.constant_(self.more_lambda_params.weight, 1.0)
 #         print("here")
 #         # self.more_lambda_params = [torch.nn.init.orthogonal_(l.reshape(1,-1)).squeeze() for l in self.more_lambda_params]
 #
@@ -173,15 +174,19 @@ class SimpleModelGenerator(nn.Module):
 #
 #
 #     def forward(self, other_examples):
-#         final_output = torch.tensor(0.0, requires_grad=True)
-#         for param, group in zip(self.lambda_params, other_examples):
-#             x = group['input']
-#             final_output = final_output + self.more_lambda_params(x)
+#         # final_output = torch.tensor(0.0, requires_grad=True)
+#
+#         input = torch.sum(torch.stack([i['input'] for i in other_examples]), axis=0)
+#         # final_output = self.more_lambda_params(input)
+#         final_output = self.more_lambda_params*input
+#         # for param, group in zip(self.more_lambda_params, other_examples):
+#         #     x = group['input']
+#         #     final_output = final_output + param(x)
 #
 #         output = {
 #             'prediction': final_output,
 #             'adv_output': None,
-#             'hidden': x,  # just for compatability
+#             'hidden': input,  # just for compatability
 #             'classifier_hiddens': None,
 #             'adv_hiddens': None
 #         }

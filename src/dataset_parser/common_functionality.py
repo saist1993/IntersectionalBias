@@ -1,4 +1,6 @@
 import copy
+import random
+
 import torch
 import pickle
 import numpy as np
@@ -60,7 +62,7 @@ class SimpleModelGenerator(nn.Module):
         final_output = torch.tensor(0.0, requires_grad=True)
         for param, group in zip(self.lambda_params, other_examples):
             x = group['input']
-            final_output = final_output + x*param
+            final_output = final_output + x * param
 
         output = {
             'prediction': final_output,
@@ -338,17 +340,17 @@ class AugmentDataCommonFunctionality:
 
             if True:
                 s_abstract_positive = []
-                s_abstract_negative =  []
+                s_abstract_negative = []
 
                 new_all_representation_positive = []
                 new_all_representation_negative = []
 
-                for i,representation in zip(s_abstract[1:],all_representation_positive[1:]):
+                for i, representation in zip(s_abstract[1:], all_representation_positive[1:]):
                     if np.sum(all_label[AugmentDataCommonFunctionality.generate_mask(all_s, i)] == 1) > 1:
                         new_all_representation_positive.append(representation)
                         s_abstract_positive.append(i)
 
-                for i,representation in zip(s_abstract[1:],all_representation_negative[1:]):
+                for i, representation in zip(s_abstract[1:], all_representation_negative[1:]):
                     if np.sum(all_label[AugmentDataCommonFunctionality.generate_mask(all_s, i)] == 0) > 1:
                         new_all_representation_negative.append(representation)
                         s_abstract_negative.append(i)
@@ -367,7 +369,6 @@ class AugmentDataCommonFunctionality:
                 }
 
         return group_to_lambda_weights
-
 
     @staticmethod
     def generate_examples(s, group_to_lambda_weights, number_of_examples, other_meta_data):
@@ -401,7 +402,6 @@ class AugmentDataCommonFunctionality:
 
         return augmented_input_positive, augmented_input_negative
 
-
     @staticmethod
     def create_mask_with_x(data, condition):
 
@@ -420,7 +420,6 @@ class AugmentDataCommonFunctionality:
         for i in keep_indices:
             mask = np.logical_and(mask, i)
         return mask
-
 
     @staticmethod
     def custom_sample_data(group, all_label, all_input, all_aux, all_aux_flatten, number_of_positive_examples,
@@ -449,18 +448,16 @@ class AugmentDataCommonFunctionality:
 
         return batch_input_negative, batch_input_positive
 
-
-
-
     @staticmethod
-    def generate_examples_mmd(s, gen_model, number_of_examples, other_meta_data, classifier_models, label, confidence_score=0.1):
+    def generate_examples_mmd(s, gen_model, number_of_examples, other_meta_data, classifier_models, label,
+                              confidence_score=0.1):
         # other_leaf_node = AugmentDataCommonFunctionality.generate_combinations_only_leaf_node(s, k=1)
         other_leaf_node = AugmentDataCommonFunctionality.generate_abstract_node(s, k=1)
         assert number_of_examples >= 1
 
         real_vs_fake, task = classifier_models
-        def common_procedure(label):
 
+        def common_procedure(label):
 
             selected_examples = []
             counter = 0
@@ -468,9 +465,10 @@ class AugmentDataCommonFunctionality:
             while len(selected_examples) <= number_of_examples:
                 all_other_leaf_node_example_positive = []
                 for group in other_leaf_node:
-                    group_mask = AugmentDataCommonFunctionality.generate_mask(other_meta_data['raw_data']['train_s'], group)
+                    group_mask = AugmentDataCommonFunctionality.generate_mask(other_meta_data['raw_data']['train_s'],
+                                                                              group)
                     label_1_group_mask = np.logical_and(group_mask, other_meta_data['raw_data']['train_y'] == label)
-                    label_1_examples = np.random.choice(np.where(label_1_group_mask == True)[0], size=number_of_examples,
+                    label_1_examples = np.random.choice(np.where(label_1_group_mask == True)[0], size=500,
                                                         replace=True)
 
                     batch_input = {
@@ -479,7 +477,8 @@ class AugmentDataCommonFunctionality:
 
                     all_other_leaf_node_example_positive.append(batch_input)
 
-                generated_examples = gen_model(all_other_leaf_node_example_positive)['prediction'].detach().numpy()
+                final_model = gen_model[random.randrange(len(gen_model))]
+                generated_examples = final_model(all_other_leaf_node_example_positive)['prediction'].detach().numpy()
                 if counter < 1000:
                     # the classifier is confident that this is real. Which means fake looks very much like real
                     # relevant_index = np.where((real_vs_fake.predict_proba(generated_examples)[:, 1] > confidence_score) & (task.predict_proba(generated_examples)[:, label] < 0.7))
@@ -533,7 +532,7 @@ class AugmentData:
         self.max_number_of_generated_examples = max_number_of_generated_examples
         self.max_number_of_positive_examples = max_number_of_positive_examples
         self.max_number_of_negative_examples = max_number_of_negative_examples
-        self.mmd_augmentation_mechanism = mmd_augmentation_mechanism # alternative - both_generated_and_real_data
+        self.mmd_augmentation_mechanism = mmd_augmentation_mechanism  # alternative - both_generated_and_real_data
         self.all_unique_group = all_unique_group
 
         # formating data in a specific way for legacy purpose!
@@ -559,7 +558,7 @@ class AugmentData:
             mask = self.common_func.generate_mask(self.other_meta_data['raw_data']['train_s'], groups)
             size_of_each_group.append(np.sum(mask))
 
-        #[1, 0, 0, 1]
+        # [1, 0, 0, 1]
 
         # print(size_of_each_group, self.all_unique_group[np.argsort(size_of_each_group)][:3])
 
@@ -655,13 +654,21 @@ class AugmentData:
         # gen_model_negative = SimpleModelGenerator(input_dim=51)
         # gen_model_negative.load_state_dict(torch.load("gen_model_adult_negative.pth"))
 
-        all_models = pickle.load(open(f"all_{self.dataset_name.replace('_augmented', '')}.pt", "rb"))
+        # all_models = pickle.load(open(f"all_{self.dataset_name.replace('_augmented', '')}.pt", "rb"))
+        # all_models = [
+        #               pickle.load(open(f"0.504_train_and_valid_all_twitter_hate_speech.pt", "rb")),
+        #               # pickle.load(open(f"0.536_train_and_valid_all_twitter_hate_speech.pt", "rb")),
+        #               # pickle.load(open(f"0.811_train_and_valid_all_twitter_hate_speech.pt", "rb"))
+        #               ]
         # all_models = pickle.load(open(f"train_and_valid_all_{self.dataset_name.replace('_augmented', '')}.pt", "rb"))
 
+        all_models = [pickle.load(open(f"train_and_valid_all_{self.dataset_name.replace('_augmented', '')}.pt", "rb"))]
 
-        classifier_models = pickle.load(open(f"real_vs_fake_{self.dataset_name.replace('_augmented', '')}.sklearn", "rb"))
-        # classifier_models = pickle.load(open(f"train_and_valid_real_vs_fake_{self.dataset_name.replace('_augmented', '')}.sklearn", "rb"))
-        classifier_models_2 = pickle.load(open(f"task_classifier_{self.dataset_name.replace('_augmented', '')}.sklearn", "rb"))
+        # classifier_models = pickle.load(open(f"real_vs_fake_{self.dataset_name.replace('_augmented', '')}.sklearn", "rb"))
+        classifier_models = pickle.load(
+            open(f"train_and_valid_real_vs_fake_{self.dataset_name.replace('_augmented', '')}.sklearn", "rb"))
+        # classifier_models_2 = pickle.load(open(f"task_classifier_{self.dataset_name.replace('_augmented', '')}.sklearn", "rb"))
+        classifier_models_2 = None
 
         # all_unique_groups = np.unique(self.other_meta_data['raw_data']['train_s'], axis=0)
 
@@ -669,7 +676,7 @@ class AugmentData:
         max_number_of_negative_examples = self.max_number_of_negative_examples
         max_ratio_of_generated_examples = self.max_number_of_generated_examples
 
-        augmented_train_X, augmented_train_y, augmented_train_s, is_instance_real = [], [], [], [] # generated - 0  and real is 1
+        augmented_train_X, augmented_train_y, augmented_train_s, is_instance_real = [], [], [], []  # generated - 0  and real is 1
 
         for group in self.all_unique_group:
             group_mask = self.common_func.generate_mask(self.other_meta_data['raw_data']['train_s'], group)
@@ -678,13 +685,13 @@ class AugmentData:
             total_positive_examples = np.sum(label_1_group_mask)
             total_negative_examples = np.sum(group_mask) - total_positive_examples
 
-            def sub_routine(label_mask, total_examples, max_number_of_examples, example_type, mechanism="only_generated_data"):
+            def sub_routine(label_mask, total_examples, max_number_of_examples, example_type,
+                            mechanism="only_generated_data"):
 
                 if mechanism == "only_generated_data":
                     total_examples = 0
 
-                if total_examples > max_number_of_examples:   # total_examples > max_number_of_examples or
-
+                if total_examples > max_number_of_examples:  # total_examples > max_number_of_examples or
 
                     # then we only generate fake data
                     number_of_examples_to_sample = max_number_of_examples
@@ -694,7 +701,6 @@ class AugmentData:
                                                                   size=number_of_examples_to_sample,
                                                                   replace=True)  # sample max number of positive examples
 
-
                     augmented_train_X.append(self.other_meta_data['raw_data']['train_X'][index_of_selected_examples])
                     augmented_train_y.append(self.other_meta_data['raw_data']['train_y'][index_of_selected_examples])
                     augmented_train_s.append(self.other_meta_data['raw_data']['train_s'][index_of_selected_examples])
@@ -702,12 +708,11 @@ class AugmentData:
 
                 else:
 
-                    number_of_examples_to_generate = int(min(max_number_of_examples - total_examples,
-                                                             max_ratio_of_generated_examples * total_examples))
+                    # number_of_examples_to_generate = int(min(max_number_of_examples - total_examples,
+                    #                                          max_ratio_of_generated_examples * total_examples))
                     # total_examples = 0
 
                     number_of_examples_to_generate = max_number_of_examples - total_examples
-
 
                     try:
 
@@ -717,36 +722,40 @@ class AugmentData:
                     except ValueError:
                         print("here")
 
-
                     if mechanism == "only_generated_data":
                         number_of_examples_to_generate = max_number_of_examples
                         index_of_selected_examples = None
 
                     # now generate remaining examples!
                     if example_type == 'positive':
-                        augmented_input = self.common_func.generate_examples_mmd(tuple(group), all_models['a']['gen_model_positive'],
-                                                                                number_of_examples_to_generate,
-                                                                                self.other_meta_data, [classifier_models, classifier_models_2], 1)
+                        augmented_input = self.common_func.generate_examples_mmd(tuple(group),
+                                                                                 [m['a']['gen_model_positive'] for m in
+                                                                                  all_models],
+                                                                                 number_of_examples_to_generate,
+                                                                                 self.other_meta_data,
+                                                                                 [classifier_models,
+                                                                                  classifier_models_2], 1)
                     elif example_type == 'negative':
-                        augmented_input = self.common_func.generate_examples_mmd(tuple(group), all_models['a']['gen_model_negative'],
-                                                                                number_of_examples_to_generate,
-                                                                                self.other_meta_data, [classifier_models, classifier_models_2], 0)
+                        augmented_input = self.common_func.generate_examples_mmd(tuple(group),
+                                                                                 [m['a']['gen_model_negative'] for m in
+                                                                                  all_models],
+                                                                                 number_of_examples_to_generate,
+                                                                                 self.other_meta_data,
+                                                                                 [classifier_models,
+                                                                                  classifier_models_2], 0)
                     else:
                         raise NotImplementedError
-
 
                     if index_of_selected_examples is not None:
                         augmented_train_X.append(
                             np.vstack((self.other_meta_data['raw_data']['train_X'][index_of_selected_examples],
-                                   augmented_input)))
+                                       augmented_input)))
                         is_instance_real.append(np.hstack(
                             [np.ones(len(index_of_selected_examples)), np.zeros(number_of_examples_to_generate)]))
                     else:
                         augmented_train_X.append(
-                                       augmented_input)
+                            augmented_input)
                         is_instance_real.append(np.zeros(number_of_examples_to_generate))
-
-
 
                     if example_type == "positive":
                         augmented_train_y.append(np.ones(max_number_of_examples))
@@ -754,10 +763,9 @@ class AugmentData:
                         augmented_train_y.append(np.zeros(max_number_of_examples))
                     else:
                         raise NotImplementedError
-                # augmented_train_s.append(self.other_meta_data['raw_data']['train_s'][index_of_selected_examples])
+                    # augmented_train_s.append(self.other_meta_data['raw_data']['train_s'][index_of_selected_examples])
 
                     augmented_train_s.append(np.repeat(np.expand_dims(group, 0), max_number_of_examples, 0))
-
 
             sub_routine(label_mask=label_1_group_mask, total_examples=total_positive_examples,
                         max_number_of_examples=max_number_of_positive_examples, example_type="positive",

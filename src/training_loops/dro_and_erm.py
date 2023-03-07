@@ -271,6 +271,11 @@ def dro_optimization_procedure(train_tilted_params):
             assert s_group_1 is not None
             assert items_group_1 is not None
 
+
+        if train_tilted_params.other_params['use_mixup_augmentation']:
+            items_group_0, items_group_1 = \
+                augment_current_data_via_mixup(train_tilted_params, s_group_0, s_group_1, items_group_0, items_group_1, train_tilted_params.other_params['epoch_number'])
+
         optimizer.zero_grad()
         output_group_0 = model(items_group_0)
         loss_group_0 = criterion(output_group_0['prediction'], items_group_0['labels'])
@@ -298,8 +303,8 @@ def dro_optimization_procedure(train_tilted_params):
 
             return loss_rg
 
-        loss_rg = sub_routine()
-
+        # loss_rg = sub_routine()
+        loss_rg = None
 
 
         global_loss, loss = update_loss_and_global_loss_dro(train_tilted_params=train_tilted_params,
@@ -317,14 +322,14 @@ def dro_optimization_procedure(train_tilted_params):
         track_output.append(output_group_0)
         track_input.append(items_group_0)
 
-    epoch_metric_tracker, loss = train_tilted_params.per_epoch_metric(track_output,
-                                                                      track_input,
-                                                                      train_tilted_params.fairness_function)
+    # epoch_metric_tracker, loss = train_tilted_params.per_epoch_metric(track_output,
+    #                                                                   track_input,
+    #                                                                   train_tilted_params.fairness_function)
 
-    return epoch_metric_tracker, loss, global_weight, global_loss
+    return None, loss, global_weight, global_loss
 
 
-def erm_optimization_procedure(train_tilted_params):
+def erm_optimization_procedure_original(train_tilted_params):
     # Gives weights to each group. In case of supergroup then two group shares the same weight
     # Note that global_weight never gets updated.
     global_weight = train_tilted_params.other_params['global_weight']
@@ -350,27 +355,8 @@ def erm_optimization_procedure(train_tilted_params):
 
     all_groups = []
 
-    # all_label_augmented, all_aux_augmented, all_input_augmented, all_aux_flatten_augmented = train_tilted_params.other_params['all_label_augmented'],\
-    #     train_tilted_params.other_params['all_aux_augmented'],\
-    #     train_tilted_params.other_params['all_input_augmented'], train_tilted_params.other_params['all_aux_flatten_augmented']
-
-
-    # all_label, all_aux, all_input, all_aux_flatten =  train_tilted_params.other_params['all_label'],\
-    #     train_tilted_params.other_params['all_aux'],\
-    #     train_tilted_params.other_params['all_input'], train_tilted_params.other_params['all_aux_flatten']
 
     for i in tqdm(range(train_tilted_params.other_params['number_of_iterations'])):
-        #
-        # if False:    # bool(random.getrandbits(1)), i%20 != 0
-        #     train_tilted_params.other_params['all_label'] = all_label_augmented
-        #     train_tilted_params.other_params['all_aux'] = all_aux_augmented
-        #     train_tilted_params.other_params['all_aux_flatten'] = np.asarray(all_aux_flatten_augmented)
-        #     train_tilted_params.other_params['all_input'] = all_input_augmented
-        # # else:
-        # #     train_tilted_params.other_params['all_label'] = all_label
-        # #     train_tilted_params.other_params['all_aux'] = all_aux
-        # #     train_tilted_params.other_params['all_aux_flatten'] = np.asarray(all_aux_flatten)
-        # #     train_tilted_params.other_params['all_input'] = all_input
 
 
         s_group_0, s_group_1 = group_sampling_procedure_func(
@@ -425,34 +411,6 @@ def erm_optimization_procedure(train_tilted_params):
 
 
 
-
-
-
-        #####TheOriginalEndsHere############
-
-        # composite_items = {
-        #     'input': torch.vstack([items_group_0['input'], items_group_1['input']]),
-        #     'labels': torch.hstack([items_group_0['labels'], items_group_1['labels']]),
-        #     'aux': torch.vstack([items_group_0['aux'], items_group_1['aux']]),
-        #     'aux_flattened': torch.hstack([items_group_0['aux_flattened'], items_group_1['aux_flattened']])
-        # }
-        #
-        # optimizer.zero_grad()
-        # output = model(composite_items)
-        # loss = criterion(output['prediction'], composite_items['labels'])
-        #
-        # loss = torch.mean(loss)
-        # loss_rg = fairness_regularization_procedure_func(train_tilted_params=train_tilted_params,
-        #                                                  items_group_0=items_group_0,
-        #                                                  items_group_1=items_group_1,
-        #                                                  model=model,
-        #                                                  other_params={'gamma': None})
-        # loss = loss + loss_rg*train_tilted_params.other_params['mixup_rg']
-
-        ## Augmented Ends Here ###
-
-
-
         loss.backward()
         optimizer.step()
 
@@ -473,6 +431,94 @@ def erm_optimization_procedure(train_tilted_params):
                                                                       train_tilted_params.fairness_function)
 
     return epoch_metric_tracker, loss, global_weight, None
+
+
+def erm_optimization_procedure(train_tilted_params):
+    # Gives weights to each group. In case of supergroup then two group shares the same weight
+    # Note that global_weight never gets updated.
+    global_weight = train_tilted_params.other_params['global_weight']
+
+    model, optimizer, device, criterion = \
+        train_tilted_params.model, train_tilted_params.optimizer, train_tilted_params.device, train_tilted_params.criterion
+    model.train()
+
+    group_sampling_procedure = train_tilted_params.other_params['group_sampling_procedure']
+
+    if "distance" in group_sampling_procedure:
+        flattened_s_to_s = {value: key for key, value in train_tilted_params.other_params['s_to_flattened_s'].items()}
+        similarity_matrix = generate_similarity_matrix(train_tilted_params.other_params['valid_iterator'], model,
+                                                       train_tilted_params.other_params['groups'], flattened_s_to_s,
+                                                       distance_mechanism=train_tilted_params.other_params[
+                                                           'distance_mechanism'])
+    else:
+        similarity_matrix = None
+
+    track_output = []
+    track_input = []
+
+    all_groups = []
+
+    number_of_examples_to_sample_from = train_tilted_params.other_params['global_weight']    # I am currently repurposing global_weight as the number of examples to sample.
+
+    kl_loss = torch.nn.KLDivLoss(reduction="batchmean")
+
+    for i in tqdm(range(train_tilted_params.other_params['number_of_iterations'])):
+
+        s_group_0, s_group_1 = group_sampling_procedure_func(
+            train_tilted_params=train_tilted_params,
+            global_weight=global_weight,
+            similarity_matrix=similarity_matrix
+        )
+
+        all_groups.append(s_group_0)
+
+        items_group_0, items_group_1 = example_sampling_procedure_func(
+            train_tilted_params=train_tilted_params,
+            group0=s_group_0,
+            group1=s_group_1
+        )
+
+
+
+        #####TheOriginalStartsHere############
+        optimizer.zero_grad()
+
+
+        if train_tilted_params.other_params['use_mixup_augmentation']:
+            items_group_0, items_group_1 = \
+                augment_current_data_via_mixup(train_tilted_params, s_group_0, s_group_1, items_group_0,
+                                               items_group_1, train_tilted_params.other_params['epoch_number'])
+
+        if group_sampling_procedure == 'random_single_group':
+            assert s_group_1 is None
+            assert items_group_1 is None
+
+        output_group_0 = model(items_group_0)
+        loss_group_0 = criterion(output_group_0['prediction'], items_group_0['labels'])
+
+        loss = torch.mean(loss_group_0)
+
+
+
+        loss.backward()
+        optimizer.step()
+
+        output_group_0['loss_batch'] = torch.mean(loss).item()  # handel this better!
+        track_output.append(output_group_0)
+        try:
+            items_group_0['labels'] = items_group_0['original_labels']
+        except KeyError:
+            items_group_0['labels'] = items_group_0['labels']
+        track_input.append(items_group_0)
+
+    all_groups = np.unique(all_groups)
+
+    epoch_metric_tracker, loss = train_tilted_params.per_epoch_metric(track_output,
+                                                                      track_input,
+                                                                      train_tilted_params.fairness_function)
+
+    return epoch_metric_tracker, loss, global_weight, None
+
 
 
 def create_group(total_no_groups, method="super_group"):
@@ -701,9 +747,9 @@ def orchestrator(training_loop_parameters: TrainingLoopParameters):
             fairness_function=training_loop_parameters.fairness_function,
             iterator_set=None)
 
-        valid_epoch_metric, loss = test(valid_parameters)
+        # train_epoch_metric, loss = test(valid_parameters)
 
-        log_epoch_metric(logger, start_message='train', epoch_metric=valid_epoch_metric, epoch_number=ep, loss=loss)
+        # log_epoch_metric(logger, start_message='train', epoch_metric=train_epoch_metric, epoch_number=ep, loss=loss)
 
         if training_loop_parameters.use_wandb:
             log_and_plot_data(epoch_metric=train_epoch_metric, loss=loss, train=True)

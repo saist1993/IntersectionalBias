@@ -22,9 +22,9 @@ class SimpleNonLinear(nn.Module):
         self.dropout = nn.Dropout(p=self.use_dropout)
 
         if self.use_batch_norm != 0.0:
-            self.batchnorm1 = nn.BatchNorm1d(128)
-            self.batchnorm2 = nn.BatchNorm1d(64)
-            self.batchnorm3 = nn.BatchNorm1d(32)
+            self.batchnorm1 = nn.InstanceNorm1d(128)
+            self.batchnorm2 = nn.InstanceNorm1d(64)
+            self.batchnorm3 = nn.InstanceNorm1d(32)
 
     def forward(self, params):
         x = params['input']

@@ -11,8 +11,12 @@ from itertools import combinations
 from metrics import calculate_epoch_metric
 from typing import Dict, Callable, Optional
 from sklearn.metrics.pairwise import cosine_distances
+from sklearn.metrics import accuracy_score
+import warnings
+warnings.filterwarnings('ignore')
 
 
+from pprint import pprint
 @dataclass
 class TrainParameters:
     model: torch.nn.Module
@@ -93,7 +97,7 @@ def get_fairness_loss(fairness_function, loss, preds, aux, label, all_patterns):
         raise NotImplementedError
 
 
-def per_epoch_metric(epoch_output, epoch_input, fairness_function, attribute_id=None):
+def per_epoch_metric(epoch_output, epoch_input, fairness_function, loss_function=None, attribute_id=None):
     """
     :param epoch_output: access all the batch output.
     :param epoch_input: Iterator to access the gold data and inputs
@@ -130,6 +134,8 @@ def per_epoch_metric(epoch_output, epoch_input, fairness_function, attribute_id=
 
         # all_s_prediction(batch_output[''])
 
+
+
     try:
         if not flag:
             # this is a adversarial group
@@ -144,6 +150,38 @@ def per_epoch_metric(epoch_output, epoch_input, fairness_function, attribute_id=
     all_s = np.vstack(all_s)
     all_s_flatten = np.hstack(all_s_flatten)
 
+    group_metrics = {}
+
+    for group in np.unique(all_s, axis=0):
+        mask = generate_mask(all_s, group)
+        positive_label_mask = all_label == 1
+        negative_label_mask = all_label == 0
+
+        positive_mask = np.logical_and(mask, positive_label_mask)
+        negative_mask = np.logical_and(mask, negative_label_mask)
+
+        total_group_size = np.sum(mask)
+        positive_size = np.sum(positive_mask)
+        negative_size = np.sum(negative_mask)
+
+        positive_accuracy = round(accuracy_score(y_true=all_label[positive_mask], y_pred=all_prediction[positive_mask]),
+                                  3)
+        negative_accuracy = round(accuracy_score(y_true=all_label[negative_mask], y_pred=all_prediction[negative_mask]),
+                                  3)
+        total_accuracy = round(accuracy_score(y_true=all_label[mask], y_pred=all_prediction[mask]), 3)
+
+        group_metrics[tuple(group)] = [total_group_size, positive_size, negative_size, total_accuracy,
+                                       positive_accuracy, negative_accuracy]
+
+        if loss_function:
+            total_loss = loss_function(torch.FloatTensor(all_label[mask]), torch.FloatTensor(all_prediction[mask]))/total_group_size
+            positive_loss = loss_function(torch.FloatTensor(all_label[positive_mask]), torch.FloatTensor(all_prediction[positive_mask]))/positive_size
+            negative_loss = loss_function(torch.FloatTensor(all_label[negative_mask]), torch.FloatTensor(all_prediction[negative_mask]))/negative_size
+            group_metrics[tuple(group)].append([total_loss, positive_loss, negative_loss])
+
+
+
+    print(group_metrics)
 
     # Calculate accuracy
     # accuracy = fairness_functions.calculate_accuracy_classification(predictions=all_prediction, labels=all_label)
@@ -163,7 +201,7 @@ def per_epoch_metric(epoch_output, epoch_input, fairness_function, attribute_id=
     }
 
     epoch_metric = calculate_epoch_metric.CalculateEpochMetric(all_prediction, all_label, all_s, other_meta_data).run()
-    # epoch_metric = None
+    epoch_metric.other_info = group_metrics
     return epoch_metric, np.mean(all_loss)
 
 
@@ -566,6 +604,8 @@ def augment_current_data_via_mixup(train_tilted_params, s_group_0, s_group_1, it
                 train_tilted_params.other_params['all_label_augmented'],\
                 train_tilted_params.other_params['all_aux_flatten_augmented']
 
+        augmented_s_flat = np.asarray(augmented_s_flat)
+
         size_of_data = int(len(items['input'])/2)
         index_0 = np.where(np.logical_and(augmented_s_flat==s, augmented_y==0) == True)[0]
         index_1 = np.where(np.logical_and(augmented_s_flat==s, augmented_y==1) == True)[0]
@@ -582,6 +622,9 @@ def augment_current_data_via_mixup(train_tilted_params, s_group_0, s_group_1, it
         # else:
         #     index_0 = index_0[2 * int(length_of_index_0 / 3):]
         #     index_1 = index_1[2 * int(length_of_index_0 / 3):]
+
+        # index_0 = index_0[:int((epoch_number+1)*100000)]
+        # index_1 = index_1[:int((epoch_number+1)*100000)]
 
 
         relevant_index = np.random.choice(index_0, size=size_of_data, replace=True).tolist()

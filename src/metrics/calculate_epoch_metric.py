@@ -20,7 +20,8 @@ class EpochMetricTracker():
     tpr_parity: FairnessMetricTracker
     eps_fairness: Dict[str, EPSFairnessMetric]
     loss: Optional[float] = None
-    epoch_number: Optional[int] = None
+    epoch_number: Optional[int] = None,
+    other_info: Optional[Dict] = None
 
 
 class CalculateEpochMetric:

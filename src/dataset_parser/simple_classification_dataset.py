@@ -54,6 +54,11 @@ class SimpleClassificationDataset:
         if len(np.unique(self.s)) == 2 and -1 in np.unique(self.s):
             self.s = (self.s + 1) / 2
 
+        self.per_group_label_number_of_examples = params['per_group_label_number_of_examples']
+
+        self.max_number_of_generated_examples = params['max_number_of_generated_examples']
+        self.mmd_augmentation_mechanism = params['mmd_augmentation_mechanism']
+
     def run(self):
         """Orchestrates the whole process"""
         X,y,s = self.X, self.y, self.s
@@ -67,16 +72,23 @@ class SimpleClassificationDataset:
 
 
         if "augmented" in self.dataset_name:
-            augment_data = AugmentData(self.dataset_name, train_X, train_y, train_s, self.max_number_of_generated_examples)
-            train_X, train_y, train_s = augment_data.run()
-            # train_X, train_y, train_s = valid_X, valid_y, valid_s
+            augment_data = AugmentData(self.dataset_name, train_X, train_y, train_s,
+                                       np.unique(valid_s, axis=0),
+                                       self.max_number_of_generated_examples,
+                                       max_number_of_positive_examples=self.per_group_label_number_of_examples,
+                                       max_number_of_negative_examples=self.per_group_label_number_of_examples,
+                                       mmd_augmentation_mechanism=self.mmd_augmentation_mechanism
+                                       )
 
+            if self.mmd_augmentation_mechanism == 'only_generated_data':
+                train_X_augmented, train_y_augmented, train_s_augmented = augment_data.run()
 
+            else:
+                train_X, train_y, train_s = augment_data.run()
+                train_X_augmented, train_y_augmented, train_s_augmented = train_X, train_y, train_s
 
-        # if "augmented_valid" in self.dataset_name:
-        #     augment_data = AugmentData(self.dataset_name, valid_X, valid_y, valid_s,
-        #                                200)
-        #     train_X, train_y, train_s = augment_data.run()
+        else:
+            train_X_augmented, train_y_augmented, train_s_augmented = train_X, train_y, train_s
 
 
 
@@ -91,6 +103,13 @@ class SimpleClassificationDataset:
             do_standard_scalar_transformation=True
         )
         iterator_set, vocab, s_flatten_lookup = create_iterator.get_iterators(iterator_data)
+
+        if "augmented" in self.dataset_name:
+            scaler = iterator_set['scaler']
+            # train_X_augmented = scaler.transform(train_X_augmented)
+        iterator_set['train_X_augmented'] = train_X_augmented
+        iterator_set['train_y_augmented'] = train_y_augmented
+        iterator_set['train_s_augmented'] = train_s_augmented
 
         iterators = [iterator_set]  # If it was k-fold. One could append k iterators here.
 
