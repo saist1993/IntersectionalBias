@@ -595,6 +595,49 @@ def sample_data(train_tilted_params, s_group_0, s_group_1):
     return items_group_0, items_group_1
 
 
+def abstract_group_sampling(train_tilted_params, s_group_0, s_group_1):
+    original_data, _ = sample_data(train_tilted_params, s_group_0, None)
+    reverse_lookup = {value:key for key, value in train_tilted_params.other_params['s_to_flattened_s'].items()}
+    s_group_0 = reverse_lookup[s_group_0]
+    s_group_0_abstract = generate_combinations(s_group_0,k=1)
+
+    all_group_samples = []
+    for group in s_group_0_abstract:
+        mask = generate_mask(train_tilted_params.other_params['all_aux'], group)
+        positive_mask = np.logical_and(mask, train_tilted_params.other_params['all_label'] == 1)
+        negative_mask = np.logical_and(mask, train_tilted_params.other_params['all_label'] == 0)
+        samples = np.random.choice(np.where(negative_mask)[0],
+                                            size=int(train_tilted_params.other_params['batch_size'] / 2),
+                                            replace=True).tolist()
+        samples.extend(np.random.choice(np.where(positive_mask)[0],
+                         size=int(train_tilted_params.other_params['batch_size'] / 2),
+                         replace=True).tolist())
+        all_group_samples.append(samples)
+
+    alpha = 1.0
+    weights = [beta(alpha, alpha) for _ in range(len(all_group_samples))]
+    weights = weights/np.sum(weights)
+    x = np.sum(np.asarray([weight*train_tilted_params.other_params['all_input'][samples] for samples, weight in zip(all_group_samples, weights)]), axis=0)
+    y = train_tilted_params.other_params['all_label'][samples]
+    s = train_tilted_params.other_params['all_aux'][samples]
+    s_flat = train_tilted_params.other_params['all_aux_flatten'][samples]
+
+    batch_input = {
+        'labels': torch.LongTensor(y),
+        'input': torch.FloatTensor(x),
+        'aux': torch.LongTensor(s),
+        'aux_flattened': torch.LongTensor(s_flat)
+    }
+
+    for key in batch_input.keys():
+        batch_input[key] = batch_input[key].to(train_tilted_params.device)
+
+
+
+    return original_data, batch_input
+
+
+
 def augment_current_data_via_mixup(train_tilted_params, s_group_0, s_group_1, items_group_0, items_group_1, epoch_number=0):
      # 'input': torch.FloatTensor(all_input[relevant_index])
 

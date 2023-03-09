@@ -374,17 +374,21 @@ def orchestrator(training_loop_parameters: TrainingLoopParameters):
                         size_of_groups=gen_size_of_each_group)
 
 
-        resampled_X, resampled_s, resampled_y, size_of_each_group = resample_dataset(all_X=original_train_input,
-                                                                 all_s=original_train_aux,
-                                                                 all_y=original_train_label,
-                                                                 size_of_each_group=size_of_each_group,
-                                                                 model=training_loop_parameters.model)
+        if ep%5 == 0:
+            resampled_X, resampled_s, resampled_y, size_of_each_group = resample_dataset(all_X=original_train_input,
+                                                                     all_s=original_train_aux,
+                                                                     all_y=original_train_label,
+                                                                     size_of_each_group=size_of_each_group,
+                                                                     model=training_loop_parameters.model)
 
-        gen_resampled_X, gen_resampled_s, gen_resampled_y, gen_size_of_each_group = resample_dataset(all_X=generated_train_input,
-                                                                                     all_s=generated_train_aux,
-                                                                                     all_y=generated_train_label,
-                                                                                     size_of_each_group=gen_size_of_each_group,
-                                                                                     model=training_loop_parameters.model)
+            gen_resampled_X, gen_resampled_s, gen_resampled_y, gen_size_of_each_group = resample_dataset(all_X=generated_train_input,
+                                                                                         all_s=generated_train_aux,
+                                                                                         all_y=generated_train_label,
+                                                                                         size_of_each_group=gen_size_of_each_group,
+                                                                                         model=training_loop_parameters.model)
+            for layer in training_loop_parameters.model.children():
+                if hasattr(layer, 'reset_parameters'):
+                    layer.reset_parameters()
 
         index = np.arange(len(resampled_X))
         np.random.shuffle(index)
