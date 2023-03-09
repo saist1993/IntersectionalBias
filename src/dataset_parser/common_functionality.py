@@ -655,14 +655,14 @@ class AugmentData:
         # gen_model_negative.load_state_dict(torch.load("gen_model_adult_negative.pth"))
 
         # all_models = pickle.load(open(f"all_{self.dataset_name.replace('_augmented', '')}.pt", "rb"))
-        all_models = [
-                      pickle.load(open(f"0.886_train_and_valid_all_twitter_hate_speech.pt", "rb")),
-                      pickle.load(open(f"0.658_train_and_valid_all_twitter_hate_speech.pt", "rb")),
-                      pickle.load(open(f"0.734_train_and_valid_all_twitter_hate_speech.pt", "rb"))
-                      ]
+        # all_models = [
+        #               pickle.load(open(f"0.886_train_and_valid_all_twitter_hate_speech.pt", "rb")),
+        #               pickle.load(open(f"0.658_train_and_valid_all_twitter_hate_speech.pt", "rb")),
+        #               pickle.load(open(f"0.734_train_and_valid_all_twitter_hate_speech.pt", "rb"))
+        #               ]
         # all_models = pickle.load(open(f"train_and_valid_all_{self.dataset_name.replace('_augmented', '')}.pt", "rb"))
 
-        # all_models = [pickle.load(open(f"all_{self.dataset_name.replace('_augmented', '')}.pt", "rb"))]
+        all_models = [pickle.load(open(f"all_{self.dataset_name.replace('_augmented', '')}.pt", "rb"))]
 
         # classifier_models = pickle.load(open(f"real_vs_fake_{self.dataset_name.replace('_augmented', '')}.sklearn", "rb"))
         classifier_models = pickle.load(
