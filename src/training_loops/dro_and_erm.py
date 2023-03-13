@@ -6,6 +6,7 @@ from tqdm.auto import tqdm
 
 from .common_functionality import *
 
+from mmd_utils import mix_rbf_mmd2
 '''
 parameters till now 
 
@@ -125,6 +126,9 @@ def example_sampling_procedure_func(train_tilted_params, group0, group1):
     elif example_sampling_procedure == 'random_sampling':
         items_group_0, items_group_1 = \
             randomly_sample_data(train_tilted_params=train_tilted_params, s_group_0=group0, s_group_1=group1)
+    elif example_sampling_procedure == 'abstract_group_sampling':
+        items_group_0, items_group_1 = \
+            abstract_group_sampling(train_tilted_params=train_tilted_params, s_group_0=group0, s_group_1=group1)
     else:
         raise NotImplementedError
 
@@ -329,13 +333,14 @@ def dro_optimization_procedure(train_tilted_params):
     return None, loss, global_weight, global_loss
 
 
-def erm_optimization_procedure_original(train_tilted_params):
+def erm_optimization_procedure(train_tilted_params):
     # Gives weights to each group. In case of supergroup then two group shares the same weight
     # Note that global_weight never gets updated.
     global_weight = train_tilted_params.other_params['global_weight']
 
     model, optimizer, device, criterion = \
         train_tilted_params.model, train_tilted_params.optimizer, train_tilted_params.device, train_tilted_params.criterion
+
     model.train()
 
     group_sampling_procedure = train_tilted_params.other_params['group_sampling_procedure']
@@ -355,6 +360,7 @@ def erm_optimization_procedure_original(train_tilted_params):
 
     all_groups = []
 
+    sigma_list = [1.0, 10.0, 20.0, 30.0, 40.0, 50.0]
 
     for i in tqdm(range(train_tilted_params.other_params['number_of_iterations'])):
 
@@ -390,9 +396,12 @@ def erm_optimization_procedure_original(train_tilted_params):
         output_group_0 = model(items_group_0)
         loss_group_0 = criterion(output_group_0['prediction'], items_group_0['labels'])
 
-        if s_group_1:
+        if items_group_1 is not None:
             output_group_1 = model(items_group_1)
             loss_group_1 = criterion(output_group_1['prediction'], items_group_1['labels'])
+            # loss_group_1 =  mix_rbf_mmd2(output_group_1['hidden'],
+            #                                  output_group_0['hidden'],
+            #                                  sigma_list=sigma_list)
         else:
             loss_group_1 = None
 
@@ -408,7 +417,6 @@ def erm_optimization_procedure_original(train_tilted_params):
 
         if loss_rg:
             loss = loss + loss_rg * train_tilted_params.other_params['mixup_rg']
-
 
 
         loss.backward()
@@ -433,7 +441,7 @@ def erm_optimization_procedure_original(train_tilted_params):
     return epoch_metric_tracker, loss, global_weight, None
 
 
-def erm_optimization_procedure(train_tilted_params):
+def erm_optimization_procedure_v2(train_tilted_params):
     # Gives weights to each group. In case of supergroup then two group shares the same weight
     # Note that global_weight never gets updated.
     global_weight = train_tilted_params.other_params['global_weight']
@@ -489,9 +497,9 @@ def erm_optimization_procedure(train_tilted_params):
                 augment_current_data_via_mixup(train_tilted_params, s_group_0, s_group_1, items_group_0,
                                                items_group_1, train_tilted_params.other_params['epoch_number'])
 
-        if group_sampling_procedure == 'random_single_group':
-            assert s_group_1 is None
-            assert items_group_1 is None
+        # if group_sampling_procedure == 'random_single_group':
+        #     assert s_group_1 is None
+        #     assert items_group_1 is None
 
         output_group_0 = model(items_group_0)
         loss_group_0 = criterion(output_group_0['prediction'], items_group_0['labels'])
@@ -601,6 +609,8 @@ def orchestrator(training_loop_parameters: TrainingLoopParameters):
         example_sampling_procedure = "random_sampling"
     elif "equal_sampling" in method:
         example_sampling_procedure = "equal_sampling"
+    elif "abstract_group_sampling" in method:
+        example_sampling_procedure = "abstract_group_sampling"
     else:
         raise NotImplementedError("no example sampling procedure specified")
 

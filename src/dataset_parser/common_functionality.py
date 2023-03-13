@@ -468,8 +468,12 @@ class AugmentDataCommonFunctionality:
                     group_mask = AugmentDataCommonFunctionality.generate_mask(other_meta_data['raw_data']['train_s'],
                                                                               group)
                     label_1_group_mask = np.logical_and(group_mask, other_meta_data['raw_data']['train_y'] == label)
-                    label_1_examples = np.random.choice(np.where(label_1_group_mask == True)[0], size=500,
-                                                        replace=True)
+                    try:
+                        label_1_examples = np.random.choice(np.where(label_1_group_mask == True)[0], size=500,
+                                                            replace=True)
+                    except ValueError:
+                        print("here")
+
 
                     batch_input = {
                         'input': torch.FloatTensor(other_meta_data['raw_data']['train_X'][label_1_examples]),
@@ -691,7 +695,7 @@ class AugmentData:
                 if mechanism == "only_generated_data":
                     total_examples = 0
 
-                if total_examples > max_number_of_examples:  # total_examples > max_number_of_examples or
+                if True:  # total_examples > max_number_of_examples or
 
                     # then we only generate fake data
                     number_of_examples_to_sample = max_number_of_examples
