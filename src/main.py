@@ -13,6 +13,7 @@ from utils import plot_and_visualize
 from training_loops import dro_and_erm
 from typing import NamedTuple, Dict, Optional
 from training_loops import oracle_with_mixup
+from training_loops import fairgrad_training_loop
 from training_loops import titled_erm_training_loop
 from training_loops import adversarial_training_loop
 from dataset_iterators import generate_data_iterators
@@ -332,13 +333,16 @@ def runner(runner_arguments:RunnerArguments):
                       'dataset_name': runner_arguments.dataset_name,
                       'seed': runner_arguments.seed,
                       's_to_flattened_s': other_meta_data['s_flatten_lookup'],
-                      'dataset_other_meta_data': other_meta_data},
+                      'dataset_other_meta_data': other_meta_data,
+                      'per_group_label_number_of_examples': runner_arguments.per_group_label_number_of_examples,},
         fairness_function=runner_arguments.fairness_function
     )
     # Combine everything
 
-    if 'unconstrained' in runner_arguments.method or 'fairgrad' in  runner_arguments.method:
+    if 'unconstrained' in runner_arguments.method:
         output = unconstrained_training_loop.training_loop(training_loop_params)
+    elif "fairgrad" in runner_arguments.method:
+        output = fairgrad_training_loop.orchestrator(training_loop_params)
     elif runner_arguments.method in ['adversarial_group', 'adversarial_single', 'adversarial_group_with_fairness_loss']:
         output = adversarial_training_loop.training_loop(training_loop_params)
     elif runner_arguments.method in ['adversarial_moe']:
@@ -429,7 +433,7 @@ if __name__ == '__main__':
     parser.add_argument('--fairness_lambda', '-fairness_lambda', help="the lambda in the fairness loss equation", type=float,
                         default=0.0)
     parser.add_argument('--method', '-method', help="unconstrained/adversarial_single/adversarial_group", type=str,
-                        default='erm_random_single_group_equal_sampling')
+                        default='fairgrad')
     parser.add_argument('--save_model_as', '-save_model_as', help="unconstrained/adversarial_single/adversarial_group", type=str,
                         default=None)
     parser.add_argument('--dataset_name', '-dataset_name', help="twitter_hate_speech/adult_multi_group/celeb_multigroup_v3",
