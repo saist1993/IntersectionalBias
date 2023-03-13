@@ -722,6 +722,7 @@ def orchestrator(training_loop_parameters: TrainingLoopParameters):
             training_loop_parameters.other_params['all_input_augmented'] = all_input_augmented
 
 
+
         if "train_on_only_generated_data" in method:
 
             training_loop_parameters.other_params['all_label'] = all_label_augmented
