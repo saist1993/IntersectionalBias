@@ -63,11 +63,11 @@ class SimpleNonLinear(nn.Module):
 
         self.encoder = nn.Sequential(
             nn.Linear(input_dim, 256),
-            nn.BatchNorm1d(256),
+            # nn.BatchNorm1d(256),
             nn.ReLU(),
             nn.Dropout(p=0.2),
             nn.Linear(256, 128),
-            nn.BatchNorm1d(128),
+            # nn.BatchNorm1d(128),
             nn.ReLU(),
             nn.Dropout(p=0.2)
         )
@@ -76,11 +76,11 @@ class SimpleNonLinear(nn.Module):
         for adv_dim in adv_dims:
             self.adversarials.append(nn.Sequential(
                 nn.Linear(128, 64),
-                nn.BatchNorm1d(64),
+                # nn.BatchNorm1d(64),
                 nn.ReLU(),
                 nn.Dropout(p=0.2),
                 nn.Linear(64, 32),
-                nn.BatchNorm1d(32),
+                # nn.BatchNorm1d(32),
                 nn.ReLU(),
                 nn.Dropout(p=0.2),
                 nn.Linear(32, adv_dim)

@@ -16,6 +16,7 @@ from training_loops import oracle_with_mixup
 from training_loops import fairgrad_training_loop
 from training_loops import titled_erm_training_loop
 from training_loops import adversarial_training_loop
+from training_loops import new_adversarial_training_loop
 from dataset_iterators import generate_data_iterators
 from training_loops import unconstrained_training_loop
 from training_loops import adversarial_moe_training_loop
@@ -105,7 +106,7 @@ class RunnerArguments(NamedTuple):
     optimizer_name: str = 'adam'
     lr: float = 0.001
     use_wandb: bool = False
-    adversarial_lambda: float = 0.5
+    adversarial_lambda: float = 20.0
     dataset_size: int = 10000
     attribute_id: Optional[int] = None
     fairness_lambda: float = 0.0
@@ -344,7 +345,7 @@ def runner(runner_arguments:RunnerArguments):
     elif "fairgrad" in runner_arguments.method: # now fairgrad is at correct place
         output = fairgrad_training_loop.orchestrator(training_loop_params)
     elif runner_arguments.method in ['adversarial_group', 'adversarial_single', 'adversarial_group_with_fairness_loss']:
-        output = adversarial_training_loop.training_loop(training_loop_params)
+        output = new_adversarial_training_loop.orchestrator(training_loop_params)
     elif runner_arguments.method in ['adversarial_moe']:
         output = adversarial_moe_training_loop.training_loop(training_loop_params)
     elif runner_arguments.method in ['only_titled_erm', 'only_mixup', 'only_mixup_with_loss_group',
@@ -429,16 +430,16 @@ if __name__ == '__main__':
                         default='simple_non_linear')
 
     parser.add_argument('--adversarial_lambda', '-adversarial_lambda', help="the lambda in the adv loss equation", type=float,
-                        default=0.0)
+                        default=100.0)
     parser.add_argument('--fairness_lambda', '-fairness_lambda', help="the lambda in the fairness loss equation", type=float,
                         default=0.0)
     parser.add_argument('--method', '-method', help="unconstrained/adversarial_single/adversarial_group", type=str,
-                            default='erm_random_single_group_equal_sampling_mixup_generated_and_real_data_only_generated_data')
+                            default='adversarial_single')
     parser.add_argument('--save_model_as', '-save_model_as', help="unconstrained/adversarial_single/adversarial_group", type=str,
                         default=None)
     parser.add_argument('--dataset_name', '-dataset_name', help="twitter_hate_speech/adult_multi_group/celeb_multigroup_v3",
                         type=str,
-                        default='twitter_hate_speech_augmented')
+                        default='twitter_hate_speech')
 
     parser.add_argument('--log_file_name', '-log_file_name', help="the name of the log file",
                         type=str,
