@@ -313,7 +313,14 @@ if __name__ == '__main__':
         mixup_scales = [0.0]
         titled_scales = [0.0]
 
-    for examples_to_generate in max_number_of_generated_examples:
+    if "adversarial" in args.method:
+        mixup_scales = [0.0]
+        titled_scales = [0.0]
+        adversarial_scale = [0.5, 1.0, 5.0, 10.0, 50.0, 100.0]
+    else:
+        adversarial_scale = [0.0]
+
+    for adv_scale in adversarial_scale:
         for seed in args.seeds:
             for titled_scale in titled_scales:
                 for mixup_scale in mixup_scales:
@@ -330,7 +337,7 @@ if __name__ == '__main__':
                             optimizer_name=args.optimizer_name,
                             lr=args.lr,
                             use_wandb=args.use_wandb,
-                            adversarial_lambda=0.0,
+                            adversarial_lambda=adv_scale,
                             dataset_size=args.dataset_size,
                             attribute_id=args.attribute_id,  # which attribute to care about!
                             fairness_lambda=0.0,
@@ -338,12 +345,10 @@ if __name__ == '__main__':
                             fairness_function=args.fairness_function,
                             titled_t=titled_scale,
                             mixup_rg=mixup_scale,
-                            max_number_of_generated_examples=examples_to_generate,
+                            max_number_of_generated_examples=1.0,
                             use_dropout=args.use_dropout,
                             per_group_label_number_of_examples=args.per_group_label_number_of_examples
                         )
                         output = runner(runner_arguments=runner_arguments)
                     except KeyboardInterrupt:
                         raise IOError
-
-# generic runner: cd ~/codes/IntersectionalBias/src/; python hyperparam_runner -seeds 10 20 -dataset_name adult_multi_group -batch_size 64 -model simple_non_linear -epochs 5 -method unconstrained -fairness_lambda_start 0.05 -fairness_lambda_end 0.5 -fairness_function equal_opportunity
