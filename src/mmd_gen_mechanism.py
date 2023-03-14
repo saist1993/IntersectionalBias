@@ -375,8 +375,8 @@ if __name__ == '__main__':
             current_group = np.random.choice(train_tilted_params.other_params['groups'],
                                              p=per_group_accuracy / np.linalg.norm(per_group_accuracy, 1), size=1)[0]
 
-            if flattened_s_to_s[current_group] in [(0, 1, 1, 0), (1, 1, 0, 1), (1, 0, 0, 0), (0, 1, 0, 1), (0, 1, 0, 0), (1, 0, 0, 1), (1, 0, 1, 1)]:
-                continue
+            # if flattened_s_to_s[current_group] in [(0, 1, 1, 0), (1, 1, 0, 1), (1, 0, 0, 0), (0, 1, 0, 1), (0, 1, 0, 0), (1, 0, 0, 1), (1, 0, 1, 1)]:
+            #     continue
 
             # if current_group == train_tilted_params.other_params['s_to_flattened_s'][tuple(deleted_group)]:
             #     continue
@@ -583,8 +583,8 @@ if __name__ == '__main__':
 
         for flat_current_group, current_group in other_meta_data['s_flatten_lookup'].items():\
 
-            if flattened_s_to_s[current_group] in [ (0, 1, 0, 1), (0, 1, 0, 0), (1, 0, 0, 1), (1, 0, 1, 1)]:
-                continue
+            # if flattened_s_to_s[current_group] in [ (0, 1, 0, 1), (0, 1, 0, 0), (1, 0, 0, 1), (1, 0, 1, 1)]:
+            #     continue
 
             positive_size, negative_size = 0, 0
 
