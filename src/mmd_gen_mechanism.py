@@ -683,7 +683,7 @@ if __name__ == '__main__':
         print(
             f"average accuracy is {np.mean(overall_average_accuracy)}, + {np.mean(positive_average_accuracy)}, - {np.mean(negative_average_accuracy)} ")
         if np.mean(positive_average_accuracy) < worst_accuracy:
-            worst_accuracy = np.mean(overall_average_accuracy)
+            worst_accuracy = np.mean(positive_average_accuracy)
             # torch.save(gen_model_positive.state_dict(), "dummy.pth")
             # torch.save(gen_model_negative.state_dict(), "dummy.pth")
             pickle.dump(all_models, open(f"train_and_valid_all_{dataset_name}.pt", 'wb'))
