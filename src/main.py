@@ -188,7 +188,7 @@ def get_model(method:str, model_name:str, other_meta_data:Dict, device:torch.dev
             'use_dropout': use_dropout
         }
 
-        if method == 'adversarial_single':
+        if 'adversarial_single' in method:
             total_adv_dim = len(other_meta_data['s_flatten_lookup'])
             model_params['model_arch']['adv'] = {'output_dim': [total_adv_dim]}
             model = adversarial.SimpleNonLinear(model_params)
