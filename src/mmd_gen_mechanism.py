@@ -15,8 +15,8 @@ from sklearn.metrics import balanced_accuracy_score, accuracy_score
 
 warnings.filterwarnings("ignore", message="y_pred contains classes not in y_true")
 
-# import mkl
-# mkl.set_num_threads(3)
+import mkl
+mkl.set_num_threads(3)
 
 dataset_name = 'celeb_multigroup_v3'
 seed = 50
