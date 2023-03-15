@@ -1,3 +1,5 @@
+import copy
+
 import torch
 import config
 import numpy as np
@@ -234,13 +236,20 @@ class DatasetTwitterHateSpeech:
         train_s = np.delete(train_s, new_test_examples_index, axis=0)
         train_y = np.delete(train_y, new_test_examples_index, axis=0)
 
-        # for deleted_group in [(0, 1, 1, 0), (1, 1, 0, 1), (1, 0, 0, 0), (0, 1, 0, 1), (0, 1, 0, 0), (1, 0, 0, 1), (1, 0, 1, 1)]:
-        #     # deleted_group = [0,1,0,0]
-        #     group_to_remove_index = np.where(create_mask(train_s, deleted_group))[0]
-        #
-        #     train_X = np.delete(train_X, group_to_remove_index, 0)
-        #     train_s = np.delete(train_s, group_to_remove_index, 0)
-        #     train_y = np.delete(train_y, group_to_remove_index, 0)
+
+        complete_train_X = copy.deepcopy(train_X)
+        complete_train_y = copy.deepcopy(train_y)
+        complete_train_s = copy.deepcopy(train_s)
+
+        # (0, 1, 1, 0), (1, 1, 0, 1), (1, 0, 0, 0), (0, 1, 0, 1), (0, 1, 0, 0), (1, 0, 0, 1), (1, 0, 1, 1)]
+
+        for deleted_group in [(0, 1, 1, 0), (1, 1, 0, 1), (1, 0, 0, 0), (0, 1, 0, 1), (0, 1, 0, 0), (1, 0, 0, 1), (1, 0, 1, 1)]:
+            # deleted_group = [0,1,0,0]
+            group_to_remove_index = np.where(create_mask(train_s, deleted_group))[0]
+
+            train_X = np.delete(train_X, group_to_remove_index, 0)
+            train_s = np.delete(train_s, group_to_remove_index, 0)
+            train_y = np.delete(train_y, group_to_remove_index, 0)
 
         # deleted_group = [1, 1, 0, 0]
         # group_to_remove_index = np.where(create_mask(train_s, deleted_group))[0]
@@ -268,6 +277,8 @@ class DatasetTwitterHateSpeech:
         train_X = scaler.transform(train_X)
         valid_X = scaler.transform(valid_X)
         test_X = scaler.transform(test_X)
+
+        complete_train_X = scaler.transform(complete_train_X)
 
         if "augmented" in self.dataset_name:
             augment_data = AugmentData(self.dataset_name, train_X, train_y, train_s,
@@ -342,6 +353,9 @@ class DatasetTwitterHateSpeech:
                 'test_X': test_X,
                 'test_y': test_y,
                 'test_s': test_s,
+                'complete_train_X': complete_train_X,
+                'complete_train_y': complete_train_y,
+                'complete_train_s': complete_train_s,
             }
             other_meta_data['raw_data'] = raw_data
 

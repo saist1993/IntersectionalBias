@@ -111,27 +111,45 @@ class AuxilaryFunction:
         group_mask = AuxilaryFunction.create_mask_with_x(data=all_aux, condition=group)
         positive_index = np.where(np.logical_and(all_label == 1, group_mask == True))[0]
         negative_index = np.where(np.logical_and(all_label == 0, group_mask == True))[0]
-        negative_index = np.random.choice(negative_index, size=number_of_negative_examples, replace=True).tolist()
-        positive_index = np.random.choice(positive_index, size=number_of_positive_examples, replace=True).tolist()
 
-        batch_input_negative = {
-            'labels': torch.LongTensor(all_label[negative_index]),
-            'input': torch.FloatTensor(all_input[negative_index]),
-            'aux': torch.LongTensor(all_aux[negative_index]),
-            'aux_flattened': torch.LongTensor(all_aux_flatten[negative_index])
-        }
+        try:
+            negative_index = np.random.choice(negative_index, size=number_of_negative_examples, replace=True).tolist()
 
-        batch_input_positive = {
-            'labels': torch.LongTensor(all_label[positive_index]),
-            'input': torch.FloatTensor(all_input[positive_index]),
-            'aux': torch.LongTensor(all_aux[positive_index]),
-            'aux_flattened': torch.LongTensor(all_aux_flatten[positive_index])
-        }
+            batch_input_negative = {
+                'labels': torch.LongTensor(all_label[negative_index]),
+                'input': torch.FloatTensor(all_input[negative_index]),
+                'aux': torch.LongTensor(all_aux[negative_index]),
+                'aux_flattened': torch.LongTensor(all_aux_flatten[negative_index])
+            }
+        except:
+            batch_input_negative = {
+                'labels': torch.LongTensor(np.zeros(number_of_negative_examples)),
+                'input': torch.FloatTensor(np.tile(np.zeros_like(all_input[0]), (number_of_negative_examples, 1))),
+                'aux': None,
+                'aux_flattened': None
+            }
+
+        try:
+            positive_index = np.random.choice(positive_index, size=number_of_positive_examples, replace=True).tolist()
+
+            batch_input_positive = {
+                'labels': torch.LongTensor(all_label[positive_index]),
+                'input': torch.FloatTensor(all_input[positive_index]),
+                'aux': torch.LongTensor(all_aux[positive_index]),
+                'aux_flattened': torch.LongTensor(all_aux_flatten[positive_index])
+            }
+        except:
+            batch_input_positive = {
+                'labels': torch.LongTensor(np.ones(number_of_positive_examples)),
+                'input': torch.FloatTensor(np.tile(np.zeros_like(all_input[0]), (number_of_positive_examples, 1))),
+                'aux': None,
+                'aux_flattened': None
+            }
 
         return batch_input_negative, batch_input_positive
 
     @staticmethod
-    def sample_batch(current_group, other_meta_data, batch_sizes=512, validation=False):
+    def sample_batch(current_group, other_meta_data, batch_sizes=512, validation=False, from_real = False):
 
         # all_label_train = other_meta_data['raw_data']['train_y']
         # all_aux_train = other_meta_data['raw_data']['train_s']
@@ -180,13 +198,19 @@ class AuxilaryFunction:
         #         [other_meta_data['s_flatten_lookup'][tuple(i)] for i in other_meta_data['raw_data']['valid_s']]),
         #     number_of_positive_examples=int(batch_size / 2), number_of_negative_examples=int(batch_size / 2))
 
-        all_label = np.hstack([other_meta_data['raw_data']['valid_y'], other_meta_data['raw_data']['train_y']])
-        all_aux = np.vstack([other_meta_data['raw_data']['valid_s'], other_meta_data['raw_data']['train_s']])
-        all_input = np.vstack([other_meta_data['raw_data']['valid_X'], other_meta_data['raw_data']['train_X']])
+        # all_label = np.hstack([other_meta_data['raw_data']['valid_y'], other_meta_data['raw_data']['train_y']])
+        # all_aux = np.vstack([other_meta_data['raw_data']['valid_s'], other_meta_data['raw_data']['train_s']])
+        # all_input = np.vstack([other_meta_data['raw_data']['valid_X'], other_meta_data['raw_data']['train_X']])
         #
-        # all_label = other_meta_data['raw_data']['train_y']
-        # all_aux = other_meta_data['raw_data']['train_s']
-        # all_input = other_meta_data['raw_data']['train_X']
+
+        if from_real:
+            all_label = other_meta_data['raw_data']['complete_train_y']
+            all_aux = other_meta_data['raw_data']['complete_train_s']
+            all_input = other_meta_data['raw_data']['complete_train_X']
+        else:
+            all_label = other_meta_data['raw_data']['train_y']
+            all_aux = other_meta_data['raw_data']['train_s']
+            all_input = other_meta_data['raw_data']['train_X']
 
         # if validation:
         #     all_label = other_meta_data['raw_data']['valid_y']
@@ -277,20 +301,14 @@ if __name__ == '__main__':
     size_of_groups = {tuple(group): np.sum(generate_mask(other_meta_data['raw_data']['train_s'], group)) for group in
                       all_groups}
 
-    if False:
-        deleted_group = [0, 1, 0, 0]
-        group_to_remove_index = np.where(generate_mask(other_meta_data['raw_data']['train_s'], deleted_group))[0]
-        print(f"deleted group is {deleted_group} and flat version"
-              f" {other_meta_data['s_flatten_lookup'][tuple(deleted_group)]}")
+    deleted_groups = [(1, 1, 1, 0)]
 
-        other_meta_data['raw_data']['train_X'] = np.delete(other_meta_data['raw_data']['train_X'],
-                                                           group_to_remove_index, 0)
-        other_meta_data['raw_data']['train_s'] = np.delete(other_meta_data['raw_data']['train_s'],
-                                                           group_to_remove_index, 0)
-        other_meta_data['raw_data']['train_y'] = np.delete(other_meta_data['raw_data']['train_y'],
-                                                           group_to_remove_index, 0)
-
-    # other groups -> [0,1,1,1] and [1,1,0,0]
+    # for d in deleted_groups:
+    #     x = np.zeros(other_meta_data['raw_data']['train_X'][0])
+    #     y_0 = np.zeros(other_meta_data['raw_data']['train_y'][0])
+    #     y_1 = np.zeros(other_meta_data['raw_data']['train_y'][0])
+    #     x = np.zeros(other_meta_data['raw_data']['train_X'][0])
+        # create a 0's vector with
 
     all_label_train = other_meta_data['raw_data']['train_y']
     all_aux_train = other_meta_data['raw_data']['train_s']
@@ -375,8 +393,8 @@ if __name__ == '__main__':
             current_group = np.random.choice(train_tilted_params.other_params['groups'],
                                              p=per_group_accuracy / np.linalg.norm(per_group_accuracy, 1), size=1)[0]
 
-            # if flattened_s_to_s[current_group] in [(0, 1, 1, 0), (1, 1, 0, 1), (1, 0, 0, 0), (0, 1, 0, 1), (0, 1, 0, 0), (1, 0, 0, 1), (1, 0, 1, 1)]:
-            #     continue
+            if flattened_s_to_s[current_group] in deleted_groups:
+                continue
 
             # if current_group == train_tilted_params.other_params['s_to_flattened_s'][tuple(deleted_group)]:
             #     continue
@@ -491,7 +509,7 @@ if __name__ == '__main__':
         for flat_current_group, current_group in other_meta_data['s_flatten_lookup'].items():
             positive_size, negative_size = 0, 0
 
-            if flattened_s_to_s[current_group] in [(0, 1, 1, 0), (1, 1, 0, 1), (1, 0, 0, 0), (0, 1, 0, 1), (0, 1, 0, 0), (1, 0, 0, 1), (1, 0, 1, 1)]:
+            if flattened_s_to_s[current_group] in deleted_groups:
                 continue
 
             with torch.no_grad():
@@ -552,7 +570,7 @@ if __name__ == '__main__':
         # all_generated_examples[all_generated_examples < 0] = -1.0
         # all_generated_examples = scaler.transform(all_generated_examples)
         real_examples = np.random.choice(range(len(original_meta_data['raw_data']['train_X'])),
-                                         size=len(all_generated_examples), replace=False)
+                                         size=len(all_generated_examples), replace=True)
         real_examples = original_meta_data['raw_data']['train_X'][real_examples]
         generated_example_label = np.zeros(len(all_generated_examples))
         real_example_label = np.ones(len(all_generated_examples))
@@ -586,6 +604,9 @@ if __name__ == '__main__':
             # if flattened_s_to_s[current_group] in [ (0, 1, 0, 1), (0, 1, 0, 0), (1, 0, 0, 1), (1, 0, 1, 1)]:
             #     continue
 
+            # if flattened_s_to_s[current_group] in [(0, 1, 1, 0), (1, 1, 0, 1), (1, 0, 0, 0), (0, 1, 0, 1), (0, 1, 0, 0), (1, 0, 0, 1), (1, 0, 1, 1)]:
+            #     continue
+
             positive_size, negative_size = 0, 0
 
             gen_model_positive, gen_model_negative, optimizer_positive, optimizer_negative = \
@@ -603,7 +624,7 @@ if __name__ == '__main__':
             with torch.no_grad():
 
                 negative_examples_current_group, positive_examples_current_group, examples_other_leaf_group_negative, examples_other_leaf_group_positive = aux_func.sample_batch(
-                    current_group, original_meta_data, batch_sizes=1024, validation=False)
+                    current_group, original_meta_data, batch_sizes=1024, validation=False, from_real = True)
 
                 if positive_size < max_size:
                     output_positive = gen_model_positive(examples_other_leaf_group_positive)
@@ -686,8 +707,8 @@ if __name__ == '__main__':
             worst_accuracy = np.mean(positive_average_accuracy)
             # torch.save(gen_model_positive.state_dict(), "dummy.pth")
             # torch.save(gen_model_negative.state_dict(), "dummy.pth")
-            pickle.dump(all_models, open(f"train_and_valid_all_{dataset_name}.pt", 'wb'))
-            pickle.dump(clf, open(f"train_and_valid_real_vs_fake_{dataset_name}.sklearn", 'wb'))
-        # # #
-        pickle.dump(all_models, open(f"{round(np.mean(positive_average_accuracy),3)}_train_and_valid_all_{dataset_name}.pt", 'wb'))
-        pickle.dump(clf, open(f"{round(np.mean(positive_average_accuracy),3)}_train_and_valid_real_vs_fake_{dataset_name}.sklearn", 'wb'))
+            # pickle.dump(all_models, open(f"train_and_valid_all_{dataset_name}.pt", 'wb'))
+            # pickle.dump(clf, open(f"train_and_valid_real_vs_fake_{dataset_name}.sklearn", 'wb'))
+        # # # #
+        # pickle.dump(all_models, open(f"{round(np.mean(positive_average_accuracy),3)}_train_and_valid_all_{dataset_name}.pt", 'wb'))
+        # pickle.dump(clf, open(f"{round(np.mean(positive_average_accuracy),3)}_train_and_valid_real_vs_fake_{dataset_name}.sklearn", 'wb'))

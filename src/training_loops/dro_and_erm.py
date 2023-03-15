@@ -373,6 +373,7 @@ def erm_optimization_procedure(train_tilted_params):
 
         all_groups.append(s_group_0)
 
+
         items_group_0, items_group_1 = example_sampling_procedure_func(
             train_tilted_params=train_tilted_params,
             group0=s_group_0,
@@ -431,7 +432,7 @@ def erm_optimization_procedure(train_tilted_params):
         track_input.append(items_group_0)
 
     all_groups = np.unique(all_groups)
-
+    print(all_groups)
 
 
     epoch_metric_tracker, loss = train_tilted_params.per_epoch_metric(track_output,
