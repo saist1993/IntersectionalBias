@@ -105,8 +105,14 @@ class SimpleClassificationDataset:
         iterator_set, vocab, s_flatten_lookup = create_iterator.get_iterators(iterator_data)
 
         if "augmented" in self.dataset_name:
+            if self.mmd_augmentation_mechanism == 'only_generated_data':
+                scaler = iterator_set['scaler']
+                train_X_augmented = scaler.transform(train_X_augmented)
+        else:
             scaler = iterator_set['scaler']
-            # train_X_augmented = scaler.transform(train_X_augmented)
+            train_X_augmented = scaler.transform(train_X_augmented)
+
+
         iterator_set['train_X_augmented'] = train_X_augmented
         iterator_set['train_y_augmented'] = train_y_augmented
         iterator_set['train_s_augmented'] = train_s_augmented

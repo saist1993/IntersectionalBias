@@ -483,14 +483,14 @@ class AugmentDataCommonFunctionality:
 
                 final_model = gen_model[random.randrange(len(gen_model))]
                 generated_examples = final_model(all_other_leaf_node_example_positive)['prediction'].detach().numpy()
-                if counter < 1000:
+                if counter < 3000:
                     # the classifier is confident that this is real. Which means fake looks very much like real
                     # relevant_index = np.where((real_vs_fake.predict_proba(generated_examples)[:, 1] > confidence_score) & (task.predict_proba(generated_examples)[:, label] < 0.7))
                     # relevant_index = np.where(classifier_models.predict(generated_examples) != label)
                     relevant_index = np.where((real_vs_fake.predict_proba(generated_examples)[:, 1] > confidence_score))
                 else:
                     relevant_index = np.where(
-                        classifier_models.predict_proba(generated_examples)[:, label] > 0.0)
+                        classifier_models.predict_proba(generated_examples)[:, 1] > 0.0)
                 selected_examples += generated_examples[relevant_index].tolist()
                 # selected_examples += generated_examples.tolist()
                 counter += 1
@@ -664,13 +664,16 @@ class AugmentData:
                       # pickle.load(open(f"0.658_train_and_valid_all_twitter_hate_speech.pt", "rb")),
                       # pickle.load(open(f"0.734_train_and_valid_all_twitter_hate_speech.pt", "rb"))
                       ]
-        all_models = [pickle.load(open(f"train_and_valid_all_{self.dataset_name.replace('_augmented', '')}.pt", "rb"))]
+        all_models = [pickle.load(open(f"train_and_valid_all_{self.dataset_name.replace('_augmented', '')}_50.pt", "rb"))]
 
         # all_models = [pickle.load(open(f"all_{self.dataset_name.replace('_augmented', '')}.pt", "rb"))]
 
         # classifier_models = pickle.load(open(f"real_vs_fake_{self.dataset_name.replace('_augmented', '')}.sklearn", "rb"))
+        # classifier_models = pickle.load(
+        #     open(f"real_vs_fake_{self.dataset_name.replace('_augmented', '')}_50.sklearn", "rb"))
+
         classifier_models = pickle.load(
-            open(f"real_vs_fake_{self.dataset_name.replace('_augmented', '')}.sklearn", "rb"))
+            open(f"train_and_valid_real_vs_fake_{self.dataset_name.replace('_augmented', '')}_50.sklearn", "rb"))
         # classifier_models_2 = pickle.load(open(f"task_classifier_{self.dataset_name.replace('_augmented', '')}.sklearn", "rb"))
         classifier_models_2 = None
 
@@ -780,6 +783,10 @@ class AugmentData:
                         mechanism=self.mmd_augmentation_mechanism)
 
         augmented_train_X = np.vstack(augmented_train_X)
+        if "celeb_multigroup_v3" in self.dataset_name:
+            print("here***************")
+            augmented_train_X[augmented_train_X > 0] = 1.0
+            augmented_train_X[augmented_train_X < 0] = -1.0
         augmented_train_s = np.vstack(augmented_train_s)
         augmented_train_y = np.hstack(augmented_train_y)
         is_instance_real = np.hstack(is_instance_real)

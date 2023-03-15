@@ -1,45 +1,31 @@
 import copy
-import torch
 import pickle
+import warnings
 import numpy as np
-import torch.nn as nn
-import pandas as pd
 from tqdm import tqdm
 from mmd_utils import *
-from scipy import optimize
-from functools import partial
 from collections import Counter
-import matplotlib.pyplot as plt
-from geomloss import SamplesLoss
-from dataclasses import dataclass
+from utils.misc import set_seed
 from itertools import combinations
-from metrics import fairness_utils
-from typing import Dict, Callable, Optional
 from sklearn.preprocessing import StandardScaler
 from sklearn.neural_network import MLPClassifier
 from sklearn.model_selection import train_test_split
 from dataset_iterators import generate_data_iterators
 from sklearn.metrics import balanced_accuracy_score, accuracy_score
-from utils.misc import resolve_device, set_seed, make_opt, CustomError
-from training_loops.dro_and_erm import group_sampling_procedure_func, create_group, example_sampling_procedure_func
 
-# from adversarial_mmd import *
-
-dataset_name = 'twitter_hate_speech'
-batch_size = 512
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-import numpy as np
+warnings.filterwarnings("ignore", message="y_pred contains classes not in y_true")
 
 # import mkl
 # mkl.set_num_threads(3)
 
+dataset_name = 'celeb_multigroup_v3'
+seed = 50
+batch_size = 512
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
+
 torch.set_num_threads(4)
 torch.set_num_interop_threads(4)
-
-import warnings
-
-warnings.filterwarnings("ignore", message="y_pred contains classes not in y_true")
-
 
 class AuxilaryFunction:
 
@@ -198,19 +184,19 @@ class AuxilaryFunction:
         #         [other_meta_data['s_flatten_lookup'][tuple(i)] for i in other_meta_data['raw_data']['valid_s']]),
         #     number_of_positive_examples=int(batch_size / 2), number_of_negative_examples=int(batch_size / 2))
 
-        # all_label = np.hstack([other_meta_data['raw_data']['valid_y'], other_meta_data['raw_data']['train_y']])
-        # all_aux = np.vstack([other_meta_data['raw_data']['valid_s'], other_meta_data['raw_data']['train_s']])
-        # all_input = np.vstack([other_meta_data['raw_data']['valid_X'], other_meta_data['raw_data']['train_X']])
+        all_label = np.hstack([other_meta_data['raw_data']['valid_y'], other_meta_data['raw_data']['train_y']])
+        all_aux = np.vstack([other_meta_data['raw_data']['valid_s'], other_meta_data['raw_data']['train_s']])
+        all_input = np.vstack([other_meta_data['raw_data']['valid_X'], other_meta_data['raw_data']['train_X']])
         #
 
-        if from_real:
-            all_label = other_meta_data['raw_data']['complete_train_y']
-            all_aux = other_meta_data['raw_data']['complete_train_s']
-            all_input = other_meta_data['raw_data']['complete_train_X']
-        else:
-            all_label = other_meta_data['raw_data']['train_y']
-            all_aux = other_meta_data['raw_data']['train_s']
-            all_input = other_meta_data['raw_data']['train_X']
+        # if from_real:
+        #     all_label = other_meta_data['raw_data']['complete_train_y']
+        #     all_aux = other_meta_data['raw_data']['complete_train_s']
+        #     all_input = other_meta_data['raw_data']['complete_train_X']
+        # else:
+        #     all_label = other_meta_data['raw_data']['train_y']
+        #     all_aux = other_meta_data['raw_data']['train_s']
+        #     all_input = other_meta_data['raw_data']['train_X']
 
         # if validation:
         #     all_label = other_meta_data['raw_data']['valid_y']
@@ -271,7 +257,10 @@ def generate_mask(all_s, mask_pattern):
 
 
 if __name__ == '__main__':
+    set_seed(seed)
     other_params = {}
+
+    deleted_groups = []
 
     iterator_params = {
         'batch_size': batch_size,
@@ -285,30 +274,16 @@ if __name__ == '__main__':
     }
 
     iterators, other_meta_data = generate_data_iterators(dataset_name=dataset_name, **iterator_params)
-
-    tgs = TestGeneratedSamples(iterators=iterators, other_meta_data=other_meta_data)
-    # tgs.run()
-
-    # we need to remove data here
-
-    scaler = StandardScaler().fit(other_meta_data['raw_data']['train_X'])
-    other_meta_data['raw_data']['train_X'] = scaler.transform(other_meta_data['raw_data']['train_X'])
-    other_meta_data['raw_data']['valid_X'] = scaler.transform(other_meta_data['raw_data']['valid_X'])
+    scaler = iterators[0]['scaler']
+    # scaler = StandardScaler().fit(other_meta_data['raw_data']['train_X'])
+    # other_meta_data['raw_data']['train_X'] = scaler.transform(other_meta_data['raw_data']['train_X'])
+    # other_meta_data['raw_data']['valid_X'] = scaler.transform(other_meta_data['raw_data']['valid_X'])
 
     original_meta_data = copy.deepcopy(other_meta_data)
 
     all_groups = np.unique(other_meta_data['raw_data']['train_s'], axis=0)
     size_of_groups = {tuple(group): np.sum(generate_mask(other_meta_data['raw_data']['train_s'], group)) for group in
                       all_groups}
-
-    deleted_groups = [(1, 1, 1, 0)]
-
-    # for d in deleted_groups:
-    #     x = np.zeros(other_meta_data['raw_data']['train_X'][0])
-    #     y_0 = np.zeros(other_meta_data['raw_data']['train_y'][0])
-    #     y_1 = np.zeros(other_meta_data['raw_data']['train_y'][0])
-    #     x = np.zeros(other_meta_data['raw_data']['train_X'][0])
-        # create a 0's vector with
 
     all_label_train = other_meta_data['raw_data']['train_y']
     all_aux_train = other_meta_data['raw_data']['train_s']
@@ -320,8 +295,7 @@ if __name__ == '__main__':
     all_input_valid = other_meta_data['raw_data']['valid_X']
     all_aux_flatten_valid = [other_meta_data['s_flatten_lookup'][tuple(i)] for i in all_aux_valid]
 
-    total_no_groups = len(np.unique(all_aux_flatten_valid))  # hopefully this also has all the groups
-    # groups_matrix, global_weight, global_loss = create_group(total_no_groups, method="single_group")
+    total_no_groups = len(np.unique(all_aux_flatten_valid))
 
     train_tilted_params = TrainingLoopParameters(
         n_epochs=10,
@@ -380,9 +354,7 @@ if __name__ == '__main__':
 
         break
 
-    # mmd_loss = MMD_loss()
-    # sample_loss = SamplesLoss(loss="gaussian".lower(), p=2)
-    # sample_loss = ot.sliced_wasserstein_distance
+
     max_size = 20000000000
     aux_func = AuxilaryFunction()
     worst_accuracy = 1.0
@@ -425,14 +397,7 @@ if __name__ == '__main__':
                 positive_loss = mix_rbf_mmd2(positive_examples_current_group['input'],
                                              output_positive['prediction'],
                                              sigma_list=sigma_list)
-                #
 
-                # C = cost_matrix(positive_examples_current_group['input'], output_positive['prediction'])
-                # positive_loss = sink(C)
-                #
-                # for examples in examples_other_leaf_group_positive:
-                #     C = cost_matrix(examples['input'], output_positive['prediction'])
-                #     positive_loss = positive_loss + sink(C)
 
                 other_positive_loss = torch.sum(
                     torch.tensor([mix_rbf_mmd2(examples['input'], output_positive['prediction'],
@@ -452,43 +417,16 @@ if __name__ == '__main__':
                 negative_loss = mix_rbf_mmd2(negative_examples_current_group['input'],
                                              output_negative['prediction'],
                                              sigma_list=sigma_list)
-                #
-                # C = cost_matrix(negative_examples_current_group['input'], output_negative['prediction'])
-                # negative_loss = sink(C)
-                #
-                # for examples in examples_other_leaf_group_negative:
-                #     C = cost_matrix(examples['input'], output_negative['prediction'])
-                #     negative_loss = negative_loss + sink(C)
-                #
+
                 other_negative_loss = torch.sum(
                     torch.tensor([mix_rbf_mmd2(examples['input'], output_negative['prediction'],
                                                sigma_list=sigma_list) for examples in
                                   examples_other_leaf_group_negative], requires_grad=True))
 
-                #
-                # negative_loss = MMD(x=negative_examples_current_group['input'], y=output_negative['prediction'],
-                #                     kernel='rbf')
-                # #
-                # other_negative_loss = torch.sum(torch.tensor([MMD(x=examples['input'], y=output_negative['prediction'],
-                #                                                   kernel='rbf') for examples in
-                #                                               examples_other_leaf_group_negative],
-                #                                              requires_grad=True))
 
-                # negative_loss = sample_loss(negative_examples_current_group['input'], output_negative['prediction'])
-                #
-                # other_negative_loss = torch.sum(torch.tensor([sample_loss(examples['input'], output_positive['prediction']) for examples in
-                #                                               examples_other_leaf_group_negative],
-                #                                              requires_grad=True))
-
-                # loss2 = MMD(x=torch.tensor(other_meta_data['raw_data']['train_X'][np.random.choice(np.where((other_meta_data['raw_data']['train_y'] == 0) == True)[0],
-                #                                                           size=len(output_negative['prediction']), replace=False)], dtype=torch.float),
-                #             y=output_negative['prediction'], kernel='rbf')
 
                 negative_loss = negative_loss + other_negative_loss
-                # negative_loss = sample_loss(negative_examples_current_group['input'], output_negative['prediction'])+\
-                #                 sample_loss(examples_other_leaf_group_negative[0]['input'], output_negative['prediction']) \
-                #                  + sample_loss(examples_other_leaf_group_negative[1]['input'], output_negative['prediction'])\
-                #                  + sample_loss(examples_other_leaf_group_negative[2]['input'], output_negative['prediction'])
+
 
                 negative_loss.backward()
                 optimizer_negative.step()
@@ -531,47 +469,27 @@ if __name__ == '__main__':
 
                 if positive_size < max_size:
                     output_positive = gen_model_positive(examples_other_leaf_group_positive)
-                    # final_accuracy_positive = tgs.prediction_over_generated_examples(
-                    #     generated_examples=output_positive['prediction'], gold_label=negative_examples_current_group['aux'])
-                    # balanced_accuracy += [i[0] for i in final_accuracy_positive]
-                    # overall_accuracy += [i[1] for i in final_accuracy_positive]
 
                 if negative_size < max_size:
                     output_negative = gen_model_negative(examples_other_leaf_group_negative)
-                    # final_accuracy_negative = tgs.prediction_over_generated_examples(generated_examples=output_negative['prediction'], gold_label=negative_examples_current_group['aux'])
-                    # balanced_accuracy += [i[0] for i in final_accuracy_negative]
-                    # overall_accuracy += [i[1] for i in final_accuracy_negative]
 
-                # acc1 = tgs.one_vs_all_clf[current_group].score(output_positive['prediction'].detach().numpy(),
-                #                                               np.ones(len(output_positive['prediction'])))
-                # acc2 = tgs.one_vs_all_clf[current_group].score(output_negative['prediction'].detach().numpy(),
-                #                                               np.ones(len(output_negative['prediction'])))
-                #
-                # print(f"group {current_group}: {np.mean([acc2, acc1])}")
-                #
-                # one_vs_all_accuracy.append(np.mean([acc2, acc1]))
 
                 all_generated_examples.append(output_positive['prediction'])
                 all_generated_examples.append(output_negative['prediction'])
 
-        # print(np.mean(overall_accuracy), np.max(overall_accuracy), np.min(overall_accuracy))
-        # print(np.mean(one_vs_all_accuracy), np.max(one_vs_all_accuracy), np.min(one_vs_all_accuracy))
-
-        # for name, param in gen_model_positive.named_parameters():
-        #     if param.requires_grad:
-        #         print(name, param.data)
-        #
-        # for name, param in gen_model_negative.named_parameters():
-        #     if param.requires_grad:
-        #         print(name, param.data)
-
         all_generated_examples = torch.vstack(all_generated_examples).detach().numpy()
-        # all_generated_examples[all_generated_examples > 0] = 1.0
-        # all_generated_examples[all_generated_examples < 0] = -1.0
-        # all_generated_examples = scaler.transform(all_generated_examples)
+
+        if dataset_name == "celeb_multigroup_v3":
+            all_generated_examples[all_generated_examples > 0] = 1.0
+            all_generated_examples[all_generated_examples < 0] = -1.0
+            all_generated_examples = scaler.transform(all_generated_examples)
+
         real_examples = np.random.choice(range(len(original_meta_data['raw_data']['train_X'])),
                                          size=len(all_generated_examples), replace=True)
         real_examples = original_meta_data['raw_data']['train_X'][real_examples]
+        if dataset_name == "celeb_multigroup_v3":
+            real_examples = scaler.transform(real_examples)
+
         generated_example_label = np.zeros(len(all_generated_examples))
         real_example_label = np.ones(len(all_generated_examples))
 
@@ -586,14 +504,9 @@ if __name__ == '__main__':
         print(clf.score(X_train, y_train), accuracy_score(y_test, y_pred), balanced_accuracy_score(y_test, y_pred))
         print("***")
 
-        if balanced_accuracy_score(y_test, y_pred) < worst_accuracy:
-            worst_accuracy = balanced_accuracy_score(y_test, y_pred)
-            # torch.save(gen_model_positive.state_dict(), "dummy.pth")
-            # torch.save(gen_model_negative.state_dict(), "dummy.pth")
-            # pickle.dump(all_models, open(f"all_{dataset_name}.pt", 'wb'))
-            # pickle.dump(clf, open(f"real_vs_fake_{dataset_name}.sklearn", 'wb'))
+        # if balanced_accuracy_score(y_test, y_pred) < worst_accuracy:
+        #     worst_accuracy = balanced_accuracy_score(y_test, y_pred)
 
-        # group wise accuracy
 
         overall_average_accuracy = []
         positive_average_accuracy = []
@@ -602,9 +515,6 @@ if __name__ == '__main__':
         for flat_current_group, current_group in other_meta_data['s_flatten_lookup'].items():\
 
             # if flattened_s_to_s[current_group] in [ (0, 1, 0, 1), (0, 1, 0, 0), (1, 0, 0, 1), (1, 0, 1, 1)]:
-            #     continue
-
-            # if flattened_s_to_s[current_group] in [(0, 1, 1, 0), (1, 1, 0, 1), (1, 0, 0, 0), (0, 1, 0, 1), (0, 1, 0, 0), (1, 0, 0, 1), (1, 0, 1, 1)]:
             #     continue
 
             positive_size, negative_size = 0, 0
@@ -624,7 +534,7 @@ if __name__ == '__main__':
             with torch.no_grad():
 
                 negative_examples_current_group, positive_examples_current_group, examples_other_leaf_group_negative, examples_other_leaf_group_positive = aux_func.sample_batch(
-                    current_group, original_meta_data, batch_sizes=1024, validation=False, from_real = True)
+                    current_group, original_meta_data, batch_sizes=1024, validation=False, from_real = False)
 
                 if positive_size < max_size:
                     output_positive = gen_model_positive(examples_other_leaf_group_positive)
@@ -634,9 +544,11 @@ if __name__ == '__main__':
 
                 gen_examples = np.vstack(
                     [output_positive['prediction'].detach().numpy(), output_negative['prediction'].detach().numpy()])
-                # examples[examples > 0] = 1.0
-                # examples[examples < 0] = -1.0
-                # examples = scaler.transform(examples)
+
+                if dataset_name == "celeb_multigroup_v3":
+                    gen_examples[gen_examples > 0] = 1.0
+                    gen_examples[gen_examples < 0] = -1.0
+                    gen_examples = scaler.transform(gen_examples)
 
                 real_examples = np.vstack(
                     [positive_examples_current_group['input'], negative_examples_current_group['input']])
@@ -657,9 +569,17 @@ if __name__ == '__main__':
 
                 # over all
                 overall_accuracy = temp(_all_examples=all_examples, _all_label=all_label)
+
+                positive_examples = output_positive['prediction'].detach().numpy()
+                if dataset_name == "celeb_multigroup_v3":
+                    positive_examples[positive_examples > 0] = 1.0
+                    positive_examples[positive_examples < 0] = -1.0
+                    positive_examples = scaler.transform(positive_examples)
+                    positive_examples_current_group['input'] = scaler.transform(positive_examples_current_group['input'])
+
                 positive_accuracy = temp(_all_examples=np.vstack(
                     [
-                        output_positive['prediction'].detach().numpy(),
+                        positive_examples,
                         positive_examples_current_group['input']
                     ]),
                     _all_label=np.hstack(
@@ -672,9 +592,16 @@ if __name__ == '__main__':
 
                 )
 
+                negative_examples = output_negative['prediction'].detach().numpy()
+                if dataset_name == "celeb_multigroup_v3":
+                    negative_examples[negative_examples > 0] = 1.0
+                    negative_examples[negative_examples < 0] = -1.0
+                    negative_examples = scaler.transform(negative_examples)
+                    negative_examples_current_group['input'] = scaler.transform(negative_examples_current_group['input'])
+
                 negative_accuracy = temp(_all_examples=np.vstack(
                     [
-                        output_negative['prediction'].detach().numpy(),
+                        negative_examples,
                         negative_examples_current_group['input']
                     ]),
                     _all_label=np.hstack(
@@ -707,8 +634,8 @@ if __name__ == '__main__':
             worst_accuracy = np.mean(positive_average_accuracy)
             # torch.save(gen_model_positive.state_dict(), "dummy.pth")
             # torch.save(gen_model_negative.state_dict(), "dummy.pth")
-            # pickle.dump(all_models, open(f"train_and_valid_all_{dataset_name}.pt", 'wb'))
-            # pickle.dump(clf, open(f"train_and_valid_real_vs_fake_{dataset_name}.sklearn", 'wb'))
-        # # # #
-        # pickle.dump(all_models, open(f"{round(np.mean(positive_average_accuracy),3)}_train_and_valid_all_{dataset_name}.pt", 'wb'))
-        # pickle.dump(clf, open(f"{round(np.mean(positive_average_accuracy),3)}_train_and_valid_real_vs_fake_{dataset_name}.sklearn", 'wb'))
+            pickle.dump(all_models, open(f"train_and_valid_all_{dataset_name}_{seed}.pt", 'wb'))
+            pickle.dump(clf, open(f"train_and_valid_real_vs_fake_{dataset_name}_{seed}.sklearn", 'wb'))
+        # # #
+        # pickle.dump(all_models, open(f"{round(np.mean(positive_average_accuracy),3)}_train_and_valid_all_{dataset_name}_{seed}.pt", 'wb'))
+        # pickle.dump(clf, open(f"{round(np.mean(positive_average_accuracy),3)}_train_and_valid_real_vs_fake_{dataset_name}_{seed}.sklearn", 'wb'))
