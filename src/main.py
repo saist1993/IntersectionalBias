@@ -284,7 +284,8 @@ def runner(runner_arguments:RunnerArguments):
         'dataset_size': 1000,
         'max_number_of_generated_examples': runner_arguments.max_number_of_generated_examples,
         'per_group_label_number_of_examples': runner_arguments.per_group_label_number_of_examples,
-        'mmd_augmentation_mechanism': mmd_augmentation_mechanism
+        'mmd_augmentation_mechanism': mmd_augmentation_mechanism,
+        'seed': runner_arguments.seed
     }
     iterators, other_meta_data = generate_data_iterators(dataset_name=runner_arguments.dataset_name, **iterator_params)
 

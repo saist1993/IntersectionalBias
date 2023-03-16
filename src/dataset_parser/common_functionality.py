@@ -529,7 +529,7 @@ class AugmentData:
 
     def __init__(self, dataset_name, X, y, s, all_unique_group, max_number_of_generated_examples=0.75,
                  max_number_of_positive_examples=500, max_number_of_negative_examples=500,
-                 mmd_augmentation_mechanism="only_generated_data"):
+                 mmd_augmentation_mechanism="only_generated_data", seed=50):
         self.dataset_name = dataset_name
         # scaler = StandardScaler().fit(X)
         self.X, self.y, self.s = X, y, s
@@ -538,6 +538,7 @@ class AugmentData:
         self.max_number_of_negative_examples = max_number_of_negative_examples
         self.mmd_augmentation_mechanism = mmd_augmentation_mechanism  # alternative - both_generated_and_real_data
         self.all_unique_group = all_unique_group
+        self.seed = seed
 
         # formating data in a specific way for legacy purpose!
         self.other_meta_data = {
@@ -664,7 +665,7 @@ class AugmentData:
                       # pickle.load(open(f"0.658_train_and_valid_all_twitter_hate_speech.pt", "rb")),
                       # pickle.load(open(f"0.734_train_and_valid_all_twitter_hate_speech.pt", "rb"))
                       ]
-        all_models = [pickle.load(open(f"train_and_valid_all_{self.dataset_name.replace('_augmented', '')}_50.pt", "rb"))]
+        all_models = [pickle.load(open(f"train_and_valid_all_{self.dataset_name.replace('_augmented', '')}_{self.seed}.pt", "rb"))]
 
         # all_models = [pickle.load(open(f"all_{self.dataset_name.replace('_augmented', '')}.pt", "rb"))]
 

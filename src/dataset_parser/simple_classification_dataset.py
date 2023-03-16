@@ -26,6 +26,7 @@ class SimpleClassificationDataset:
         self.dataset_name = dataset_name
         self.return_numpy_array = params['return_numpy_array']
         self.max_number_of_generated_examples = params['max_number_of_generated_examples']
+        self.seed = params['seed']
 
         if 'adult_multi_group' in self.dataset_name:
             self.X, self.y, self.s = get_adult_multigroups_data()
@@ -77,7 +78,8 @@ class SimpleClassificationDataset:
                                        self.max_number_of_generated_examples,
                                        max_number_of_positive_examples=self.per_group_label_number_of_examples,
                                        max_number_of_negative_examples=self.per_group_label_number_of_examples,
-                                       mmd_augmentation_mechanism=self.mmd_augmentation_mechanism
+                                       mmd_augmentation_mechanism=self.mmd_augmentation_mechanism,
+                                       seed=self.seed
                                        )
 
             if self.mmd_augmentation_mechanism == 'only_generated_data':
