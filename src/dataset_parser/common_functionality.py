@@ -699,7 +699,7 @@ class AugmentData:
                 if mechanism == "only_generated_data":
                     total_examples = 0
 
-                if True:  # total_examples > max_number_of_examples or
+                if total_examples > max_number_of_examples:  # total_examples > max_number_of_examples or
 
                     # then we only generate fake data
                     number_of_examples_to_sample = max_number_of_examples
