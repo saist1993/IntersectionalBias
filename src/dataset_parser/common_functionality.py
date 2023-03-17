@@ -687,8 +687,10 @@ class AugmentData:
 
         augmented_train_X, augmented_train_y, augmented_train_s, is_instance_real = [], [], [], []  # generated - 0  and real is 1
 
+        deleted_groups = [(1, 0, 0, 1), (0, 1, 0, 0), (1, 0, 1, 1), (0, 1, 1, 0), (1, 0, 0, 0)]
+
         for group in self.all_unique_group:
-            if tuple(group) in [(1, 0, 0, 1)]:
+            if tuple(group) in deleted_groups[:2]:
                 continue
             group_mask = self.common_func.generate_mask(self.other_meta_data['raw_data']['train_s'], group)
             label_1_group_mask = np.logical_and(group_mask, self.other_meta_data['raw_data']['train_y'] == 1)
