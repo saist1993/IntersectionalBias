@@ -243,8 +243,11 @@ class DatasetTwitterHateSpeech:
 
         # (0, 1, 1, 0), (1, 1, 0, 1), (1, 0, 0, 0), (0, 1, 0, 1), (0, 1, 0, 0), (1, 0, 0, 1), (1, 0, 1, 1)]
 
-        for deleted_group in [(0, 1, 1, 0), (1, 1, 0, 1), (1, 0, 0, 0), (0, 1, 0, 1), (0, 1, 0, 0), (1, 0, 0, 1), (1, 0, 1, 1)]:
-            # deleted_group = [0,1,0,0]
+
+        deleted_groups = [(1, 0, 0, 1), (0, 1, 0, 0), (1, 0, 1, 1), (0, 1, 1, 0), (1, 0, 0, 0)]
+
+        for deleted_group in [deleted_groups[0]]:
+        #     # deleted_group = [0,1,0,0]
             group_to_remove_index = np.where(create_mask(train_s, deleted_group))[0]
 
             train_X = np.delete(train_X, group_to_remove_index, 0)

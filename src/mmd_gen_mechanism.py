@@ -18,7 +18,8 @@ warnings.filterwarnings("ignore", message="y_pred contains classes not in y_true
 # import mkl
 # mkl.set_num_threads(3)
 
-dataset_name = 'celeb_multigroup_v3'
+# dataset_name = 'celeb_multigroup_v3'
+dataset_name = 'twitter_hate_speech'
 seed = 50
 batch_size = 512
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -30,7 +31,7 @@ torch.set_num_interop_threads(4)
 class AuxilaryFunction:
 
     @staticmethod
-    def generate_abstract_node(s, k=1):
+    def generate_abstract_node(s, k=2):
         all_s_combinations = []
 
         for i in combinations(range(len(s)), k):
@@ -275,9 +276,9 @@ if __name__ == '__main__':
 
     iterators, other_meta_data = generate_data_iterators(dataset_name=dataset_name, **iterator_params)
     scaler = iterators[0]['scaler']
-    # scaler = StandardScaler().fit(other_meta_data['raw_data']['train_X'])
-    # other_meta_data['raw_data']['train_X'] = scaler.transform(other_meta_data['raw_data']['train_X'])
-    # other_meta_data['raw_data']['valid_X'] = scaler.transform(other_meta_data['raw_data']['valid_X'])
+    scaler = StandardScaler().fit(other_meta_data['raw_data']['train_X'])
+    other_meta_data['raw_data']['train_X'] = scaler.transform(other_meta_data['raw_data']['train_X'])
+    other_meta_data['raw_data']['valid_X'] = scaler.transform(other_meta_data['raw_data']['valid_X'])
 
     original_meta_data = copy.deepcopy(other_meta_data)
 
@@ -487,6 +488,7 @@ if __name__ == '__main__':
         real_examples = np.random.choice(range(len(original_meta_data['raw_data']['train_X'])),
                                          size=len(all_generated_examples), replace=True)
         real_examples = original_meta_data['raw_data']['train_X'][real_examples]
+
         if dataset_name == "celeb_multigroup_v3":
             real_examples = scaler.transform(real_examples)
 
@@ -634,8 +636,8 @@ if __name__ == '__main__':
             worst_accuracy = np.mean(positive_average_accuracy)
             # torch.save(gen_model_positive.state_dict(), "dummy.pth")
             # torch.save(gen_model_negative.state_dict(), "dummy.pth")
-            pickle.dump(all_models, open(f"train_and_valid_all_{dataset_name}_{seed}.pt", 'wb'))
-            pickle.dump(clf, open(f"train_and_valid_real_vs_fake_{dataset_name}_{seed}.sklearn", 'wb'))
+            # pickle.dump(all_models, open(f"train_and_valid_all_{dataset_name}_{seed}.pt", 'wb'))
+            # pickle.dump(clf, open(f"train_and_valid_real_vs_fake_{dataset_name}_{seed}.sklearn", 'wb'))
         # # #
         # pickle.dump(all_models, open(f"{round(np.mean(positive_average_accuracy),3)}_train_and_valid_all_{dataset_name}_{seed}.pt", 'wb'))
         # pickle.dump(clf, open(f"{round(np.mean(positive_average_accuracy),3)}_train_and_valid_real_vs_fake_{dataset_name}_{seed}.sklearn", 'wb'))

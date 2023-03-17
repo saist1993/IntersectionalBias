@@ -665,7 +665,8 @@ class AugmentData:
                       # pickle.load(open(f"0.658_train_and_valid_all_twitter_hate_speech.pt", "rb")),
                       # pickle.load(open(f"0.734_train_and_valid_all_twitter_hate_speech.pt", "rb"))
                       ]
-        all_models = [pickle.load(open(f"train_and_valid_all_{self.dataset_name.replace('_augmented', '')}_{self.seed}.pt", "rb"))]
+        # all_models = [pickle.load(open(f"train_and_valid_all_{self.dataset_name.replace('_augmented', '')}_{self.seed}.pt", "rb"))]
+        all_models = [pickle.load(open(f"train_and_valid_all_{self.dataset_name.replace('_augmented', '')}.pt", "rb"))]
 
         # all_models = [pickle.load(open(f"all_{self.dataset_name.replace('_augmented', '')}.pt", "rb"))]
 
@@ -674,7 +675,7 @@ class AugmentData:
         #     open(f"real_vs_fake_{self.dataset_name.replace('_augmented', '')}_50.sklearn", "rb"))
 
         classifier_models = pickle.load(
-            open(f"train_and_valid_real_vs_fake_{self.dataset_name.replace('_augmented', '')}_50.sklearn", "rb"))
+            open(f"train_and_valid_real_vs_fake_{self.dataset_name.replace('_augmented', '')}.sklearn", "rb"))
         # classifier_models_2 = pickle.load(open(f"task_classifier_{self.dataset_name.replace('_augmented', '')}.sklearn", "rb"))
         classifier_models_2 = None
 
