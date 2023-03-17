@@ -218,7 +218,7 @@ class EstimateProbability:
         max_group = max_group[np.argmax(max_group_count)]
 
         probs = np.mean(all_average_prob, axis=0)
-        return [np.mean(all_eps), self.get_confidence_interval(all_eps), np.mean(all_average_prob), min_group, max_group]
+        return [np.mean(all_eps), self.get_confidence_interval(all_eps), np.mean(all_average_prob, axis=0), min_group, max_group]
 
 
 @dataclass
@@ -327,6 +327,8 @@ class EpsFairness(fairness_utils.FairnessTemplateClass):
         else:
             raise NotImplementedError
 
+        size = [np.sum(mask) for mask in group_masks]
+
         index = np.argmax([eps_fpr[0], eps_tpr[0]])
         return [eps_fpr, eps_tpr][index]
 
@@ -343,21 +345,23 @@ class EpsFairness(fairness_utils.FairnessTemplateClass):
                 self.original_prediction = deepcopy(self.prediction)
                 self.prediction = self.label
 
-            _, group_index = fairness_utils.get_groups(self.all_possible_groups, type_of_group)
+            group, group_index = fairness_utils.get_groups(self.all_possible_groups, type_of_group)
             if fairness_mode == 'demographic_parity':
-                output = self.demographic_parity(np.asarray(self.all_possible_groups_mask)[group_index],
+                output = self.demographic_parity(np.asarray(self.all_possible_groups_mask),
                                                  robust_estimation_method, self.all_possible_groups)
             elif fairness_mode == 'equal_opportunity':
-                output = self.tpr_parity(np.asarray(self.all_possible_groups_mask)[group_index],
+                output = self.tpr_parity(np.asarray(self.all_possible_groups_mask),
                                          robust_estimation_method, self.all_possible_groups)
             elif fairness_mode == 'equal_odds':
-                output = self.equal_odds(np.asarray(self.all_possible_groups_mask)[group_index],
+                output = self.equal_odds(np.asarray(self.all_possible_groups_mask),
                                          robust_estimation_method, self.all_possible_groups)
             else:
                 raise NotImplementedError
 
             if bias_amplification_mode:
                 self.prediction = self.original_prediction
+
+            output.append([(i, np.sum(j), k) for i, j, k in zip(self.all_possible_groups, self.all_possible_groups_mask, output[2])])
 
             return output
 
@@ -381,6 +385,7 @@ class EpsFairness(fairness_utils.FairnessTemplateClass):
             fairness_mode_intersectional_bootstrap = get_analytics('intersectional',
                                                                    'bootstrap_empirical_estimate',
                                                                    fairness_mode)
+
 
 
 

@@ -207,34 +207,34 @@ class DatasetTwitterHateSpeech:
         all_groups = np.unique(test_s, axis=0)
         all_labels = np.unique(test_y)
 
-        minimum_group_size_test = 100
-        minimum_group_size_valid = 100
-        new_test_examples_index = []
-
-        for group in all_groups:
-            for label in all_labels:
-                group_mask = create_mask(test_s, group)
-                label_mask = test_y == label
-                final_mask = np.logical_and(group_mask, label_mask)
-                if np.sum(final_mask) < minimum_group_size_test:
-                    # new_test_examples.append((group, label, minimum_group_size_test-np.sum(final_mask)))
-
-                    train_group_mask = create_mask(train_s, group)
-                    train_label_mask = train_y == label
-                    final_train_mask = np.logical_and(train_group_mask, train_label_mask)
-
-
-                    new_test_examples_index += np.random.choice(np.where(final_train_mask == True)[0],
-                                                                size=minimum_group_size_test-np.sum(final_mask),
-                                                                replace=False).tolist()
-
-        test_X = np.vstack([test_X, train_X[new_test_examples_index]])
-        test_y = np.hstack([test_y, train_y[new_test_examples_index]])
-        test_s = np.vstack([test_s, train_s[new_test_examples_index]])
-
-        train_X = np.delete(train_X, new_test_examples_index, axis=0)
-        train_s = np.delete(train_s, new_test_examples_index, axis=0)
-        train_y = np.delete(train_y, new_test_examples_index, axis=0)
+        # minimum_group_size_test = 100
+        # minimum_group_size_valid = 100
+        # new_test_examples_index = []
+        #
+        # for group in all_groups:
+        #     for label in all_labels:
+        #         group_mask = create_mask(test_s, group)
+        #         label_mask = test_y == label
+        #         final_mask = np.logical_and(group_mask, label_mask)
+        #         if np.sum(final_mask) < minimum_group_size_test:
+        #             # new_test_examples.append((group, label, minimum_group_size_test-np.sum(final_mask)))
+        #
+        #             train_group_mask = create_mask(train_s, group)
+        #             train_label_mask = train_y == label
+        #             final_train_mask = np.logical_and(train_group_mask, train_label_mask)
+        #
+        #
+        #             new_test_examples_index += np.random.choice(np.where(final_train_mask == True)[0],
+        #                                                         size=minimum_group_size_test-np.sum(final_mask),
+        #                                                         replace=False).tolist()
+        #
+        # test_X = np.vstack([test_X, train_X[new_test_examples_index]])
+        # test_y = np.hstack([test_y, train_y[new_test_examples_index]])
+        # test_s = np.vstack([test_s, train_s[new_test_examples_index]])
+        #
+        # train_X = np.delete(train_X, new_test_examples_index, axis=0)
+        # train_s = np.delete(train_s, new_test_examples_index, axis=0)
+        # train_y = np.delete(train_y, new_test_examples_index, axis=0)
 
 
         complete_train_X = copy.deepcopy(train_X)
@@ -246,8 +246,9 @@ class DatasetTwitterHateSpeech:
 
 
         deleted_groups = [(1, 0, 0, 1), (0, 1, 0, 0), (1, 0, 1, 1), (0, 1, 1, 0), (1, 0, 0, 0)]
+        # deleted_groups = [(1, 1, 1, 1), (1, 1, 1, 0)]
 
-        for deleted_group in deleted_groups[:5]:
+        for deleted_group in deleted_groups:
         #     # deleted_group = [0,1,0,0]
             group_to_remove_index = np.where(create_mask(train_s, deleted_group))[0]
 

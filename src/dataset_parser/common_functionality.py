@@ -661,12 +661,12 @@ class AugmentData:
 
         # all_models = pickle.load(open(f"all_{self.dataset_name.replace('_augmented', '')}.pt", "rb"))
         all_models = [
-                      pickle.load(open(f"0.648_train_and_valid_all_twitter_hate_speech.pt", "rb")),
+                      # pickle.load(open(f"0.648_train_and_valid_all_twitter_hate_speech.pt", "rb")),
                       # pickle.load(open(f"0.658_train_and_valid_all_twitter_hate_speech.pt", "rb")),
                       # pickle.load(open(f"0.734_train_and_valid_all_twitter_hate_speech.pt", "rb"))
                       ]
         # all_models = [pickle.load(open(f"train_and_valid_all_{self.dataset_name.replace('_augmented', '')}_{self.seed}.pt", "rb"))]
-        # all_models = [pickle.load(open(f"train_and_valid_all_{self.dataset_name.replace('_augmented', '')}.pt", "rb"))]
+        all_models = [pickle.load(open(f"train_and_valid_all_{self.dataset_name.replace('_augmented', '')}.pt", "rb"))]
 
         # all_models = [pickle.load(open(f"all_{self.dataset_name.replace('_augmented', '')}.pt", "rb"))]
 
@@ -688,9 +688,10 @@ class AugmentData:
         augmented_train_X, augmented_train_y, augmented_train_s, is_instance_real = [], [], [], []  # generated - 0  and real is 1
 
         deleted_groups = [(1, 0, 0, 1), (0, 1, 0, 0), (1, 0, 1, 1), (0, 1, 1, 0), (1, 0, 0, 0)]
+        # deleted_groups = [(1, 1, 1, 1), (1, 1, 1, 0)]
 
         for group in self.all_unique_group:
-            if tuple(group) in deleted_groups[:5]:
+            if tuple(group) in deleted_groups:
                 continue
             group_mask = self.common_func.generate_mask(self.other_meta_data['raw_data']['train_s'], group)
             label_1_group_mask = np.logical_and(group_mask, self.other_meta_data['raw_data']['train_y'] == 1)
@@ -704,7 +705,7 @@ class AugmentData:
                 if mechanism == "only_generated_data":
                     total_examples = 0
 
-                if True:  # total_examples > max_number_of_examples or
+                if total_examples > max_number_of_examples:  # total_examples > max_number_of_examples or
 
                     # then we only generate fake data
                     number_of_examples_to_sample = max_number_of_examples
