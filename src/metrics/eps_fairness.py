@@ -218,7 +218,7 @@ class EstimateProbability:
         max_group = max_group[np.argmax(max_group_count)]
 
         probs = np.mean(all_average_prob, axis=0)
-        return [np.mean(all_eps), self.get_confidence_interval(all_eps), np.mean(all_average_prob, axis=0), min_group, max_group]
+        return [np.mean(all_eps), self.get_confidence_interval(all_eps), np.mean(all_average_prob), min_group, max_group]
 
 
 @dataclass
@@ -361,7 +361,7 @@ class EpsFairness(fairness_utils.FairnessTemplateClass):
             if bias_amplification_mode:
                 self.prediction = self.original_prediction
 
-            output.append([(i, np.sum(j), k) for i, j, k in zip(self.all_possible_groups, self.all_possible_groups_mask, output[2])])
+            # output.append([(i, np.sum(j), k) for i, j, k in zip(self.all_possible_groups, self.all_possible_groups_mask, output[2])])
 
             return output
 
