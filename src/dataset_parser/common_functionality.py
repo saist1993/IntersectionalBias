@@ -661,12 +661,12 @@ class AugmentData:
 
         # all_models = pickle.load(open(f"all_{self.dataset_name.replace('_augmented', '')}.pt", "rb"))
         all_models = [
-                      # pickle.load(open(f"0.648_train_and_valid_all_twitter_hate_speech.pt", "rb")),
+                      pickle.load(open(f"0.648_train_and_valid_all_twitter_hate_speech.pt", "rb")),
                       # pickle.load(open(f"0.658_train_and_valid_all_twitter_hate_speech.pt", "rb")),
                       # pickle.load(open(f"0.734_train_and_valid_all_twitter_hate_speech.pt", "rb"))
                       ]
         # all_models = [pickle.load(open(f"train_and_valid_all_{self.dataset_name.replace('_augmented', '')}_{self.seed}.pt", "rb"))]
-        all_models = [pickle.load(open(f"train_and_valid_all_{self.dataset_name.replace('_augmented', '')}.pt", "rb"))]
+        # all_models = [pickle.load(open(f"train_and_valid_all_{self.dataset_name.replace('_augmented', '')}.pt", "rb"))]
 
         # all_models = [pickle.load(open(f"all_{self.dataset_name.replace('_augmented', '')}.pt", "rb"))]
 
@@ -705,7 +705,7 @@ class AugmentData:
                 if mechanism == "only_generated_data":
                     total_examples = 0
 
-                if total_examples > max_number_of_examples:  # total_examples > max_number_of_examples or
+                if True:  # total_examples > max_number_of_examples or
 
                     # then we only generate fake data
                     number_of_examples_to_sample = max_number_of_examples
