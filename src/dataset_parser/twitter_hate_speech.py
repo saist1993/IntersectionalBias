@@ -240,6 +240,7 @@ class DatasetTwitterHateSpeech:
         complete_train_X = copy.deepcopy(train_X)
         complete_train_y = copy.deepcopy(train_y)
         complete_train_s = copy.deepcopy(train_s)
+        # print("here")
 
         # (0, 1, 1, 0), (1, 1, 0, 1), (1, 0, 0, 0), (0, 1, 0, 1), (0, 1, 0, 0), (1, 0, 0, 1), (1, 0, 1, 1)]
 
