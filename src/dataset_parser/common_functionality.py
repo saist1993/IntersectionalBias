@@ -690,7 +690,7 @@ class AugmentData:
         deleted_groups = [(1, 0, 0, 1), (0, 1, 0, 0), (1, 0, 1, 1), (0, 1, 1, 0), (1, 0, 0, 0)]
 
         for group in self.all_unique_group:
-            if tuple(group) in deleted_groups[:2]:
+            if tuple(group) in deleted_groups[:3]:
                 continue
             group_mask = self.common_func.generate_mask(self.other_meta_data['raw_data']['train_s'], group)
             label_1_group_mask = np.logical_and(group_mask, self.other_meta_data['raw_data']['train_y'] == 1)
