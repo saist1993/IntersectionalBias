@@ -248,13 +248,13 @@ class DatasetTwitterHateSpeech:
         deleted_groups = [(1, 0, 0, 1), (0, 1, 0, 0), (1, 0, 1, 1), (0, 1, 1, 0), (1, 0, 0, 0)]
         # deleted_groups = [(1, 1, 1, 1), (1, 1, 1, 0)]
 
-        for deleted_group in deleted_groups:
-        #     # deleted_group = [0,1,0,0]
-            group_to_remove_index = np.where(create_mask(train_s, deleted_group))[0]
-
-            train_X = np.delete(train_X, group_to_remove_index, 0)
-            train_s = np.delete(train_s, group_to_remove_index, 0)
-            train_y = np.delete(train_y, group_to_remove_index, 0)
+        # for deleted_group in deleted_groups:
+        # #     # deleted_group = [0,1,0,0]
+        #     group_to_remove_index = np.where(create_mask(train_s, deleted_group))[0]
+        #
+        #     train_X = np.delete(train_X, group_to_remove_index, 0)
+        #     train_s = np.delete(train_s, group_to_remove_index, 0)
+        #     train_y = np.delete(train_y, group_to_remove_index, 0)
 
         # deleted_group = [1, 1, 0, 0]
         # group_to_remove_index = np.where(create_mask(train_s, deleted_group))[0]
