@@ -9,6 +9,7 @@ from utils.misc import set_seed
 from itertools import combinations
 from sklearn.preprocessing import StandardScaler
 from sklearn.neural_network import MLPClassifier
+from sklearn.linear_model import LogisticRegression
 from sklearn.model_selection import train_test_split
 from dataset_iterators import generate_data_iterators
 from sklearn.metrics import balanced_accuracy_score, accuracy_score
@@ -275,10 +276,10 @@ if __name__ == '__main__':
     }
 
     iterators, other_meta_data = generate_data_iterators(dataset_name=dataset_name, **iterator_params)
-    scaler = iterators[0]['scaler']
-    scaler = StandardScaler().fit(other_meta_data['raw_data']['train_X'])
-    other_meta_data['raw_data']['train_X'] = scaler.transform(other_meta_data['raw_data']['train_X'])
-    other_meta_data['raw_data']['valid_X'] = scaler.transform(other_meta_data['raw_data']['valid_X'])
+    # scaler = iterators[0]['scaler']
+    # scaler = StandardScaler().fit(other_meta_data['raw_data']['train_X'])
+    # other_meta_data['raw_data']['train_X'] = scaler.transform(other_meta_data['raw_data']['train_X'])
+    # other_meta_data['raw_data']['valid_X'] = scaler.transform(other_meta_data['raw_data']['valid_X'])
 
     original_meta_data = copy.deepcopy(other_meta_data)
 
@@ -466,7 +467,7 @@ if __name__ == '__main__':
                 #         all_models[flat_current_group]['optimizer_negative']
 
                 negative_examples_current_group, positive_examples_current_group, examples_other_leaf_group_negative, examples_other_leaf_group_positive = aux_func.sample_batch(
-                    current_group, original_meta_data, batch_sizes=1024, validation=True)
+                    current_group, original_meta_data, batch_sizes=2048, validation=True)
 
                 if positive_size < max_size:
                     output_positive = gen_model_positive(examples_other_leaf_group_positive)
@@ -498,7 +499,8 @@ if __name__ == '__main__':
         X = np.vstack([all_generated_examples, real_examples])
         y = np.hstack([generated_example_label, real_example_label])
 
-        clf = MLPClassifier(solver="adam", learning_rate_init=0.01, hidden_layer_sizes=(50, 20), random_state=1)
+        # clf = MLPClassifier(solver="adam", learning_rate_init=0.01, hidden_layer_sizes=(50, 20), random_state=1)
+        clf = LogisticRegression(random_state=0, max_iter=300)
         X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.33, random_state=42, shuffle=True)
         clf.fit(X_train, y_train)
         y_pred = clf.predict(X_test)
@@ -636,8 +638,8 @@ if __name__ == '__main__':
             worst_accuracy = np.mean(positive_average_accuracy)
             # torch.save(gen_model_positive.state_dict(), "dummy.pth")
             # torch.save(gen_model_negative.state_dict(), "dummy.pth")
-            # pickle.dump(all_models, open(f"train_and_valid_all_{dataset_name}_{seed}.pt", 'wb'))
-            # pickle.dump(clf, open(f"train_and_valid_real_vs_fake_{dataset_name}_{seed}.sklearn", 'wb'))
-        # # #
-        # pickle.dump(all_models, open(f"{round(np.mean(positive_average_accuracy),3)}_train_and_valid_all_{dataset_name}_{seed}.pt", 'wb'))
-        # pickle.dump(clf, open(f"{round(np.mean(positive_average_accuracy),3)}_train_and_valid_real_vs_fake_{dataset_name}_{seed}.sklearn", 'wb'))
+            pickle.dump(all_models, open(f"train_and_valid_all_{dataset_name}_{seed}.pt", 'wb'))
+            pickle.dump(clf, open(f"train_and_valid_real_vs_fake_{dataset_name}_{seed}.sklearn", 'wb'))
+        # # # #
+        pickle.dump(all_models, open(f"{round(np.mean(positive_average_accuracy),3)}_train_and_valid_all_{dataset_name}_{seed}.pt", 'wb'))
+        pickle.dump(clf, open(f"{round(np.mean(positive_average_accuracy),3)}_train_and_valid_real_vs_fake_{dataset_name}_{seed}.sklearn", 'wb'))
