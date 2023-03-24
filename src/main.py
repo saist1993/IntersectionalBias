@@ -69,21 +69,33 @@ class SimpleModelGenerator(nn.Module):
         if number_of_params == 3:
             self.lambda_params = torch.nn.Parameter(torch.FloatTensor([0.33, 0.33, 0.33]))
         elif number_of_params == 4:
-            self.lambda_params = torch.nn.Parameter(torch.FloatTensor([0.25, 0.25, 0.25, 0.25]))
+            self.lambda_params = torch.nn.Parameter(torch.FloatTensor([0.1, 0.1, 0.1, 0.1]))
 
-        self.more_lambda_params = [torch.nn.Parameter(torch.FloatTensor(torch.ones(input_dim))) for i in
-                                   range(len(self.lambda_params))]
+        # self.more_lambda_params = torch.nn.Linear(input_dim, input_dim, bias=False)
+        self.more_lambda_params = torch.nn.Parameter(torch.FloatTensor(torch.randn(input_dim)))
+        # nn.init.constant_(self.more_lambda_params.weight, 1.0)
+        print("here")
+        # self.more_lambda_params = [torch.nn.init.orthogonal_(l.reshape(1,-1)).squeeze() for l in self.more_lambda_params]
+
+
+
+        # self.more_lambda_params = torch.nn.Parameter(torch.FloatTensor(torch.ones(input_dim)))
+
 
     def forward(self, other_examples):
-        final_output = torch.tensor(0.0, requires_grad=True)
-        for param, group, more_params in zip(self.lambda_params, other_examples, self.more_lambda_params):
-            x = group['input']
-            final_output = final_output + (x*more_params)*param
+        # final_output = torch.tensor(0.0, requires_grad=True)
+
+        input = torch.sum(torch.stack([i['input'] for i in other_examples]), axis=0)
+        # final_output = self.more_lambda_params(input)
+        final_output = self.more_lambda_params*input
+        # for param, group in zip(self.more_lambda_params, other_examples):
+        #     x = group['input']
+        #     final_output = final_output + param(x)
 
         output = {
             'prediction': final_output,
             'adv_output': None,
-            'hidden': x,  # just for compatabilit
+            'hidden': input,  # just for compatability
             'classifier_hiddens': None,
             'adv_hiddens': None
         }
@@ -93,6 +105,41 @@ class SimpleModelGenerator(nn.Module):
     @property
     def layers(self):
         return torch.nn.ModuleList([self.layer_1, self.layer_2])
+
+
+# class SimpleModelGenerator(nn.Module):
+#     """Fairgrad uses this as complex non linear model"""
+#
+#     def __init__(self, input_dim, number_of_params=3):
+#         super().__init__()
+#
+#         if number_of_params == 3:
+#             self.lambda_params = torch.nn.Parameter(torch.FloatTensor([0.33, 0.33, 0.33]))
+#         elif number_of_params == 4:
+#             self.lambda_params = torch.nn.Parameter(torch.FloatTensor([0.25, 0.25, 0.25, 0.25]))
+#
+#         self.more_lambda_params = [torch.nn.Parameter(torch.FloatTensor(torch.ones(input_dim))) for i in
+#                                    range(len(self.lambda_params))]
+#
+#     def forward(self, other_examples):
+#         final_output = torch.tensor(0.0, requires_grad=True)
+#         for param, group, more_params in zip(self.lambda_params, other_examples, self.more_lambda_params):
+#             x = group['input']
+#             final_output = final_output + (x*more_params)*param
+#
+#         output = {
+#             'prediction': final_output,
+#             'adv_output': None,
+#             'hidden': x,  # just for compatabilit
+#             'classifier_hiddens': None,
+#             'adv_hiddens': None
+#         }
+#
+#         return output
+#
+#     @property
+#     def layers(self):
+#         return torch.nn.ModuleList([self.layer_1, self.layer_2])
 
 class RunnerArguments(NamedTuple):
     """Arguments for the main function"""
@@ -436,13 +483,13 @@ if __name__ == '__main__':
     parser.add_argument('--fairness_lambda', '-fairness_lambda', help="the lambda in the fairness loss equation", type=float,
                         default=0.0)
     parser.add_argument('--method', '-method', help="unconstrained/adversarial_single/adversarial_group", type=str,
-                            default='unconstrained')
+                            default='erm_random_single_group_equal_sampling')
 
     parser.add_argument('--save_model_as', '-save_model_as', help="unconstrained/adversarial_single/adversarial_group", type=str,
                         default=None)
     parser.add_argument('--dataset_name', '-dataset_name', help="twitter_hate_speech/adult_multi_group/celeb_multigroup_v3",
                         type=str,
-                        default='twitter_hate_speech')
+                        default='twitter_hate_speech_augmented')
 
     parser.add_argument('--log_file_name', '-log_file_name', help="the name of the log file",
                         type=str,

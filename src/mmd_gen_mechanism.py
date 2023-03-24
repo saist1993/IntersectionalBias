@@ -19,8 +19,8 @@ warnings.filterwarnings("ignore", message="y_pred contains classes not in y_true
 # import mkl
 # mkl.set_num_threads(3)
 
-dataset_name = 'celeb_multigroup_v3'
-# dataset_name = 'twitter_hate_speech'
+# dataset_name = 'celeb_multigroup_v3'
+dataset_name = 'twitter_hate_speech'
 seed = 50
 batch_size = 512
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
