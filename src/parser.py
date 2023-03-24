@@ -141,7 +141,8 @@ def temp_table_generator(dataset_name, fairness_function):
     rows = []
     average_rows = []
     rows.append(['method', 'balanced accuracy', 'fairness', 'confidence_interval', 'seed'])
-    average_rows.append(['method', 'balanced accuracy', 'fairness'])
+    average_rows.append(['method', 'balanced accuracy', 'fairness', 'min fair', 'max fair', 'average fair',
+                         'spread fair', 'average max difference'])
 
     for dataset in dataset_names:
         for model in models:
@@ -160,7 +161,14 @@ def temp_table_generator(dataset_name, fairness_function):
                     confidence_interval = result.test_epoch_metric.eps_fairness[fairness_function].intersectional_bootstrap[1]
                     confidence_interval[0], confidence_interval[1] = round(confidence_interval[0], k),\
                                                                      round(confidence_interval[1], k)
-                    rows_temp.append([method, round(accuracy,k), round(fairness,k), confidence_interval, seed])
+
+                    intersectional_bootstrap =  result.test_epoch_metric.eps_fairness[fairness_function].intersectional_bootstrap
+                    min_group, max_group, min_prob, max_prob, mean_prob, mean_std, minmax_difference = intersectional_bootstrap[5:]
+
+
+
+
+                    rows_temp.append([method, round(accuracy,k), round(fairness,k), confidence_interval, seed, min_group, max_group, min_prob, max_prob, mean_prob, mean_std, minmax_difference])
 
                     if True:
                         print(result.arguments)
@@ -173,7 +181,27 @@ def temp_table_generator(dataset_name, fairness_function):
                 average_fairness = round(np.mean([r[2] for r in rows_temp]), k)
                 average_fairness_std = round(np.std([r[2] for r in rows_temp]), k)
 
-                average_rows.append([method, f"{average_accuracy} +/- {average_accuracy_std}", f"{average_fairness} +/- {average_fairness_std}"])
+                average_min_fairness = round(np.mean([r[6] for r in rows_temp]), k)
+                average_min_fairness_std = round(np.std([r[6] for r in rows_temp]), k)
+
+                average_max_fairness = round(np.mean([r[7] for r in rows_temp]), k)
+                average_max_fairness_std = round(np.std([r[7] for r in rows_temp]), k)
+
+                average_mean_fairness = round(np.mean([r[8] for r in rows_temp]), k)
+                average_mean_fairness_std = round(np.std([r[8] for r in rows_temp]), k)
+
+                average_std_fairness = round(np.mean([r[9] for r in rows_temp]), k)
+                average_std_fairness_std = round(np.std([r[9] for r in rows_temp]), k)
+
+                average_minmax_difference_fairness = round(np.mean([r[10] for r in rows_temp]), k)
+                average_minmax_difference_fairness_std = round(np.std([r[10] for r in rows_temp]), k)
+
+                average_rows.append([method, f"{average_accuracy} +/- {average_accuracy_std}", f"{average_fairness} +/- {average_fairness_std}",
+                                     f"{average_min_fairness} +/- {average_min_fairness_std}",
+                                     f"{average_max_fairness} +/- {average_max_fairness_std}",
+                                     f"{average_mean_fairness} +/- {average_mean_fairness_std}",
+                                     f"{average_std_fairness} +/- {average_std_fairness_std}",
+                                     f"{average_minmax_difference_fairness} +/- {average_minmax_difference_fairness_std}"])
 
 
     t = Texttable()

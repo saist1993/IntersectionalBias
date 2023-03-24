@@ -76,7 +76,7 @@ def train(train_parameters: TrainParameters):
             alpha = 1.0
             gamma = beta(alpha, alpha)
 
-            items['input'] = items['input']*gamma + augmentation_input*(1-gamma)
+            # items['input'] = items['input']*gamma + augmentation_input*(1-gamma)
 
 
             output = model(items)
