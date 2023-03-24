@@ -125,7 +125,7 @@ def temp_table_generator(dataset_name, fairness_function):
     dataset_names = [dataset_name]
     # dataset_names = ['twitter_hate_speech']
     # dataset_names = ['celeb_multigroup_v3']
-    models = ['simple_non_linear']
+    models = ['simple_non_linear' ]
     seeds = [10, 20, 30, 40, 50]
     # seeds = [50]
     # fairness_function = 'equal_odds'
