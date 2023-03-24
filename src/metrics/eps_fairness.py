@@ -148,6 +148,8 @@ class EstimateProbability:
             warnings.warn("There is something fishy in the data. There was no example atleast for one group at all.")
             return [0.0, [0.0, 0.0], average_prob]
 
+
+
         return [np.log(max_prob / min_prob), [0.0, 0.0], all_probs, (min_group, max_group)]
 
     def simple_bayesian_estimate_rate_parity(self, preds, labels, masks, use_tpr=True):
@@ -201,6 +203,7 @@ class EstimateProbability:
         all_eps = []
         all_average_prob = []
         all_min_max_groups = []
+        all_max_prob, all_min_prob, all_mean_prob, all_std_prob, all_difference_prob = [], [], [], [], []
         for _ in range(self.number_of_bootstrap_dataset):
             index_select = np.random.choice(len(preds), len(preds), replace=True)
 
@@ -210,6 +213,11 @@ class EstimateProbability:
             all_eps.append(eps)
             all_average_prob.append(average_prob)
             all_min_max_groups.append(min_max_group)
+            all_max_prob.append(max(average_prob))
+            all_min_prob.append(min(average_prob))
+            all_mean_prob.append(np.mean(average_prob))
+            all_std_prob.append(np.std(average_prob))
+            all_difference_prob.append(np.max(average_prob) - np.min(average_prob))
 
         min_group, min_group_count = np.unique(np.asarray(all_min_max_groups)[:, 0], axis=0, return_counts=True)
         min_group = min_group[np.argmax(min_group_count)]
@@ -217,8 +225,14 @@ class EstimateProbability:
         max_group, max_group_count = np.unique(np.asarray(all_min_max_groups)[:, 1], axis=0, return_counts=True)
         max_group = max_group[np.argmax(max_group_count)]
 
+        max_prob = np.mean(all_max_prob)
+        min_prob = np.mean(all_min_prob)
+        mean_prob = np.mean(all_mean_prob)
+        mean_std = np.mean(all_std_prob)
+        minmax_difference = np.mean(all_difference_prob)
+
         probs = np.mean(all_average_prob, axis=0)
-        return [np.mean(all_eps), self.get_confidence_interval(all_eps), np.mean(all_average_prob), min_group, max_group]
+        return [np.mean(all_eps), self.get_confidence_interval(all_eps), np.mean(all_average_prob, axis=0), min_group, max_group, min_prob, max_prob, mean_prob, mean_std, minmax_difference]
 
 
 @dataclass
@@ -329,6 +343,9 @@ class EpsFairness(fairness_utils.FairnessTemplateClass):
 
         size = [np.sum(mask) for mask in group_masks]
 
+        eps_fpr.append(['fpr'])
+        eps_tpr.append(['tpr'])
+
         index = np.argmax([eps_fpr[0], eps_tpr[0]])
         return [eps_fpr, eps_tpr][index]
 
@@ -361,7 +378,11 @@ class EpsFairness(fairness_utils.FairnessTemplateClass):
             if bias_amplification_mode:
                 self.prediction = self.original_prediction
 
-            # output.append([(i, np.sum(j), k) for i, j, k in zip(self.all_possible_groups, self.all_possible_groups_mask, output[2])])
+            output.append([(list(i), np.sum(j), k) for i, j, k in zip(self.all_possible_groups, self.all_possible_groups_mask, output[2])])
+
+            output.pop(2)
+
+            # fairness_values = [i[-1] for i in output[-1]]
 
             return output
 

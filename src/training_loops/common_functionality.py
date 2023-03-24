@@ -181,7 +181,7 @@ def per_epoch_metric(epoch_output, epoch_input, fairness_function, loss_function
 
 
 
-    print(group_metrics)
+    # print(group_metrics)
 
     # Calculate accuracy
     # accuracy = fairness_functions.calculate_accuracy_classification(predictions=all_prediction, labels=all_label)

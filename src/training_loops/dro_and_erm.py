@@ -747,7 +747,7 @@ def orchestrator(training_loop_parameters: TrainingLoopParameters):
 
         train_epoch_metric, loss, global_weight, global_loss = procedure(train_parameters)
 
-        valid_parameters = TrainParameters(
+        train_parameters = TrainParameters(
             model=training_loop_parameters.model,
             iterator=training_loop_parameters.iterators[0]['train_iterator'],
             optimizer=training_loop_parameters.optimizer,
@@ -758,10 +758,10 @@ def orchestrator(training_loop_parameters: TrainingLoopParameters):
             mode='evaluate',
             fairness_function=training_loop_parameters.fairness_function,
             iterator_set=None)
+        #
+        train_epoch_metric, loss = test(train_parameters)
 
-        # train_epoch_metric, loss = test(valid_parameters)
-
-        # log_epoch_metric(logger, start_message='train', epoch_metric=train_epoch_metric, epoch_number=ep, loss=loss)
+        log_epoch_metric(logger, start_message='train', epoch_metric=train_epoch_metric, epoch_number=ep, loss=loss)
 
         if training_loop_parameters.use_wandb:
             log_and_plot_data(epoch_metric=train_epoch_metric, loss=loss, train=True)

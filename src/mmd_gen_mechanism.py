@@ -19,8 +19,8 @@ warnings.filterwarnings("ignore", message="y_pred contains classes not in y_true
 # import mkl
 # mkl.set_num_threads(3)
 
-# dataset_name = 'celeb_multigroup_v3'
-dataset_name = 'twitter_hate_speech'
+dataset_name = 'celeb_multigroup_v3'
+# dataset_name = 'twitter_hate_speech'
 seed = 50
 batch_size = 512
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -272,14 +272,15 @@ if __name__ == '__main__':
         'dataset_size': 1000,
         'max_number_of_generated_examples': 1000,
         'per_group_label_number_of_examples': 1000,
-        'mmd_augmentation_mechanism': "asd"
+        'mmd_augmentation_mechanism': "asd",
+        "seed": seed
     }
 
     iterators, other_meta_data = generate_data_iterators(dataset_name=dataset_name, **iterator_params)
-    # scaler = iterators[0]['scaler']
-    # scaler = StandardScaler().fit(other_meta_data['raw_data']['train_X'])
-    # other_meta_data['raw_data']['train_X'] = scaler.transform(other_meta_data['raw_data']['train_X'])
-    # other_meta_data['raw_data']['valid_X'] = scaler.transform(other_meta_data['raw_data']['valid_X'])
+    scaler = iterators[0]['scaler']
+    scaler = StandardScaler().fit(other_meta_data['raw_data']['train_X'])
+    other_meta_data['raw_data']['train_X'] = scaler.transform(other_meta_data['raw_data']['train_X'])
+    other_meta_data['raw_data']['valid_X'] = scaler.transform(other_meta_data['raw_data']['valid_X'])
 
     original_meta_data = copy.deepcopy(other_meta_data)
 
