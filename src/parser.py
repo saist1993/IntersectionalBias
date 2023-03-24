@@ -140,9 +140,10 @@ def temp_table_generator(dataset_name, fairness_function):
 
     rows = []
     average_rows = []
-    rows.append(['method', 'balanced accuracy', 'fairness', 'confidence_interval', 'seed'])
+    rows.append(['method', 'balanced accuracy', 'fairness', 'confidence_interval', 'seed', 'min fair', 'max fair', 'average fair',
+                         'spread fair', 'max difference'])
     average_rows.append(['method', 'balanced accuracy', 'fairness', 'min fair', 'max fair', 'average fair',
-                         'spread fair', 'average max difference'])
+                         'spread fair', 'max difference'])
 
     for dataset in dataset_names:
         for model in models:
@@ -163,7 +164,7 @@ def temp_table_generator(dataset_name, fairness_function):
                                                                      round(confidence_interval[1], k)
 
                     intersectional_bootstrap =  result.test_epoch_metric.eps_fairness[fairness_function].intersectional_bootstrap
-                    min_prob, max_prob, mean_prob, mean_std, minmax_difference = intersectional_bootstrap[5:]
+                    min_prob, max_prob, mean_prob, mean_std, minmax_difference = intersectional_bootstrap[4:9]
 
 
 
