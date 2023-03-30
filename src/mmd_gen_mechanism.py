@@ -642,5 +642,5 @@ if __name__ == '__main__':
             pickle.dump(all_models, open(f"train_and_valid_all_{dataset_name}_{seed}.pt", 'wb'))
             pickle.dump(clf, open(f"train_and_valid_real_vs_fake_{dataset_name}_{seed}.sklearn", 'wb'))
         # # # #
-        pickle.dump(all_models, open(f"{round(np.mean(positive_average_accuracy),3)}_train_and_valid_all_{dataset_name}_{seed}.pt", 'wb'))
-        pickle.dump(clf, open(f"{round(np.mean(positive_average_accuracy),3)}_train_and_valid_real_vs_fake_{dataset_name}_{seed}.sklearn", 'wb'))
+        # pickle.dump(all_models, open(f"{round(np.mean(positive_average_accuracy),3)}_train_and_valid_all_{dataset_name}_{seed}.pt", 'wb'))
+        # pickle.dump(clf, open(f"{round(np.mean(positive_average_accuracy),3)}_train_and_valid_real_vs_fake_{dataset_name}_{seed}.sklearn", 'wb'))
