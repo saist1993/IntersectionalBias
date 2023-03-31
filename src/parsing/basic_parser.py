@@ -115,7 +115,7 @@ class BasicLogParser:
         parsed_blocks = []
         for b in blocks:
             block = self.block_parser(b)
-            if None not in block:
+            if None not in block[1:]:
                 block = BlockData(
                     unique_id=unique_id,
                     arguments=arguments,
