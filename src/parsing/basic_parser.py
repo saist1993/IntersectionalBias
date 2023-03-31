@@ -128,7 +128,7 @@ class BasicLogParser:
 
     def get_parsed_content(self, dataset_name, method, model, seed, fairness_function):
         # Step 1: Find the correct directory
-        log_files_location = Path(f"../logs/logs/{dataset_name}/{method}/{model}/{seed}/{fairness_function}")
+        log_files_location = Path(f"../logs/{dataset_name}/{method}/{model}/{seed}/{fairness_function}")
         all_log_files_names = log_files_location.glob('*')
         # all_log_files_content = [self.core_parser(file_name) for file_name in all_log_files_names]
 
