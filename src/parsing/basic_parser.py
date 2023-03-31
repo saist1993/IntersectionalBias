@@ -3,6 +3,8 @@ from numpy import nan
 from pathlib import Path
 from metrics.calculate_epoch_metric import *
 
+
+from numpy import array
 @dataclass
 class BlockData:
     unique_id: str
