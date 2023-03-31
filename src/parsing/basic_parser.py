@@ -42,10 +42,15 @@ class BestCandidateMechanism:
             pruned_data.append(d[::-1][:int(len(d)*self.level_1_strategy_params['keep_last_k']*0.01)])
         self.data = pruned_data
 
+    def compute_metric(self, block):
+        computed_metric = block.valid_epoch_metric.eps_fairness[self.level_2_strategy_params['fairness_function']].intersectional_bootstrap[10]
+        print(computed_metric)
+
     def relaxation_threshold(self):
         try:
            best_validation_accuracy = max([block.valid_epoch_metric.balanced_accuracy for blocks in self.data for block in blocks])
-           print(best_validation_accuracy)
+           self.compute_metric(self.data[0][0])
+           raise IOError
         except ValueError:
             print("here")
         all_blocks_flat = [block for blocks in self.data for block in blocks
@@ -123,7 +128,7 @@ class BasicLogParser:
 
     def get_parsed_content(self, dataset_name, method, model, seed, fairness_function):
         # Step 1: Find the correct directory
-        log_files_location = Path(f"../server_logs/logs/{dataset_name}/{method}/{model}/{seed}/{fairness_function}")
+        log_files_location = Path(f"../logs/logs/{dataset_name}/{method}/{model}/{seed}/{fairness_function}")
         all_log_files_names = log_files_location.glob('*')
         # all_log_files_content = [self.core_parser(file_name) for file_name in all_log_files_names]
 
