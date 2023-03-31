@@ -4,6 +4,8 @@ from pathlib import Path
 from metrics.calculate_epoch_metric import *
 
 
+from itertools import combinations_with_replacement
+
 from numpy import array
 @dataclass
 class BlockData:
@@ -47,7 +49,10 @@ class BestCandidateMechanism:
     def compute_metric(self, block):
         computed_metric = block.valid_epoch_metric.eps_fairness[self.level_2_strategy_params['fairness_function']].intersectional_bootstrap[10]
         eps = [i[-1] for i in computed_metric]
-        return np.mean(eps)
+        all_new_eps = []
+        for i,j in combinations_with_replacement(eps):
+            all_new_eps.append(i/j)
+        return np.mean(all_new_eps)
 
     def relaxation_threshold(self):
         try:
