@@ -3,6 +3,10 @@ import numpy as np
 from texttable import Texttable
 from parsing import basic_parser
 
+
+from itertools import combinations_with_replacement
+
+
 fairness_function = 'equal_odds'
 level_1_strategy_params = {'keep_last_k': 100.0}
 level_2_strategy_params = {'relaxation_threshold': 0.02,
@@ -140,9 +144,9 @@ def temp_table_generator(dataset_name, fairness_function):
 
     rows = []
     average_rows = []
-    rows.append(['method', 'balanced accuracy', 'fairness', 'confidence_interval', 'seed', 'min fair', 'max fair', 'average fair', 'spread fair', 'max difference'])
+    rows.append(['method', 'balanced accuracy', 'fairness', 'confidence_interval', 'seed', 'min fair', 'max fair', 'average fair', 'spread fair', 'max difference', 'average ratio'])
     average_rows.append(['method', 'balanced accuracy', 'fairness', 'min fair', 'max fair', 'average fair',
-                         'spread fair', 'average max difference'])
+                         'spread fair', 'average max difference', 'average ratio'])
 
     for dataset in dataset_names:
         for model in models:
@@ -166,10 +170,17 @@ def temp_table_generator(dataset_name, fairness_function):
                     print(intersectional_bootstrap)
                     min_prob, max_prob, mean_prob, mean_std, minmax_difference = intersectional_bootstrap[4:9]
 
+                    computed_metric = intersectional_bootstrap[10]
+                    eps = [i[-1] for i in computed_metric]
+                    all_new_eps = []
+                    for i, j in combinations_with_replacement(eps, 2):
+                        all_new_eps.append(i / j)
 
 
 
-                    rows_temp.append([method, round(accuracy,k), round(fairness,k), confidence_interval, seed, min_prob, max_prob, mean_prob, mean_std, minmax_difference])
+
+
+                    rows_temp.append([method, round(accuracy,k), round(fairness,k), confidence_interval, seed, min_prob, max_prob, mean_prob, mean_std, minmax_difference, np.mean(all_new_eps)])
 
                     if True:
                         print(result.arguments)
@@ -197,12 +208,19 @@ def temp_table_generator(dataset_name, fairness_function):
                 average_minmax_difference_fairness = round(np.mean([r[9] for r in rows_temp]), k)
                 average_minmax_difference_fairness_std = round(np.std([r[9] for r in rows_temp]), k)
 
+                average_eps_ratio = round(np.mean([r[9] for r in rows_temp]), k)
+                average_eps_ratio_std = round(np.std([r[9] for r in rows_temp]), k)
+
+
+
+
                 average_rows.append([method, f"{average_accuracy} +/- {average_accuracy_std}", f"{average_fairness} +/- {average_fairness_std}",
                                      f"{average_min_fairness} +/- {average_min_fairness_std}",
                                      f"{average_max_fairness} +/- {average_max_fairness_std}",
                                      f"{average_mean_fairness} +/- {average_mean_fairness_std}",
                                      f"{average_std_fairness} +/- {average_std_fairness_std}",
-                                     f"{average_minmax_difference_fairness} +/- {average_minmax_difference_fairness_std}"])
+                                     f"{average_minmax_difference_fairness} +/- {average_minmax_difference_fairness_std}",
+                                     f"{average_eps_ratio} +/- {average_eps_ratio_std}"])
 
 
     t = Texttable()
