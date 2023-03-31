@@ -390,7 +390,7 @@ def runner(runner_arguments:RunnerArguments):
     # Combine everything
 
     if 'unconstrained' in runner_arguments.method:
-        output = unconstrained_training_loop.training_loop(training_loop_params)
+        output = fairgrad_training_loop.training_loop(training_loop_params)
     elif "fairgrad" in runner_arguments.method: # now fairgrad is at correct place
         output = fairgrad_training_loop.orchestrator(training_loop_params)
     elif runner_arguments.method in ['adversarial_group', 'adversarial_single', 'adversarial_group_with_fairness_loss']:
