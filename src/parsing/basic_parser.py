@@ -92,14 +92,12 @@ class BasicLogParser:
 
     def core_parser(self, file_name:Path):
         print(f"file name received {file_name}")
-        if 'kNpapCsDje9NtBjYUVK3yL.log' in str(file_name):
-            print("here")
         with open(file_name, 'r') as f:
             lines = [line for line in f]
             unique_id = lines[0].split("unique id is:")[1]
             arguments = lines[1].split("arguemnts: ")[1]
-        if "per_group_label_number_of_examples=1000":
-            return None
+        # if "per_group_label_number_of_examples=1000":
+        #     return None
         blocks = []
         for l in lines[2:]:
             if "start of epoch block" in l:
