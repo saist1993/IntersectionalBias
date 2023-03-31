@@ -47,7 +47,7 @@ class BestCandidateMechanism:
     def compute_metric(self, block):
         computed_metric = block.valid_epoch_metric.eps_fairness[self.level_2_strategy_params['fairness_function']].intersectional_bootstrap[10]
         eps = [i[-1] for i in computed_metric]
-        return max(eps)
+        return np.mean(eps)
 
     def relaxation_threshold(self):
         try:
