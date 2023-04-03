@@ -11,6 +11,11 @@ from .common_functionality import CreateIterators, IteratorData, AugmentData, sp
 from .simple_classification_dataset_helper import get_adult_multigroups_data, get_adult_data, \
     get_celeb_multigroups_data_with_varying_protected_group
 
+
+
+from sklearn.preprocessing import StandardScaler
+
+
 @dataclass
 class GaussianInfo:
     class_lable: int
@@ -71,6 +76,14 @@ class SimpleClassificationDataset:
         valid_X, valid_y, valid_s = X[dev_index:test_index, :], y[dev_index:test_index], s[dev_index:test_index]
         test_X, test_y, test_s = X[test_index:, :], y[test_index:], s[test_index:]
 
+        scaler = StandardScaler().fit(train_X)
+        train_X = scaler.transform(train_X)
+        valid_X = scaler.transform(valid_X)
+        test_X = scaler.transform(test_X)
+
+
+
+
 
         if "augmented" in self.dataset_name:
             augment_data = AugmentData(self.dataset_name, train_X, train_y, train_s,
@@ -102,7 +115,7 @@ class SimpleClassificationDataset:
             dev_X=valid_X, dev_y=valid_y, dev_s=valid_s,
             test_X=test_X, test_y=test_y, test_s=test_s,
             batch_size=self.batch_size,
-            do_standard_scalar_transformation=True
+            do_standard_scalar_transformation=False
         )
         iterator_set, vocab, s_flatten_lookup = create_iterator.get_iterators(iterator_data)
 
@@ -111,7 +124,7 @@ class SimpleClassificationDataset:
                 scaler = iterator_set['scaler']
                 train_X_augmented = scaler.transform(train_X_augmented)
         else:
-            scaler = iterator_set['scaler']
+            # scaler = iterator_set['scaler']
             train_X_augmented = scaler.transform(train_X_augmented)
 
 

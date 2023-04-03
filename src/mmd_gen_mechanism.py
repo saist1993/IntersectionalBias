@@ -19,8 +19,9 @@ warnings.filterwarnings("ignore", message="y_pred contains classes not in y_true
 # import mkl
 # mkl.set_num_threads(3)
 
-# dataset_name = 'celeb_multigroup_v3'
-dataset_name = 'twitter_hate_speech'
+dataset_name = 'celeb_multigroup_v4'
+# dataset_name = 'twitter_hate_speech'
+# dataset_name = "adult_multi_group"
 seed = 50
 batch_size = 512
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -279,8 +280,9 @@ if __name__ == '__main__':
     iterators, other_meta_data = generate_data_iterators(dataset_name=dataset_name, **iterator_params)
     scaler = iterators[0]['scaler']
     scaler = StandardScaler().fit(other_meta_data['raw_data']['train_X'])
-    other_meta_data['raw_data']['train_X'] = scaler.transform(other_meta_data['raw_data']['train_X'])
-    other_meta_data['raw_data']['valid_X'] = scaler.transform(other_meta_data['raw_data']['valid_X'])
+    if dataset_name == "twitter_hate_speech":
+        other_meta_data['raw_data']['train_X'] = scaler.transform(other_meta_data['raw_data']['train_X'])
+        other_meta_data['raw_data']['valid_X'] = scaler.transform(other_meta_data['raw_data']['valid_X'])
 
     original_meta_data = copy.deepcopy(other_meta_data)
 
@@ -482,17 +484,17 @@ if __name__ == '__main__':
 
         all_generated_examples = torch.vstack(all_generated_examples).detach().numpy()
 
-        if dataset_name == "celeb_multigroup_v3":
-            all_generated_examples[all_generated_examples > 0] = 1.0
-            all_generated_examples[all_generated_examples < 0] = -1.0
-            all_generated_examples = scaler.transform(all_generated_examples)
+        # if dataset_name == "celeb_multigroup_v3":
+        #     all_generated_examples[all_generated_examples > 0] = 1.0
+        #     all_generated_examples[all_generated_examples < 0] = -1.0
+        #     all_generated_examples = scaler.transform(all_generated_examples)
 
         real_examples = np.random.choice(range(len(original_meta_data['raw_data']['train_X'])),
                                          size=len(all_generated_examples), replace=True)
         real_examples = original_meta_data['raw_data']['train_X'][real_examples]
 
-        if dataset_name == "celeb_multigroup_v3":
-            real_examples = scaler.transform(real_examples)
+        # if dataset_name == "celeb_multigroup_v3":
+        #     real_examples = scaler.transform(real_examples)
 
         generated_example_label = np.zeros(len(all_generated_examples))
         real_example_label = np.ones(len(all_generated_examples))
@@ -550,10 +552,10 @@ if __name__ == '__main__':
                 gen_examples = np.vstack(
                     [output_positive['prediction'].detach().numpy(), output_negative['prediction'].detach().numpy()])
 
-                if dataset_name == "celeb_multigroup_v3":
-                    gen_examples[gen_examples > 0] = 1.0
-                    gen_examples[gen_examples < 0] = -1.0
-                    gen_examples = scaler.transform(gen_examples)
+                # if dataset_name == "celeb_multigroup_v3":
+                #     gen_examples[gen_examples > 0] = 1.0
+                #     gen_examples[gen_examples < 0] = -1.0
+                #     gen_examples = scaler.transform(gen_examples)
 
                 real_examples = np.vstack(
                     [positive_examples_current_group['input'], negative_examples_current_group['input']])
@@ -576,11 +578,11 @@ if __name__ == '__main__':
                 overall_accuracy = temp(_all_examples=all_examples, _all_label=all_label)
 
                 positive_examples = output_positive['prediction'].detach().numpy()
-                if dataset_name == "celeb_multigroup_v3":
-                    positive_examples[positive_examples > 0] = 1.0
-                    positive_examples[positive_examples < 0] = -1.0
-                    positive_examples = scaler.transform(positive_examples)
-                    positive_examples_current_group['input'] = scaler.transform(positive_examples_current_group['input'])
+                # if dataset_name == "celeb_multigroup_v3":
+                #     positive_examples[positive_examples > 0] = 1.0
+                #     positive_examples[positive_examples < 0] = -1.0
+                #     positive_examples = scaler.transform(positive_examples)
+                #     positive_examples_current_group['input'] = scaler.transform(positive_examples_current_group['input'])
 
                 positive_accuracy = temp(_all_examples=np.vstack(
                     [
@@ -598,11 +600,11 @@ if __name__ == '__main__':
                 )
 
                 negative_examples = output_negative['prediction'].detach().numpy()
-                if dataset_name == "celeb_multigroup_v3":
-                    negative_examples[negative_examples > 0] = 1.0
-                    negative_examples[negative_examples < 0] = -1.0
-                    negative_examples = scaler.transform(negative_examples)
-                    negative_examples_current_group['input'] = scaler.transform(negative_examples_current_group['input'])
+                # if dataset_name == "celeb_multigroup_v3":
+                #     negative_examples[negative_examples > 0] = 1.0
+                #     negative_examples[negative_examples < 0] = -1.0
+                #     negative_examples = scaler.transform(negative_examples)
+                #     negative_examples_current_group['input'] = scaler.transform(negative_examples_current_group['input'])
 
                 negative_accuracy = temp(_all_examples=np.vstack(
                     [

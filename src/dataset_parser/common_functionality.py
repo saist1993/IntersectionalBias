@@ -490,7 +490,7 @@ class AugmentDataCommonFunctionality:
                     relevant_index = np.where((real_vs_fake.predict_proba(generated_examples)[:, 1] > confidence_score))
                 else:
                     relevant_index = np.where(
-                        classifier_models.predict_proba(generated_examples)[:, 1] > 0.0)
+                        real_vs_fake.predict_proba(generated_examples)[:, 1] > 0.0)
                 selected_examples += generated_examples[relevant_index].tolist()
                 # selected_examples += generated_examples.tolist()
                 counter += 1

@@ -126,16 +126,17 @@ def get_celeb_multigroups_data_with_varying_protected_group(k=5):
     """
 
     # src_path = os.path.dirname(os.path.realpath(__file__))
-    if k > 7:
+    if k > 4:
         raise NotImplementedError
 
-    df = pd.read_csv(os.path.join(folder_location, 'celebA/list_attr_celeba.csv'), sep=';')
+    df = pd.read_csv(os.path.join(folder_location, 'celebA/list_attr_celeba.csv'), sep=',')
     df = df.rename(columns={'Male': 'sex'})
 
-    protected_attribute = ['Pale_Skin', 'sex', 'Narrow_Eyes', 'Big_Nose', 'Young', 'Straight_Hair', 'Attractive'][:k]
+    # protected_attribute = ['Pale_Skin', 'sex', 'Narrow_Eyes', 'Big_Nose', 'Young', 'Straight_Hair', 'Attractive'][:k]
+    protected_attribute = ['sex', 'Young', 'Attractive', 'Pale_Skin'][:k]
     s = [df[i]*-1 for i in protected_attribute]
     y = df['Smiling']
-    df = df.drop(columns=['Smiling', 'picture_ID'])
+    df = df.drop(columns=['Smiling', 'image_id'])
     df = df.drop(columns=protected_attribute)
 
     X = df.to_numpy()
@@ -147,9 +148,13 @@ def get_celeb_multigroups_data_with_varying_protected_group(k=5):
 
     X = X[:, (X != 0).any(axis=0)]
 
+
+    X = np.load(os.path.join(folder_location, 'celebA/encoded_image.npy'))
+
     # _, s = np.unique(np.hstack((s1.reshape(-1, 1), s2.reshape(-1, 1))), return_inverse=True, axis=0)
 
     return X, y, s
+
 
 
 def get_adult_data(load_data_size=None):
