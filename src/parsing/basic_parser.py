@@ -52,7 +52,7 @@ class BestCandidateMechanism:
         # all_new_eps = []
         # for i,j in combinations_with_replacement(eps,2):
         #     all_new_eps.append(i/j)
-        return max(eps)
+        return np.mean(eps)
 
     def relaxation_threshold(self):
         try:
