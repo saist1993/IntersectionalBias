@@ -19,11 +19,12 @@ warnings.filterwarnings("ignore", message="y_pred contains classes not in y_true
 # import mkl
 # mkl.set_num_threads(3)
 
+# dataset_name = 'numeracy'
 dataset_name = 'celeb_multigroup_v4'
 # dataset_name = 'twitter_hate_speech'
 # dataset_name = "adult_multi_group"
 seed = 50
-batch_size = 512
+batch_size = 256
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 
@@ -337,7 +338,8 @@ if __name__ == '__main__':
     per_group_accuracy = [1.0 for i in train_tilted_params.other_params['groups']]
 
     for current_group_flat, current_group in flattened_s_to_s.items():
-        gen_model_positive = SimpleModelGenerator(input_dim=input_dim, number_of_params=len(flattened_s_to_s[1]))
+        # gen_model_positive = SimpleModelGenerator(input_dim=input_dim, number_of_params=len(flattened_s_to_s[1]))
+        gen_model_positive = SimpleModelGeneratorComplex(input_dim=input_dim, number_of_params=len(flattened_s_to_s[1]))
         gen_model_negative = SimpleModelGenerator(input_dim=input_dim, number_of_params=len(flattened_s_to_s[1]))
 
         optimizer_positive = torch.optim.Adam(gen_model_positive.parameters(), lr=0.1)
@@ -626,9 +628,9 @@ if __name__ == '__main__':
                 mask_group_positive = np.logical_and(mask_group, original_meta_data['raw_data']['train_y'] == 1)
                 mask_group_negative = np.logical_and(mask_group, original_meta_data['raw_data']['train_y'] == 0)
 
-                print(flat_current_group, current_group, np.sum(mask_group), np.sum(mask_group_positive),
-                      np.sum(mask_group_negative),
-                      overall_accuracy, positive_accuracy, negative_accuracy)
+                print(flat_current_group, current_group, np.sum(mask_group), "+", np.sum(mask_group_positive),
+                      " - ", np.sum(mask_group_negative),
+                      round(overall_accuracy,4), " + " ,round(positive_accuracy,4), " - ", round(negative_accuracy,4))
                 overall_average_accuracy.append(overall_accuracy)
                 positive_average_accuracy.append(positive_accuracy)
                 negative_average_accuracy.append(negative_accuracy)
@@ -637,8 +639,8 @@ if __name__ == '__main__':
 
         print(
             f"average accuracy is {np.mean(overall_average_accuracy)}, + {np.mean(positive_average_accuracy)}, - {np.mean(negative_average_accuracy)} ")
-        if np.mean(positive_average_accuracy) < worst_accuracy:
-            worst_accuracy = np.mean(positive_average_accuracy)
+        if np.mean(negative_average_accuracy) < worst_accuracy: # default is positive mean accuracy
+            worst_accuracy = np.mean(negative_average_accuracy)
             # torch.save(gen_model_positive.state_dict(), "dummy.pth")
             # torch.save(gen_model_negative.state_dict(), "dummy.pth")
             pickle.dump(all_models, open(f"train_and_valid_all_{dataset_name}_{seed}.pt", 'wb'))

@@ -1,6 +1,6 @@
 import config
 from utils.misc import CustomError
-from dataset_parser import twitter_hate_speech, gaussian_dataset, simple_classification_dataset
+from dataset_parser import twitter_hate_speech, gaussian_dataset, simple_classification_dataset, numeracy
 
 
 def generate_data_iterators(dataset_name: str, **kwargs):
@@ -17,7 +17,11 @@ def generate_data_iterators(dataset_name: str, **kwargs):
     elif dataset_name.lower() in ['adult']:
         dataset_creator = simple_classification_dataset.SimpleClassificationDataset(dataset_name=dataset_name, **kwargs)
         iterators, other_meta_data = dataset_creator.run()
+    elif "numeracy" in dataset_name.lower():
+        kwargs['dataset_location'] = config.numeracy_path[0]
+        dataset_creator = numeracy.SimpleClassificationDataset(dataset_name=dataset_name, **kwargs)
+        iterators, other_meta_data = dataset_creator.run()
     else:
         raise CustomError("No such dataset")
 
-    return  iterators, other_meta_data
+    return iterators, other_meta_data
