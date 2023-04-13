@@ -185,7 +185,7 @@ def temp_table_generator(dataset_name, fairness_function, methods):
 
                     rows_temp.append([method, round(accuracy,k), round(fairness,k), confidence_interval, seed, min_prob, max_prob, mean_prob, mean_std, minmax_difference, np.mean(all_new_eps)])
 
-                    if True:
+                    if False:
                         print(result.arguments)
                         print(result.test_epoch_metric.epoch_number)
                 # average over seeds
