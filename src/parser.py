@@ -146,9 +146,9 @@ def temp_table_generator(dataset_name, fairness_function, methods):
 
     rows = []
     average_rows = []
-    rows.append(['method', 'balanced accuracy', 'fairness', 'confidence_interval', 'seed', 'min fair', 'max fair', 'average fair', 'spread fair', 'max difference', 'average ratio'])
+    rows.append(['method', 'balanced accuracy', 'fairness', 'confidence_interval', 'seed', 'min fair', 'max fair', 'average fair', 'spread fair', 'max difference', 'average difference', 'average ratio'])
     average_rows.append(['method', 'balanced accuracy', 'fairness', 'min fair', 'max fair', 'average fair',
-                         'spread fair', 'average max difference', 'average ratio'])
+                         'spread fair', 'average max difference', 'average all difference', 'average all min max ratio'])
 
     for dataset in dataset_names:
         for model in models:
@@ -169,21 +169,26 @@ def temp_table_generator(dataset_name, fairness_function, methods):
                                                                      round(confidence_interval[1], k)
 
                     intersectional_bootstrap =  result.test_epoch_metric.eps_fairness[fairness_function].intersectional_bootstrap
-                    print(intersectional_bootstrap)
+                    # print(intersectional_bootstrap)
                     min_prob, max_prob, mean_prob, mean_std, minmax_difference = intersectional_bootstrap[4:9]
 
                     computed_metric = intersectional_bootstrap[10]
                     eps = [i[-1] for i in computed_metric]
-                    all_new_eps = []
+                    all_differences = []
                     for i, j in combinations_with_replacement(eps, 2):
                         if i!=j:
-                            all_new_eps.append(max(i,j) - min(i,j))
+                            all_differences.append(max(i,j) - min(i,j))
+
+                    all_min_max_ratio = []
+                    for i, j in combinations_with_replacement(eps, 2):
+                        if i != j:
+                            all_min_max_ratio.append(max(i, j)/ min(i, j))
 
 
 
 
 
-                    rows_temp.append([method, round(accuracy,k), round(fairness,k), confidence_interval, seed, min_prob, max_prob, mean_prob, mean_std, minmax_difference, np.mean(all_new_eps)])
+                    rows_temp.append([method, round(accuracy,k), round(fairness,k), confidence_interval, seed, min_prob, max_prob, mean_prob, mean_std, minmax_difference, np.mean(all_differences), np.mean(all_min_max_ratio)])
 
                     if False:
                         print(result.arguments)
@@ -211,8 +216,11 @@ def temp_table_generator(dataset_name, fairness_function, methods):
                 average_minmax_difference_fairness = round(np.mean([r[9] for r in rows_temp]), k)
                 average_minmax_difference_fairness_std = round(np.std([r[9] for r in rows_temp]), k)
 
-                average_eps_ratio = round(np.mean([r[10] for r in rows_temp]), k)
-                average_eps_ratio_std = round(np.std([r[10] for r in rows_temp]), k)
+                average_all_difference_fairness = round(np.mean([r[10] for r in rows_temp]), k)
+                average_all_difference_ratio_std = round(np.std([r[10] for r in rows_temp]), k)
+
+                average_all_minmax_ratio_fairness = round(np.mean([r[11] for r in rows_temp]), k)
+                average_all_minmax_ratio_std = round(np.std([r[11] for r in rows_temp]), k)
 
 
 
@@ -223,7 +231,8 @@ def temp_table_generator(dataset_name, fairness_function, methods):
                                      f"{average_mean_fairness} +/- {average_mean_fairness_std}",
                                      f"{average_std_fairness} +/- {average_std_fairness_std}",
                                      f"{average_minmax_difference_fairness} +/- {average_minmax_difference_fairness_std}",
-                                     f"{average_eps_ratio} +/- {average_eps_ratio_std}"])
+                                     f"{average_all_difference_fairness} +/- {average_all_difference_ratio_std}",
+                                     f"{average_all_minmax_ratio_fairness} +/- {average_all_minmax_ratio_std}"])
 
 
     t = Texttable()
