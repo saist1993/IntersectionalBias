@@ -49,10 +49,11 @@ class BestCandidateMechanism:
     def compute_metric(self, block):
         computed_metric = block.valid_epoch_metric.eps_fairness[self.level_2_strategy_params['fairness_function']].intersectional_bootstrap[10]
         eps = [i[-1] for i in computed_metric]
-        # all_new_eps = []
-        # for i,j in combinations_with_replacement(eps,2):
-        #     all_new_eps.append(i/j)
-        return np.mean(eps)
+        all_new_eps = []
+        for i,j in combinations_with_replacement(eps,2):
+            if i!=j:
+                all_new_eps.append(max(i,j) - min(i,j))
+        return np.mean(all_new_eps)
 
     def relaxation_threshold(self):
         try:
@@ -63,12 +64,12 @@ class BestCandidateMechanism:
                            if block.valid_epoch_metric.balanced_accuracy > best_validation_accuracy -
                            self.level_2_strategy_params['relaxation_threshold']]
 
-        # best_fairness_index = np.argmin([block.valid_epoch_metric.eps_fairness[self.level_2_strategy_params['fairness_function']].intersectional_bootstrap[0]
-        #                                       for block in all_blocks_flat])
-
-
-        best_fairness_index = np.argmin([self.compute_metric(block)
+        best_fairness_index = np.argmin([block.valid_epoch_metric.eps_fairness[self.level_2_strategy_params['fairness_function']].intersectional_bootstrap[0]
                                               for block in all_blocks_flat])
+
+
+        #best_fairness_index = np.argmin([self.compute_metric(block)
+        #                                     for block in all_blocks_flat])
 
         return all_blocks_flat[best_fairness_index]
 
@@ -106,8 +107,9 @@ class BasicLogParser:
             lines = [line for line in f]
             unique_id = lines[0].split("unique id is:")[1]
             arguments = lines[1].split("arguemnts: ")[1]
-        # if "per_group_label_number_of_examples=1000":
-        #     return None
+        #print(arguments)
+        #if "per_group_label_number_of_examples=1000" in arguments:
+        #    return None
         blocks = []
         for l in lines[2:]:
             if "start of epoch block" in l:
@@ -145,7 +147,6 @@ class BasicLogParser:
             temp = self.core_parser(file_name)
             if temp:
                 all_log_files_content.append(temp)
-
         return all_log_files_content
 
 

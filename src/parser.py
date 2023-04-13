@@ -104,7 +104,7 @@ def temp_table_generator(dataset_name, fairness_function):
         # 'only_mixup',
         # 'only_mixup_based_on_distance'
         # 'erm_random_single_group_random_sampling',
-        'erm_random_single_group_equal_sampling',
+        #'erm_random_single_group_equal_sampling',
         # 'erm_random_group_equal_sampling_mixup_regularizer',
         # 'erm_distance_group_equal_sampling_mixup_regularizer_dynamic_distance',
         # 'erm_distance_group_equal_sampling_mixup_regularizer_static_distance',
@@ -120,8 +120,10 @@ def temp_table_generator(dataset_name, fairness_function):
         # 'erm_super_group_with_simplified_fairness_loss',
         # 'train_only_group_dro_with_mixup_regularizer_super_group',
         # 'dro_random_group_equal_sampling',
-        #'erm_random_group_equal_sampling_only_generated_data_train_on_only_generated_data',
-        #'erm_random_single_group_equal_sampling_only_generated_data_mixup_generated_and_real_data'
+       # 'erm_random_group_equal_sampling_only_generated_data_train_on_only_generated_data',
+       #'erm_random_single_group_equal_sampling_only_generated_data_mixup_generated_and_real_data',
+       # "fairgrad",
+        "erm_random_single_group_equal_sampling",
     ]
 
 
@@ -174,7 +176,8 @@ def temp_table_generator(dataset_name, fairness_function):
                     eps = [i[-1] for i in computed_metric]
                     all_new_eps = []
                     for i, j in combinations_with_replacement(eps, 2):
-                        all_new_eps.append(i / j)
+                        if i!=j:
+                            all_new_eps.append(max(i,j) - min(i,j))
 
 
 
@@ -208,8 +211,8 @@ def temp_table_generator(dataset_name, fairness_function):
                 average_minmax_difference_fairness = round(np.mean([r[9] for r in rows_temp]), k)
                 average_minmax_difference_fairness_std = round(np.std([r[9] for r in rows_temp]), k)
 
-                average_eps_ratio = round(np.mean([r[9] for r in rows_temp]), k)
-                average_eps_ratio_std = round(np.std([r[9] for r in rows_temp]), k)
+                average_eps_ratio = round(np.mean([r[10] for r in rows_temp]), k)
+                average_eps_ratio_std = round(np.std([r[10] for r in rows_temp]), k)
 
 
 
@@ -235,44 +238,45 @@ def temp_table_generator(dataset_name, fairness_function):
 # adult_multi_group_equal_odds = temp_table_generator('adult_multi_group', 'equal_odds')
 # adult_multi_group_equal_opportunity = temp_table_generator('adult_multi_group', 'equal_opportunity')
 # #
-# twitter_hate_speech_equal_odds = temp_table_generator('twitter_hate_speech', 'equal_odds')
+#twitter_hate_speech_equal_odds = temp_table_generator('twitter_hate_speech_augmented', 'equal_odds')
 # twitter_hate_speech_equal_opportunity = temp_table_generator('twitter_hate_speech', 'equal_opportunity')
 # # #
-# celeb_multigroup_v3_equal_odds = temp_table_generator('celeb_multigroup_v3', 'equal_odds')
+#celeb_multigroup_v3_equal_odds = temp_table_generator('celeb_multigroup_v4_augmented', 'equal_odds')
 # celeb_multigroup_v3_equal_opportunity = temp_table_generator('celeb_multigroup_v3', 'equal_opportunity')
 
 
-celeb_multigroup_v4_equal_odds = temp_table_generator('celeb_multigroup_v4', 'equal_odds')
-celeb_multigroup_v4_equal_opportunity = temp_table_generator('celeb_multigroup_v4', 'equal_opportunity')
+#celeb_multigroup_v4_equal_odds = temp_table_generator('celeb_multigroup_v4', 'equal_odds')
+#celeb_multigroup_v4_equal_opportunity = temp_table_generator('celeb_multigroup_v4', 'equal_opportunity')
 
-
+numeracy_equal_odds = temp_table_generator('numeracy_augmented', 'equal_odds')
 # print("Adult Multi Group - Equal Odds")
 # print(adult_multi_group_equal_odds.draw())
 #
 # print("Adult Multi Group - Equal Opportunity")
 # print(adult_multi_group_equal_opportunity.draw())
 #
-# print("Twitter Hate Speech equal odds")
-# print(twitter_hate_speech_equal_odds.draw())
+#print("Twitter Hate Speech equal odds")
+#print(twitter_hate_speech_equal_odds.draw())
 #
 #
 # print("Twitter Hate Speech equal opportunity")
 # print(twitter_hate_speech_equal_opportunity.draw())
 
 #
-# print("Celeb MultiGroup V3 equal odds")
-# print(celeb_multigroup_v3_equal_odds.draw())
+#print("Celeb MultiGroup V3 equal odds")
+#print(celeb_multigroup_v3_equal_odds.draw())
 #
 # print("Celeb MultiGroup V3 equal opportunity")
 # print(celeb_multigroup_v3_equal_opportunity.draw())
 
-print("Celeb MultiGroup V4 equal odds")
-print(celeb_multigroup_v4_equal_odds.draw())
+#print("Celeb MultiGroup V4 equal odds")
+#print(celeb_multigroup_v4_equal_odds.draw())
 
-print("Celeb MultiGroup V4 equal opportunity")
-print(celeb_multigroup_v4_equal_opportunity.draw())
+#print("Celeb MultiGroup V4 equal opportunity")
+#print(celeb_multigroup_v4_equal_opportunity.draw())
 
-
+print("Numeracy equal odds")
+print(numeracy_equal_odds.draw())
 
 '''
 
