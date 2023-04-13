@@ -261,7 +261,7 @@ numeracy_equal_odds = temp_table_generator('numeracy', 'equal_odds', ['erm_rando
 print("Numeracy equal odds")
 print(numeracy_equal_odds.draw())
 
-numeracy_equal_odds = temp_table_generator('numeracy_augmented', 'equal_odds', ['erm_random_single_group_equal_sampling'])
+numeracy_equal_odds = temp_table_generator('numeracy_augmented', 'equal_odds', ['erm_random_single_group_equal_sampling', 'fairgrad'])
 print("Numeracy equal odds augmented")
 print(numeracy_equal_odds.draw())
 # print("Adult Multi Group - Equal Odds")
