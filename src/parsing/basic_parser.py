@@ -102,7 +102,7 @@ class BasicLogParser:
         return [train_epoch_metric, valid_epoch_metric, test_epoch_metric]
 
     def core_parser(self, file_name:Path):
-        print(f"file name received {file_name}")
+        # print(f"file name received {file_name}")
         with open(file_name, 'r') as f:
             lines = [line for line in f]
             unique_id = lines[0].split("unique id is:")[1]
