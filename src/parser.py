@@ -18,7 +18,7 @@ level_2_strategy_params = {'relaxation_threshold': 0.02,
 #                           level_2_strategy='relaxation_threshold', level_2_strategy_params=level_2_strategy_params))
 
 
-def temp_table_generator(dataset_name, fairness_function):
+def temp_table_generator(dataset_name, fairness_function, methods):
     # methods = ['unconstrained', 'unconstrained_with_fairness_loss',
     #            'adversarial_group', 'adversarial_group_with_fairness_loss',
     #            'only_titled_erm', 'only_mixup', 'tilted_erm_with_mixup',
@@ -35,96 +35,96 @@ def temp_table_generator(dataset_name, fairness_function):
     #            'only_tilted_erm_with_mixup_augmentation_lambda_weights_v2'
     #            ]
 
-    methods = ['unconstrained','only_titled_erm', 'only_mixup',
-               'only_mixup_based_on_distance',
-               'only_tilted_erm_with_mixup_augmentation_lambda_weights_v4',
-               'tilted_erm_with_mixup_only_one_group',
-               'tilted_erm_with_mixup_based_on_distance',
-               'only_tilted_erm_with_weights_on_loss',
-               'train_with_mixup_only_one_group_based_distance_v2',
-               'train_with_mixup_only_one_group_based_distance_v3',
-               'only_titled_erm_with_mask', 'train_only_group_dro', 'train_only_group_dro_with_weighted_sampling',
-               'only_mixup_based_on_distance_fid',
-               'train_only_group_dro_with_mixup_with_distance',
-               'train_only_group_dro_with_mixup_with_random',
-               'train_only_group_dro_with_mixup_with_random_with_weighted_sampling',
-               'train_only_group_dro_with_mixup_with_distance_with_weighted_sampling'
-               ]
-
-    methods = ['unconstrained','only_mixup',
-               'only_mixup_based_on_distance',
-               'train_only_group_dro', 'train_only_group_dro_with_weighted_sampling',
-               'train_only_group_dro_with_mixup_with_distance',
-               'train_only_group_dro_with_mixup_with_random',
-               'train_only_group_dro_with_mixup_with_random_with_weighted_sampling',
-               'train_only_group_dro_with_mixup_with_distance_with_weighted_sampling',
-               'train_only_group_dro_with_augmentation_static_positive_and_negative_weights',
-               'simple_mixup_data_augmentation'
-               ]
-
-    methods = [
-                'train_only_group_dro',
-        'train_only_group_dro_with_augmentation_static_positive_and_negative_weights',
-        'take_2_train_lisa_based_mixup_with_mixup_regularizer',
-        'lisa_based_mixup',
-        'lisa_based_mixup_with_mixup_regularizer',
-        'lisa_based_mixup_with_distance',
-        'lisa_based_mixup_with_mixup_regularizer_and_with_distance',
-        'train_only_group_dro_with_data_augmentation_via_mixup_super_group',
-        'train_only_group_dro_with_data_augmentation_via_mixup_super_group_with_mixup_regularizer',
-
-               ]
-
-
-
-    methods = [ 'train_only_group_dro_with_data_augmentation_via_mixup_super_group',
-        'train_only_group_dro_with_data_augmentation_via_mixup_super_group_with_mixup_regularizer',
-                'train_only_group_dro_with_data_augmentation_via_mixup_super_group_and_example_similarity_v1',
-                'train_only_group_dro_with_data_augmentation_via_mixup_super_group_and_example_similarity_v2'
-               ]
-
-    methods = [
-               'lisa_based_mixup',
-               'lisa_based_mixup_with_mixup_regularizer',
-               'train_only_group_dro',
-               'train_only_group_dro_with_super_group',
-               'train_only_group_dro_with_mixup_regularizer_super_group',
-               'train_only_group_dro_with_data_augmentation_via_mixup_super_group_and_example_similarity_v1',
-               'train_only_group_dro_with_data_augmentation_via_mixup_super_group_and_example_similarity_v2',
-               'erm_random_single_group_equal_sampling_only_generated_data_mixup_generated_and_real_data',
-               'erm_random_group_equal_sampling_only_generated_data_mixup_generated_and_real_data_mixup_regularizer',
-               ]
-
-    methods = [
-        # 'train_only_group_dro',
-        # 'train_only_group_dro_super_group_with_non_symmetric_mixup_regularizer',
-        # 'train_only_group_dro_super_group_with_non_symmetric_mixup_regularizer_integrated',
-        # 'train_only_group_dro_with_augmentation_static_positive_and_negative_weights',
-        # 'train_only_group_dro_with_super_group',
-        # 'only_mixup',
-        # 'only_mixup_based_on_distance'
-        # 'erm_random_single_group_random_sampling',
-        #'erm_random_single_group_equal_sampling',
-        # 'erm_random_group_equal_sampling_mixup_regularizer',
-        # 'erm_distance_group_equal_sampling_mixup_regularizer_dynamic_distance',
-        # 'erm_distance_group_equal_sampling_mixup_regularizer_static_distance',
-        # 'dro_random_single_group_random_sampling',
-        # 'dro_super_group_random_sampling',
-        # 'dro_super_group_equal_sampling',
-        # 'dro_random_group_equal_sampling',
-        # 'dro_random_single_group_equal_sampling',
-        # 'dro_super_group_and_distance_equal_sampling_mixup_regularizer_dynamic_distance_integrate_reg_loss_update_only_via_reg',
-        # 'dro_super_group_and_distance_equal_sampling_mixup_regularizer_dynamic_distance_integrate_reg_loss',
-        # 'dro_super_group_equal_sampling_mixup_regularizer_integrate_reg_loss',
-        # 'dro_super_group_and_distance_equal_sampling_mixup_regularizer_integrate_reg_loss_miixup_distance'
-        # 'erm_super_group_with_simplified_fairness_loss',
-        # 'train_only_group_dro_with_mixup_regularizer_super_group',
-        # 'dro_random_group_equal_sampling',
-       # 'erm_random_group_equal_sampling_only_generated_data_train_on_only_generated_data',
-       #'erm_random_single_group_equal_sampling_only_generated_data_mixup_generated_and_real_data',
-       # "fairgrad",
-        "erm_random_single_group_equal_sampling",
-    ]
+    # methods = ['unconstrained','only_titled_erm', 'only_mixup',
+    #            'only_mixup_based_on_distance',
+    #            'only_tilted_erm_with_mixup_augmentation_lambda_weights_v4',
+    #            'tilted_erm_with_mixup_only_one_group',
+    #            'tilted_erm_with_mixup_based_on_distance',
+    #            'only_tilted_erm_with_weights_on_loss',
+    #            'train_with_mixup_only_one_group_based_distance_v2',
+    #            'train_with_mixup_only_one_group_based_distance_v3',
+    #            'only_titled_erm_with_mask', 'train_only_group_dro', 'train_only_group_dro_with_weighted_sampling',
+    #            'only_mixup_based_on_distance_fid',
+    #            'train_only_group_dro_with_mixup_with_distance',
+    #            'train_only_group_dro_with_mixup_with_random',
+    #            'train_only_group_dro_with_mixup_with_random_with_weighted_sampling',
+    #            'train_only_group_dro_with_mixup_with_distance_with_weighted_sampling'
+    #            ]
+    #
+    # methods = ['unconstrained','only_mixup',
+    #            'only_mixup_based_on_distance',
+    #            'train_only_group_dro', 'train_only_group_dro_with_weighted_sampling',
+    #            'train_only_group_dro_with_mixup_with_distance',
+    #            'train_only_group_dro_with_mixup_with_random',
+    #            'train_only_group_dro_with_mixup_with_random_with_weighted_sampling',
+    #            'train_only_group_dro_with_mixup_with_distance_with_weighted_sampling',
+    #            'train_only_group_dro_with_augmentation_static_positive_and_negative_weights',
+    #            'simple_mixup_data_augmentation'
+    #            ]
+    #
+    # methods = [
+    #             'train_only_group_dro',
+    #     'train_only_group_dro_with_augmentation_static_positive_and_negative_weights',
+    #     'take_2_train_lisa_based_mixup_with_mixup_regularizer',
+    #     'lisa_based_mixup',
+    #     'lisa_based_mixup_with_mixup_regularizer',
+    #     'lisa_based_mixup_with_distance',
+    #     'lisa_based_mixup_with_mixup_regularizer_and_with_distance',
+    #     'train_only_group_dro_with_data_augmentation_via_mixup_super_group',
+    #     'train_only_group_dro_with_data_augmentation_via_mixup_super_group_with_mixup_regularizer',
+    #
+    #            ]
+    #
+    #
+    #
+    # methods = [ 'train_only_group_dro_with_data_augmentation_via_mixup_super_group',
+    #     'train_only_group_dro_with_data_augmentation_via_mixup_super_group_with_mixup_regularizer',
+    #             'train_only_group_dro_with_data_augmentation_via_mixup_super_group_and_example_similarity_v1',
+    #             'train_only_group_dro_with_data_augmentation_via_mixup_super_group_and_example_similarity_v2'
+    #            ]
+    #
+    # methods = [
+    #            'lisa_based_mixup',
+    #            'lisa_based_mixup_with_mixup_regularizer',
+    #            'train_only_group_dro',
+    #            'train_only_group_dro_with_super_group',
+    #            'train_only_group_dro_with_mixup_regularizer_super_group',
+    #            'train_only_group_dro_with_data_augmentation_via_mixup_super_group_and_example_similarity_v1',
+    #            'train_only_group_dro_with_data_augmentation_via_mixup_super_group_and_example_similarity_v2',
+    #            'erm_random_single_group_equal_sampling_only_generated_data_mixup_generated_and_real_data',
+    #            'erm_random_group_equal_sampling_only_generated_data_mixup_generated_and_real_data_mixup_regularizer',
+    #            ]
+    #
+    # methods = [
+    #     # 'train_only_group_dro',
+    #     # 'train_only_group_dro_super_group_with_non_symmetric_mixup_regularizer',
+    #     # 'train_only_group_dro_super_group_with_non_symmetric_mixup_regularizer_integrated',
+    #     # 'train_only_group_dro_with_augmentation_static_positive_and_negative_weights',
+    #     # 'train_only_group_dro_with_super_group',
+    #     # 'only_mixup',
+    #     # 'only_mixup_based_on_distance'
+    #     # 'erm_random_single_group_random_sampling',
+    #     #'erm_random_single_group_equal_sampling',
+    #     # 'erm_random_group_equal_sampling_mixup_regularizer',
+    #     # 'erm_distance_group_equal_sampling_mixup_regularizer_dynamic_distance',
+    #     # 'erm_distance_group_equal_sampling_mixup_regularizer_static_distance',
+    #     # 'dro_random_single_group_random_sampling',
+    #     # 'dro_super_group_random_sampling',
+    #     # 'dro_super_group_equal_sampling',
+    #     # 'dro_random_group_equal_sampling',
+    #     # 'dro_random_single_group_equal_sampling',
+    #     # 'dro_super_group_and_distance_equal_sampling_mixup_regularizer_dynamic_distance_integrate_reg_loss_update_only_via_reg',
+    #     # 'dro_super_group_and_distance_equal_sampling_mixup_regularizer_dynamic_distance_integrate_reg_loss',
+    #     # 'dro_super_group_equal_sampling_mixup_regularizer_integrate_reg_loss',
+    #     # 'dro_super_group_and_distance_equal_sampling_mixup_regularizer_integrate_reg_loss_miixup_distance'
+    #     # 'erm_super_group_with_simplified_fairness_loss',
+    #     # 'train_only_group_dro_with_mixup_regularizer_super_group',
+    #     # 'dro_random_group_equal_sampling',
+    #    # 'erm_random_group_equal_sampling_only_generated_data_train_on_only_generated_data',
+    #    #'erm_random_single_group_equal_sampling_only_generated_data_mixup_generated_and_real_data',
+    #    # "fairgrad",
+    #     "erm_random_single_group_equal_sampling",
+    # ]
 
 
 
@@ -248,7 +248,13 @@ def temp_table_generator(dataset_name, fairness_function):
 #celeb_multigroup_v4_equal_odds = temp_table_generator('celeb_multigroup_v4', 'equal_odds')
 #celeb_multigroup_v4_equal_opportunity = temp_table_generator('celeb_multigroup_v4', 'equal_opportunity')
 
-numeracy_equal_odds = temp_table_generator('numeracy_augmented', 'equal_odds')
+numeracy_equal_odds = temp_table_generator('numeracy', 'equal_odds', ['erm_random_single_group_equal_sampling', 'fairgrad'])
+print("Numeracy equal odds")
+print(numeracy_equal_odds.draw())
+
+numeracy_equal_odds = temp_table_generator('numeracy_augmented', 'equal_odds', ['erm_random_single_group_equal_sampling'])
+print("Numeracy equal odds augmented")
+print(numeracy_equal_odds.draw())
 # print("Adult Multi Group - Equal Odds")
 # print(adult_multi_group_equal_odds.draw())
 #
@@ -275,8 +281,7 @@ numeracy_equal_odds = temp_table_generator('numeracy_augmented', 'equal_odds')
 #print("Celeb MultiGroup V4 equal opportunity")
 #print(celeb_multigroup_v4_equal_opportunity.draw())
 
-print("Numeracy equal odds")
-print(numeracy_equal_odds.draw())
+
 
 '''
 
