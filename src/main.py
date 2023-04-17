@@ -358,7 +358,6 @@ def runner(runner_arguments:RunnerArguments):
     else:
         criterion = fairgrad_CrossEntropyLoss(reduction='none')
 
-    # criterion = fairgrad_CrossEntropyLoss(reduction='none')
     # Fairness function (Later)
     # torch.autograd.set_detect_anomaly(True)
     # Training Loops
@@ -390,7 +389,7 @@ def runner(runner_arguments:RunnerArguments):
     # Combine everything
 
     if 'unconstrained' in runner_arguments.method:
-        output = fairgrad_training_loop.training_loop(training_loop_params)
+        output = unconstrained_training_loop.training_loop(training_loop_params)
     elif "fairgrad" in runner_arguments.method: # now fairgrad is at correct place
         output = fairgrad_training_loop.orchestrator(training_loop_params)
     elif runner_arguments.method in ['adversarial_group', 'adversarial_single', 'adversarial_group_with_fairness_loss']:
@@ -472,7 +471,7 @@ if __name__ == '__main__':
 
     parser.add_argument('--epochs', '-epochs', help="epochs to work on",
                         type=int,
-                        default=50)
+                        default=100)
 
     parser.add_argument('--model', '-model', help="simple_non_linear",
                         type=str,
@@ -483,13 +482,13 @@ if __name__ == '__main__':
     parser.add_argument('--fairness_lambda', '-fairness_lambda', help="the lambda in the fairness loss equation", type=float,
                         default=0.0)
     parser.add_argument('--method', '-method', help="unconstrained/adversarial_single/adversarial_group", type=str,
-                            default='erm_random_single_group_equal_sampling')
+                            default='erm_random_single_group_equal_sampling_only_generated_data_mixup_generated_and_real_data')
 
     parser.add_argument('--save_model_as', '-save_model_as', help="unconstrained/adversarial_single/adversarial_group", type=str,
                         default=None)
     parser.add_argument('--dataset_name', '-dataset_name', help="twitter_hate_speech/adult_multi_group/celeb_multigroup_v3",
                         type=str,
-                        default='celeb_multigroup_v4_augmented')
+                        default='twitter_hate_speech_augmented')
 
     parser.add_argument('--log_file_name', '-log_file_name', help="the name of the log file",
                         type=str,
@@ -497,7 +496,7 @@ if __name__ == '__main__':
 
     parser.add_argument('--fairness_function', '-fairness_function', help="fairness function to concern with",
                         type=str,
-                        default='equal_odds')
+                        default='equal_opportunity')
 
     parser.add_argument('--titled_t', '-titled_t', help="fairness function to concern with",
                         type=float,
@@ -514,7 +513,7 @@ if __name__ == '__main__':
     parser.add_argument('--use_dropout', '-use_dropout',
                         help="dropout(p=use_dropout)",
                         type=float,
-                        default=0.1)
+                        default=0.5)
 
     parser.add_argument('--use_batch_norm', '-use_batch_norm',
                         help="batch norm of 0.0 means no norm else batch norm is applied",
@@ -524,7 +523,7 @@ if __name__ == '__main__':
     parser.add_argument('--per_group_label_number_of_examples', '-per_group_label_number_of_examples',
                         help="number of example to generate per group and label = 000+ -> 1000",
                         type=int,
-                        default=2000)
+                        default=1000)
 
 
 
