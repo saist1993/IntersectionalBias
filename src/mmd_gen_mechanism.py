@@ -19,8 +19,8 @@ warnings.filterwarnings("ignore", message="y_pred contains classes not in y_true
 # import mkl
 # mkl.set_num_threads(3)
 
-# dataset_name = 'numeracy'
-dataset_name = 'celeb_multigroup_v4'
+dataset_name = 'numeracy'
+# dataset_name = 'celeb_multigroup_v4'
 # dataset_name = 'twitter_hate_speech'
 # dataset_name = "adult_multi_group"
 seed = 50
@@ -338,9 +338,10 @@ if __name__ == '__main__':
     per_group_accuracy = [1.0 for i in train_tilted_params.other_params['groups']]
 
     for current_group_flat, current_group in flattened_s_to_s.items():
-        # gen_model_positive = SimpleModelGenerator(input_dim=input_dim, number_of_params=len(flattened_s_to_s[1]))
-        gen_model_positive = SimpleModelGeneratorComplex(input_dim=input_dim, number_of_params=len(flattened_s_to_s[1]))
-        gen_model_negative = SimpleModelGenerator(input_dim=input_dim, number_of_params=len(flattened_s_to_s[1]))
+        gen_model_positive = SimpleModelGenerator(input_dim=input_dim, number_of_params=len(flattened_s_to_s[1]))
+        # gen_model_positive = SimpleModelGeneratorComplex(input_dim=input_dim, number_of_params=len(flattened_s_to_s[1]))
+        gen_model_negative = SimpleModelGeneratorComplex(input_dim=input_dim, number_of_params=len(flattened_s_to_s[1]))
+        # gen_model_negative = SimpleModelGenerator(input_dim=input_dim, number_of_params=len(flattened_s_to_s[1]))
 
         optimizer_positive = torch.optim.Adam(gen_model_positive.parameters(), lr=0.1)
         optimizer_negative = torch.optim.Adam(gen_model_negative.parameters(), lr=0.1)
@@ -639,8 +640,16 @@ if __name__ == '__main__':
 
         print(
             f"average accuracy is {np.mean(overall_average_accuracy)}, + {np.mean(positive_average_accuracy)}, - {np.mean(negative_average_accuracy)} ")
-        if np.mean(negative_average_accuracy) < worst_accuracy: # default is positive mean accuracy
-            worst_accuracy = np.mean(negative_average_accuracy)
+        # if np.mean(negative_average_accuracy) < worst_accuracy: # default is positive mean accuracy
+        #     worst_accuracy = np.mean(negative_average_accuracy)
+        #     # torch.save(gen_model_positive.state_dict(), "dummy.pth")
+        #     # torch.save(gen_model_negative.state_dict(), "dummy.pth")
+        #     pickle.dump(all_models, open(f"train_and_valid_all_{dataset_name}_{seed}.pt", 'wb'))
+        #     pickle.dump(clf, open(f"train_and_valid_real_vs_fake_{dataset_name}_{seed}.sklearn", 'wb'))
+
+
+        if np.mean(positive_average_accuracy) < worst_accuracy: # default is positive mean accuracy
+            worst_accuracy = np.mean(positive_average_accuracy)
             # torch.save(gen_model_positive.state_dict(), "dummy.pth")
             # torch.save(gen_model_negative.state_dict(), "dummy.pth")
             pickle.dump(all_models, open(f"train_and_valid_all_{dataset_name}_{seed}.pt", 'wb'))
