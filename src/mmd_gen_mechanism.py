@@ -19,12 +19,12 @@ warnings.filterwarnings("ignore", message="y_pred contains classes not in y_true
 # import mkl
 # mkl.set_num_threads(3)
 
-dataset_name = 'numeracy'
+# dataset_name = 'numeracy'
 # dataset_name = 'celeb_multigroup_v4'
-# dataset_name = 'twitter_hate_speech'
+dataset_name = 'twitter_hate_speech'
 # dataset_name = "adult_multi_group"
 seed = 50
-batch_size = 256
+batch_size = 1024#256 for numeracy
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 
@@ -340,8 +340,8 @@ if __name__ == '__main__':
     for current_group_flat, current_group in flattened_s_to_s.items():
         gen_model_positive = SimpleModelGenerator(input_dim=input_dim, number_of_params=len(flattened_s_to_s[1]))
         # gen_model_positive = SimpleModelGeneratorComplex(input_dim=input_dim, number_of_params=len(flattened_s_to_s[1]))
-        # gen_model_negative = SimpleModelGeneratorComplex(input_dim=input_dim, number_of_params=len(flattened_s_to_s[1]))
-        gen_model_negative = SimpleModelGenerator(input_dim=input_dim, number_of_params=len(flattened_s_to_s[1]))
+        gen_model_negative = SimpleModelGeneratorComplex(input_dim=input_dim, number_of_params=len(flattened_s_to_s[1]))
+        # gen_model_negative = SimpleModelGenerator(input_dim=input_dim, number_of_params=len(flattened_s_to_s[1]))
 
         optimizer_positive = torch.optim.Adam(gen_model_positive.parameters(), lr=0.1)
         optimizer_negative = torch.optim.Adam(gen_model_negative.parameters(), lr=0.1)
