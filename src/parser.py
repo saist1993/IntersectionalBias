@@ -266,13 +266,24 @@ def temp_table_generator(dataset_name, fairness_function, methods):
 # print(numeracy_equal_odds.draw())
 
 # Celeb multi group v4
-celeb_multigroup_v4_equal_odds = temp_table_generator('celeb_multigroup_v4', 'equal_odds', ['erm_random_single_group_equal_sampling', 'fairgrad'])
+# celeb_multigroup_v4_equal_odds = temp_table_generator('celeb_multigroup_v4', 'equal_odds', ['erm_random_single_group_equal_sampling', 'fairgrad'])
+# print("celeb v4 equal odds")
+# print(celeb_multigroup_v4_equal_odds.draw())
+#
+#
+#
+# celeb_multigroup_v4_equal_odds = temp_table_generator('celeb_multigroup_v4_augmented', 'equal_odds', ['erm_random_single_group_equal_sampling', 'fairgrad'])
+# print("celeb v4 equal odds augmented")
+# print(celeb_multigroup_v4_equal_odds.draw())
+
+
+celeb_multigroup_v4_equal_odds = temp_table_generator('celeb_multigroup_v4', 'equal_opportunity', ['erm_random_single_group_equal_sampling', 'fairgrad'])
 print("celeb v4 equal odds")
 print(celeb_multigroup_v4_equal_odds.draw())
 
 
 
-celeb_multigroup_v4_equal_odds = temp_table_generator('celeb_multigroup_v4_augmented', 'equal_odds', ['erm_random_single_group_equal_sampling', 'fairgrad'])
+celeb_multigroup_v4_equal_odds = temp_table_generator('celeb_multigroup_v4_augmented', 'equal_opportunity', ['erm_random_single_group_equal_sampling', 'fairgrad'])
 print("celeb v4 equal odds augmented")
 print(celeb_multigroup_v4_equal_odds.draw())
 
