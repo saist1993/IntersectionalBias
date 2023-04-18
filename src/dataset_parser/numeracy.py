@@ -96,7 +96,7 @@ class SimpleClassificationDataset:
         if "augmented" in self.dataset_name:
             if self.mmd_augmentation_mechanism == 'only_generated_data':
                 scaler = iterator_set['scaler']
-                train_X_augmented = scaler.transform(train_X_augmented)
+                # train_X_augmented = scaler.transform(train_X_augmented)
         else:
             # scaler = iterator_set['scaler']
             train_X_augmented = scaler.transform(train_X_augmented)
