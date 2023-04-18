@@ -20,10 +20,7 @@ warnings.filterwarnings("ignore", message="y_pred contains classes not in y_true
 # import mkl
 # mkl.set_num_threads(3)
 
-dataset_name = 'numeracy'
-# dataset_name = 'celeb_multigroup_v4'
-# dataset_name = 'twitter_hate_speech'
-# dataset_name = "adult_multi_group"
+
 
 batch_size = 256#256 for numeracy
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -268,9 +265,31 @@ if __name__ == '__main__':
                         type=int,
                         default=50)
 
+    parser.add_argument('--dataset', '-dataset', help="numeracy/celeb_multigroup_v4/twitter_hate_speech/adult_multi_group",
+                        type=str,
+                        default='numeracy')
+
+    parser.add_argument('--positive_model', '-positive_model',
+                        help="simple/intermediate/complex",
+                        type=str,
+                        default='simple')
+
+    parser.add_argument('--negative_model', '-negative_model',
+                        help="simple/intermediate/complex",
+                        type=str,
+                        default='simple')
+
+
+
     args = parser.parse_args()
 
     seed = args.seed
+    dataset_name = args.dataset
+    positive_model_type = args.positive_model
+    negative_model_type = args.negative_model
+    # dataset_name = 'celeb_multigroup_v4'
+    # dataset_name = 'twitter_hate_speech'
+    # dataset_name = "adult_multi_group"
 
     set_seed(seed)
     other_params = {}
@@ -349,9 +368,29 @@ if __name__ == '__main__':
     per_group_accuracy = [1.0 for i in train_tilted_params.other_params['groups']]
 
     for current_group_flat, current_group in flattened_s_to_s.items():
-        gen_model_positive = SimpleModelGenerator(input_dim=input_dim, number_of_params=len(flattened_s_to_s[1]))
+
+        if positive_model_type == "simple":
+            gen_model_positive = SimpleModelGenerator(input_dim=input_dim, number_of_params=len(flattened_s_to_s[1]))
+        elif positive_model_type == "intermediate":
+            gen_model_positive = SimpleModelGeneratorIntermediate(input_dim=input_dim, number_of_params=len(flattened_s_to_s[1]))
+        elif positive_model_type == "complex":
+            gen_model_positive = SimpleModelGeneratorComplex(input_dim=input_dim, number_of_params=len(flattened_s_to_s[1]))
+
+
+        if negative_model_type == "simple":
+            gen_model_negative = SimpleModelGenerator(input_dim=input_dim, number_of_params=len(flattened_s_to_s[1]))
+        elif negative_model_type == "intermediate":
+            gen_model_negative = SimpleModelGeneratorIntermediate(input_dim=input_dim, number_of_params=len(flattened_s_to_s[1]))
+        elif negative_model_type == "complex":
+            gen_model_negative = SimpleModelGeneratorComplex(input_dim=input_dim, number_of_params=len(flattened_s_to_s[1]))
+
+
+
+
+
+
         # gen_model_positive = SimpleModelGeneratorComplex(input_dim=input_dim, number_of_params=len(flattened_s_to_s[1]))
-        gen_model_negative = SimpleModelGeneratorComplex(input_dim=input_dim, number_of_params=len(flattened_s_to_s[1]))
+        # gen_model_negative = SimpleModelGeneratorComplex(input_dim=input_dim, number_of_params=len(flattened_s_to_s[1]))
         # gen_model_negative = SimpleModelGenerator(input_dim=input_dim, number_of_params=len(flattened_s_to_s[1]))
 
         optimizer_positive = torch.optim.Adam(gen_model_positive.parameters(), lr=0.1)
@@ -378,7 +417,7 @@ if __name__ == '__main__':
     aux_func = AuxilaryFunction()
     worst_accuracy = 1.0
 
-    for _ in range(100):
+    for _ in range(20):
         total_loss_positive, total_loss_negative = 0.0, 0.0
         for i in tqdm(range(train_tilted_params.other_params['number_of_iterations'])):
             current_group = np.random.choice(train_tilted_params.other_params['groups'],
@@ -652,19 +691,28 @@ if __name__ == '__main__':
         print(
             f"average accuracy is {np.mean(overall_average_accuracy)}, + {np.mean(positive_average_accuracy)}, - {np.mean(negative_average_accuracy)} ")
         # if np.mean(negative_average_accuracy) < worst_accuracy: # default is positive mean accuracy
-        #     worst_accuracy = np.mean(negative_average_accuracy)
+        #     worst_accuracy = np.mean(negati   ve_average_accuracy)
         #     # torch.save(gen_model_positive.state_dict(), "dummy.pth")
         #     # torch.save(gen_model_negative.state_dict(), "dummy.pth")
         #     pickle.dump(all_models, open(f"train_and_valid_all_{dataset_name}_{seed}.pt", 'wb'))
         #     pickle.dump(clf, open(f"train_and_valid_real_vs_fake_{dataset_name}_{seed}.sklearn", 'wb'))
 
+        if positive_model_type == "simple": # positive dominates
+            benchmark_accuracy = np.mean(positive_average_accuracy)
+        elif negative_model_type == "simple":
+            benchmark_accuracy = np.mean(negative_average_accuracy)
+        else:
+            benchmark_accuracy = (np.mean(positive_average_accuracy) + np.mean(negative_average_accuracy))/2.0
 
-        if np.mean(positive_average_accuracy) < worst_accuracy: # default is positive mean accuracy
-            worst_accuracy = np.mean(positive_average_accuracy)
+
+        if benchmark_accuracy < worst_accuracy: # default is positive mean accuracy
+            worst_accuracy = benchmark_accuracy
             # torch.save(gen_model_positive.state_dict(), "dummy.pth")
             # torch.save(gen_model_negative.state_dict(), "dummy.pth")
-            pickle.dump(all_models, open(f"train_and_valid_all_{dataset_name}_{seed}.pt", 'wb'))
-            pickle.dump(clf, open(f"train_and_valid_real_vs_fake_{dataset_name}_{seed}.sklearn", 'wb'))
+            pickle.dump(all_models['gen_model_positive'], open(f"gen_model_positive_{dataset_name}_{seed}_{positive_model_type}.pt", 'wb'))
+            pickle.dump(all_models['gen_model_negative'], open(f"gen_model_negative_{dataset_name}_{seed}_{negative_model_type}.pt", 'wb'))
+            # pickle.dump(all_models, open(f"train_and_valid_all_{dataset_name}_{seed}.pt", 'wb'))
+            # pickle.dump(clf, open(f"train_and_valid_real_vs_fake_{dataset_name}_{seed}.sklearn", 'wb'))
         # # # #
         # pickle.dump(all_models, open(f"{round(np.mean(positive_average_accuracy),3)}_train_and_valid_all_{dataset_name}_{seed}.pt", 'wb'))
         # pickle.dump(clf, open(f"{round(np.mean(positive_average_accuracy),3)}_train_and_valid_real_vs_fake_{dataset_name}_{seed}.sklearn", 'wb'))
