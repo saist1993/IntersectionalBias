@@ -1,6 +1,7 @@
 import copy
 import pickle
 import warnings
+import argparse
 import numpy as np
 from tqdm import tqdm
 from mmd_utils import *
@@ -23,7 +24,7 @@ dataset_name = 'numeracy'
 # dataset_name = 'celeb_multigroup_v4'
 # dataset_name = 'twitter_hate_speech'
 # dataset_name = "adult_multi_group"
-seed = 50
+
 batch_size = 256#256 for numeracy
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -261,6 +262,16 @@ def generate_mask(all_s, mask_pattern):
 
 
 if __name__ == '__main__':
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--seed', '-seed', help="seed for reproduction",
+                        type=int,
+                        default=50)
+
+    args = parser.parse_args()
+
+    seed = args.seed
+
     set_seed(seed)
     other_params = {}
 
