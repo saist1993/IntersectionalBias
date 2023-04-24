@@ -425,19 +425,19 @@ if __name__ == '__main__':
 
                     if "augmented" in args.dataset_name:
                         if args.fairness_function == "equal_opportunity":
-                            gen_models = [(f"gen_model_positive_{args.dataset_name}_{args.seed}_simple.pt",
-                                           f"gen_model_negative_{args.dataset_name}_{args.seed}_simple.pt" ),
-                                          (f"gen_model_positive_{args.dataset_name}_{args.seed}_simple.pt",
-                                           f"gen_model_negative_{args.dataset_name}_{args.seed}_intermediate.pt"),
-                                          (f"gen_model_positive_{args.dataset_name}_{args.seed}_simple.pt",
-                                           f"gen_model_negative_{args.dataset_name}_{args.seed}_complex.pt")]
+                            gen_models = [(f"gen_model_positive_{args.dataset_name}_{seed}_simple.pt",
+                                           f"gen_model_negative_{args.dataset_name}_{seed}_simple.pt" ),
+                                          (f"gen_model_positive_{args.dataset_name}_{seed}_simple.pt",
+                                           f"gen_model_negative_{args.dataset_name}_{seed}_intermediate.pt"),
+                                          (f"gen_model_positive_{args.dataset_name}_{seed}_simple.pt",
+                                           f"gen_model_negative_{args.dataset_name}_{seed}_complex.pt")]
                         elif args.fairness_function == "equal_odds":
-                            gen_models = [(f"gen_model_positive_{args.dataset_name}_{args.seed}_simple.pt",
-                                           f"gen_model_negative_{args.dataset_name}_{args.seed}_simple.pt"),
-                                          (f"gen_model_positive_{args.dataset_name}_{args.seed}_intermediate.pt",
-                                           f"gen_model_negative_{args.dataset_name}_{args.seed}_simple.pt"),
-                                          (f"gen_model_positive_{args.dataset_name}_{args.seed}_complex.pt",
-                                           f"gen_model_negative_{args.dataset_name}_{args.seed}_simple.pt")]
+                            gen_models = [(f"gen_model_positive_{args.dataset_name}_{seed}_simple.pt",
+                                           f"gen_model_negative_{args.dataset_name}_{seed}_simple.pt"),
+                                          (f"gen_model_positive_{args.dataset_name}_{seed}_intermediate.pt",
+                                           f"gen_model_negative_{args.dataset_name}_{seed}_simple.pt"),
+                                          (f"gen_model_positive_{args.dataset_name}_{seed}_complex.pt",
+                                           f"gen_model_negative_{args.dataset_name}_{seed}_simple.pt")]
                     else:
                         gen_models = [("dummy", "dummy")]
 
