@@ -547,6 +547,52 @@ def create_group(total_no_groups, method="super_group"):
         raise NotImplementedError
 
 
+def resample_dataset(all_X, all_s, all_y, size_of_each_group, model=None):
+    resampled_X, resampled_s, resampled_y, size = [], [], [], {}
+    all_unique_s = np.unique(all_s, axis=0)
+    all_unique_label = np.unique(all_y)
+
+    for s in all_unique_s:
+        for label in all_unique_label:
+            # sample number_of_examples_per_group with s and label from the dataset
+            mask_s = generate_mask(all_s=all_s, mask_pattern=s)
+            mask_label = all_y == label
+            final_mask = np.logical_and(mask_s, mask_label)
+            index = np.where(final_mask)[0]
+            if model:
+                subset_mask = get_subset_of_data(all_X[final_mask], all_y[final_mask], model)
+                index = index[subset_mask == True]
+            # index are all the possible examples one can use.
+            group_size, all_members_of_the_group = size_of_each_group[tuple(s.tolist())][label]
+
+            if len(all_members_of_the_group) > group_size:
+                k = len(all_members_of_the_group) - group_size
+                all_members_of_the_group = all_members_of_the_group[k:]
+                size_of_each_group[tuple(s.tolist())][label] = [group_size, all_members_of_the_group]
+            else:
+                # need to add examples
+                k = group_size - len(all_members_of_the_group)
+                all_members_of_the_group.extend(np.random.choice(index,
+                                                          size=k,
+                                                          replace=True))
+
+                size_of_each_group[tuple(s.tolist())][label] = [group_size, all_members_of_the_group]
+
+            index_of_selected_examples = np.random.choice(all_members_of_the_group,
+                                                          size=size_of_each_group[tuple(s.tolist())][label][0],
+                                                          replace=True)
+
+            resampled_X.append(all_X[index_of_selected_examples])
+            resampled_s.append(all_s[index_of_selected_examples])
+            resampled_y.append(all_y[index_of_selected_examples])
+
+    resampled_X = np.vstack(resampled_X)
+    resampled_s = np.vstack(resampled_s)
+    resampled_y = np.hstack(resampled_y)
+
+
+    return resampled_X, resampled_s, resampled_y, size_of_each_group
+
 
 def orchestrator(training_loop_parameters: TrainingLoopParameters):
     """
@@ -675,6 +721,26 @@ def orchestrator(training_loop_parameters: TrainingLoopParameters):
     training_loop_parameters.other_params['group_sampling_procedure'] = group_sampling_procedure
     training_loop_parameters.other_params['example_sampling_procedure'] = example_sampling_procedure
     training_loop_parameters.other_params['fairness_regularization_procedure'] = fairness_regularization_procedure
+
+    all_unique_s = np.unique(all_aux, axis=0)
+    all_unique_label = np.unique(all_label)
+
+    size_of_each_group = {}
+    for s in all_unique_s:
+        size_of_each_group[tuple(s.tolist())] = {}
+        for label in all_unique_label:
+            size_of_each_group[tuple(s.tolist())][label] = [
+                training_loop_parameters.other_params['per_group_label_number_of_examples'],
+                []]
+
+    all_input, all_aux, all_label, _ =  resample_dataset(all_X=all_input,
+                                                     all_s=all_aux,
+                                                     all_y=all_label,
+                                                     size_of_each_group=size_of_each_group)
+
+    all_aux_flatten = [training_loop_parameters.other_params['s_to_flattened_s'][tuple(i)]
+             for i in all_aux]
+
 
     for ep in range(training_loop_parameters.n_epochs):
 
