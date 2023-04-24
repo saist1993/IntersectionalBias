@@ -659,8 +659,8 @@ class AugmentData:
 
         classifier_models_2 = None
         classifier_models = None
-        positive_gen_model = pickle.load(open(self.positive_gen_model), "rb")
-        negative_gen_model = pickle.load(open(self.negative_gen_model), "rb")
+        positive_gen_model = pickle.load(open(self.positive_gen_model, "rb"))
+        negative_gen_model = pickle.load(open(self.negative_gen_model, "rb"))
 
         # all_unique_groups = np.unique(self.other_meta_data['raw_data']['train_s'], axis=0)
 
