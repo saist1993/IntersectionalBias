@@ -709,8 +709,8 @@ if __name__ == '__main__':
             worst_accuracy = benchmark_accuracy
             # torch.save(gen_model_positive.state_dict(), "dummy.pth")
             # torch.save(gen_model_negative.state_dict(), "dummy.pth")
-            pickle.dump(all_models['gen_model_positive'], open(f"gen_model_positive_{dataset_name}_{seed}_{positive_model_type}.pt", 'wb'))
-            pickle.dump(all_models['gen_model_negative'], open(f"gen_model_negative_{dataset_name}_{seed}_{negative_model_type}.pt", 'wb'))
+            pickle.dump(all_models['a']['gen_model_positive'], open(f"gen_model_positive_{dataset_name}_{seed}_{positive_model_type}.pt", 'wb'))
+            pickle.dump(all_models['a']['gen_model_negative'], open(f"gen_model_negative_{dataset_name}_{seed}_{negative_model_type}.pt", 'wb'))
             # pickle.dump(all_models, open(f"train_and_valid_all_{dataset_name}_{seed}.pt", 'wb'))
             # pickle.dump(clf, open(f"train_and_valid_real_vs_fake_{dataset_name}_{seed}.sklearn", 'wb'))
         # # # #
