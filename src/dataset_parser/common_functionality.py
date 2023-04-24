@@ -455,7 +455,7 @@ class AugmentDataCommonFunctionality:
         other_leaf_node = AugmentDataCommonFunctionality.generate_abstract_node(s, k=1)
         assert number_of_examples >= 1
 
-        real_vs_fake, task = classifier_models
+        # real_vs_fake, task = classifier_models
 
         def common_procedure(label):
 
@@ -483,15 +483,15 @@ class AugmentDataCommonFunctionality:
 
                 final_model = gen_model[random.randrange(len(gen_model))]
                 generated_examples = final_model(all_other_leaf_node_example_positive)['prediction'].detach().numpy()
-                if counter < 3000:
-                    # the classifier is confident that this is real. Which means fake looks very much like real
-                    # relevant_index = np.where((real_vs_fake.predict_proba(generated_examples)[:, 1] > confidence_score) & (task.predict_proba(generated_examples)[:, label] < 0.7))
-                    # relevant_index = np.where(classifier_models.predict(generated_examples) != label)
-                    relevant_index = np.where((real_vs_fake.predict_proba(generated_examples)[:, 1] > confidence_score))
-                else:
-                    relevant_index = np.where(
-                        real_vs_fake.predict_proba(generated_examples)[:, 1] > 0.0)
-                selected_examples += generated_examples[relevant_index].tolist()
+                # if counter < 3000:
+                #     # the classifier is confident that this is real. Which means fake looks very much like real
+                #     # relevant_index = np.where((real_vs_fake.predict_proba(generated_examples)[:, 1] > confidence_score) & (task.predict_proba(generated_examples)[:, label] < 0.7))
+                #     # relevant_index = np.where(classifier_models.predict(generated_examples) != label)
+                #     relevant_index = np.where((real_vs_fake.predict_proba(generated_examples)[:, 1] > confidence_score))
+                # else:
+                #     relevant_index = np.where(
+                #         real_vs_fake.predict_proba(generated_examples)[:, 1] > 0.0)
+                selected_examples += generated_examples.tolist()
                 # selected_examples += generated_examples.tolist()
                 counter += 1
             return selected_examples[:number_of_examples]
@@ -529,7 +529,8 @@ class AugmentData:
 
     def __init__(self, dataset_name, X, y, s, all_unique_group, max_number_of_generated_examples=0.75,
                  max_number_of_positive_examples=500, max_number_of_negative_examples=500,
-                 mmd_augmentation_mechanism="only_generated_data", seed=50):
+                 mmd_augmentation_mechanism="only_generated_data", seed=50,
+                 positive_gen_model="dummy", negative_gen_model="dummy"):
         self.dataset_name = dataset_name
         # scaler = StandardScaler().fit(X)
         self.X, self.y, self.s = X, y, s
@@ -539,6 +540,8 @@ class AugmentData:
         self.mmd_augmentation_mechanism = mmd_augmentation_mechanism  # alternative - both_generated_and_real_data
         self.all_unique_group = all_unique_group
         self.seed = seed
+        self.positive_gen_model = positive_gen_model
+        self.negative_gen_model = negative_gen_model
 
         # formating data in a specific way for legacy purpose!
         self.other_meta_data = {
@@ -653,31 +656,11 @@ class AugmentData:
 
     def data_augmentation_via_mmd(self):
 
-        # gen_model_positive = SimpleModelGenerator(input_dim=51)
-        # gen_model_positive.load_state_dict(torch.load("gen_model_adult_positive.pth"))
-        #
-        # gen_model_negative = SimpleModelGenerator(input_dim=51)
-        # gen_model_negative.load_state_dict(torch.load("gen_model_adult_negative.pth"))
 
-        # all_models = pickle.load(open(f"all_{self.dataset_name.replace('_augmented', '')}.pt", "rb"))
-        all_models = [
-                      # pickle.load(open(f"0.648_train_and_valid_all_twitter_hate_speech.pt", "rb")),
-                      # pickle.load(open(f"0.658_train_and_valid_all_twitter_hate_speech.pt", "rb")),
-                      # pickle.load(open(f"0.734_train_and_valid_all_twitter_hate_speech.pt", "rb"))
-                      ]
-        all_models = [pickle.load(open(f"train_and_valid_all_{self.dataset_name.replace('_augmented', '')}_{self.seed}.pt", "rb"))]
-        # all_models = [pickle.load(open(f"train_and_valid_all_{self.dataset_name.replace('_augmented', '')}.pt", "rb"))]
-
-        # all_models = [pickle.load(open(f"all_{self.dataset_name.replace('_augmented', '')}.pt", "rb"))]
-
-        # classifier_models = pickle.load(open(f"real_vs_fake_{self.dataset_name.replace('_augmented', '')}.sklearn", "rb"))
-        # classifier_models = pickle.load(
-        #     open(f"real_vs_fake_{self.dataset_name.replace('_augmented', '')}.sklearn", "rb"))
-
-        classifier_models = pickle.load(
-            open(f"train_and_valid_real_vs_fake_{self.dataset_name.replace('_augmented', '')}_{self.seed}.sklearn", "rb"))
-        # classifier_models_2 = pickle.load(open(f"task_classifier_{self.dataset_name.replace('_augmented', '')}.sklearn", "rb"))
         classifier_models_2 = None
+        classifier_models = None
+        positive_gen_model = pickle.load(open(self.positive_gen_model), "rb")
+        negative_gen_model = pickle.load(open(self.negative_gen_model), "rb")
 
         # all_unique_groups = np.unique(self.other_meta_data['raw_data']['train_s'], axis=0)
 
@@ -743,16 +726,14 @@ class AugmentData:
                     # now generate remaining examples!
                     if example_type == 'positive':
                         augmented_input = self.common_func.generate_examples_mmd(tuple(group),
-                                                                                 [m['a']['gen_model_positive'] for m in
-                                                                                  all_models],
+                                                                                 [positive_gen_model],
                                                                                  number_of_examples_to_generate,
                                                                                  self.other_meta_data,
                                                                                  [classifier_models,
                                                                                   classifier_models_2], 1)
                     elif example_type == 'negative':
                         augmented_input = self.common_func.generate_examples_mmd(tuple(group),
-                                                                                 [m['a']['gen_model_negative'] for m in
-                                                                                  all_models],
+                                                                                 [negative_gen_model],
                                                                                  number_of_examples_to_generate,
                                                                                  self.other_meta_data,
                                                                                  [classifier_models,
@@ -790,10 +771,10 @@ class AugmentData:
                         mechanism=self.mmd_augmentation_mechanism)
 
         augmented_train_X = np.vstack(augmented_train_X)
-        if "celeb_multigroup_v3" in self.dataset_name:
-            print("here***************")
-            augmented_train_X[augmented_train_X > 0] = 1.0
-            augmented_train_X[augmented_train_X < 0] = -1.0
+        # if "celeb_multigroup_v3" in self.dataset_name:
+        #     print("here***************")
+        #     augmented_train_X[augmented_train_X > 0] = 1.0
+        #     augmented_train_X[augmented_train_X < 0] = -1.0
         augmented_train_s = np.vstack(augmented_train_s)
         augmented_train_y = np.hstack(augmented_train_y)
         is_instance_real = np.hstack(is_instance_real)

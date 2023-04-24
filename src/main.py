@@ -31,36 +31,95 @@ LOG_DIR = Path('../logs')
 SAVED_MODEL_PATH = Path('../saved_models/')
 
 
-# class SimpleModelGenerator(nn.Module):
-#     """Fairgrad uses this as complex non linear model"""
-#
-#     def __init__(self, input_dim):
-#         super().__init__()
-#
-#         self.lambda_params = torch.nn.Parameter(torch.FloatTensor([0.25, 0.25, 0.25, 0.25]))
-#
-#     def forward(self, other_examples):
-#         final_output = torch.tensor(0.0, requires_grad=True)
-#         for param, group in zip(self.lambda_params, other_examples):
-#             x = group['input']
-#             final_output = final_output + x*param
-#
-#         output = {
-#             'prediction': final_output,
-#             'adv_output': None,
-#             'hidden': x,  # just for compatabilit
-#             'classifier_hiddens': None,
-#             'adv_hiddens': None
-#         }
-#
-#         return output
-#
-#     @property
-#     def layers(self):
-#         return torch.nn.ModuleList([self.layer_1, self.layer_2])
+class SimpleModelGeneratorComplex(nn.Module):
+    """Fairgrad uses this as complex non linear model"""
+
+    def __init__(self, input_dim, number_of_params=None):
+        super().__init__()
+
+        self.layer_1 = nn.Linear(input_dim, input_dim, bias=False)
+        # self.layer_2 = nn.Linear(125, 50)
+        # self.layer_3 = nn.Linear(50, input_dim)
+        # self.leaky_relu = nn.LeakyReLU()
+
+        # if number_of_params == 3:
+        #     self.lambda_params = torch.nn.Parameter(torch.FloatTensor([0.33, 0.33, 0.33]))
+        # elif number_of_params == 4:
+        #     self.lambda_params = torch.nn.Parameter(torch.FloatTensor([0.25, 0.25, 0.25, 0.25]))
+
+    def forward(self, other_examples):
+        final_output = torch.tensor(0.0, requires_grad=True)
+        for group in other_examples:
+            x = group['input']
+            x = self.layer_1(x)
+            # x = self.leaky_relu(x)
+            # x = self.layer_2(x)
+            # x = self.leaky_relu(x)
+            # x = self.layer_3(x)
+            final_output = final_output + x
+
+
+
+
+        output = {
+            'prediction': final_output,
+            'adv_output': None,
+            'hidden': x,  # just for compatabilit
+            'classifier_hiddens': None,
+            'adv_hiddens': None
+        }
+
+        return output
+
+    @property
+    def layers(self):
+        return torch.nn.ModuleList([self.layer_1, self.layer_2, self.layer_3])
+
+
 
 
 class SimpleModelGenerator(nn.Module):
+    """Fairgrad uses this as complex non linear model"""
+
+    def __init__(self, input_dim, number_of_params=3):
+        super().__init__()
+
+        if number_of_params == 3:
+            self.lambda_params = torch.nn.Parameter(torch.FloatTensor([0.33, 0.33, 0.33]))
+        elif number_of_params == 4:
+            self.lambda_params = torch.nn.Parameter(torch.FloatTensor([0.25, 0.25, 0.25, 0.25]))
+
+        # self.more_lambda_params = nn.ParameterList([torch.nn.Parameter(torch.FloatTensor(torch.ones(input_dim))) for i in
+        #                            range(len(self.lambda_params))])
+
+        # self.more_lambda_params = torch.nn.Parameter(torch.FloatTensor(torch.ones(input_dim)))
+
+
+
+    def forward(self, other_examples):
+        final_output = torch.tensor(0.0, requires_grad=True)
+        for param, group in zip(self.lambda_params, other_examples):
+            x = group['input']
+            final_output = final_output + x*param
+
+
+        output = {
+            'prediction': final_output,
+            'adv_output': None,
+            'hidden': x,  # just for compatabilit
+            'classifier_hiddens': None,
+            'adv_hiddens': None
+        }
+
+        return output
+
+    @property
+    def layers(self):
+        return torch.nn.ModuleList([self.layer_1, self.layer_2])
+
+
+
+class SimpleModelGeneratorIntermediate(nn.Module):
     """Fairgrad uses this as complex non linear model"""
 
     def __init__(self, input_dim, number_of_params=3):
@@ -106,41 +165,6 @@ class SimpleModelGenerator(nn.Module):
     def layers(self):
         return torch.nn.ModuleList([self.layer_1, self.layer_2])
 
-
-# class SimpleModelGenerator(nn.Module):
-#     """Fairgrad uses this as complex non linear model"""
-#
-#     def __init__(self, input_dim, number_of_params=3):
-#         super().__init__()
-#
-#         if number_of_params == 3:
-#             self.lambda_params = torch.nn.Parameter(torch.FloatTensor([0.33, 0.33, 0.33]))
-#         elif number_of_params == 4:
-#             self.lambda_params = torch.nn.Parameter(torch.FloatTensor([0.25, 0.25, 0.25, 0.25]))
-#
-#         self.more_lambda_params = [torch.nn.Parameter(torch.FloatTensor(torch.ones(input_dim))) for i in
-#                                    range(len(self.lambda_params))]
-#
-#     def forward(self, other_examples):
-#         final_output = torch.tensor(0.0, requires_grad=True)
-#         for param, group, more_params in zip(self.lambda_params, other_examples, self.more_lambda_params):
-#             x = group['input']
-#             final_output = final_output + (x*more_params)*param
-#
-#         output = {
-#             'prediction': final_output,
-#             'adv_output': None,
-#             'hidden': x,  # just for compatabilit
-#             'classifier_hiddens': None,
-#             'adv_hiddens': None
-#         }
-#
-#         return output
-#
-#     @property
-#     def layers(self):
-#         return torch.nn.ModuleList([self.layer_1, self.layer_2])
-
 class RunnerArguments(NamedTuple):
     """Arguments for the main function"""
     seed: int
@@ -165,6 +189,8 @@ class RunnerArguments(NamedTuple):
     use_dropout: float = 0.2  # 0.0 corresponds to no dropout being applied
     use_batch_norm: float = 0.0  # 0.0 corresponds to no batch norm being applied
     per_group_label_number_of_examples: int = 1000
+    positive_gen_model: str = "gen_model_positive_numeracy_10_simple.pt"
+    negative_gen_model:str = "gen_model_negative_numeracy_10_simple.pt"
 
 
 def get_fairness_related_meta_dict(train_iterator, fairness_measure, fairness_rate, epsilon):
@@ -300,6 +326,10 @@ def runner(runner_arguments:RunnerArguments):
     unique_id_for_run = shortuuid.uuid()
 
 
+    positive_gen_model = runner_arguments.positive_gen_model
+    negative_gen_model = runner_arguments.negative_gen_model
+
+
     # Setting up logging
     get_logger(unique_id_for_run, runner_arguments.log_file_name, runner_arguments)
     logger = logging.getLogger(str(unique_id_for_run))
@@ -332,7 +362,9 @@ def runner(runner_arguments:RunnerArguments):
         'max_number_of_generated_examples': runner_arguments.max_number_of_generated_examples,
         'per_group_label_number_of_examples': runner_arguments.per_group_label_number_of_examples,
         'mmd_augmentation_mechanism': mmd_augmentation_mechanism,
-        'seed': runner_arguments.seed
+        'seed': runner_arguments.seed,
+        'positive_gen_model': positive_gen_model,
+        'negative_gen_model': negative_gen_model
     }
     iterators, other_meta_data = generate_data_iterators(dataset_name=runner_arguments.dataset_name, **iterator_params)
 
@@ -482,7 +514,7 @@ if __name__ == '__main__':
     parser.add_argument('--fairness_lambda', '-fairness_lambda', help="the lambda in the fairness loss equation", type=float,
                         default=0.0)
     parser.add_argument('--method', '-method', help="unconstrained/adversarial_single/adversarial_group", type=str,
-                            default='erm_random_single_group_equal_sampling')
+                            default='erm_random_single_group_equal_sampling_only_generated_data')
 
     parser.add_argument('--save_model_as', '-save_model_as', help="unconstrained/adversarial_single/adversarial_group", type=str,
                         default=None)
@@ -524,6 +556,16 @@ if __name__ == '__main__':
                         help="number of example to generate per group and label = 000+ -> 1000",
                         type=int,
                         default=500)
+
+    parser.add_argument('--positive_group_model', '-positive_group_model',
+                        help="positive generative model to use",
+                        type=str,
+                        default="gen_model_positive_numeracy_10_simple.pt")
+
+    parser.add_argument('--negative_group_model', '-negative_group_model',
+                        help="positive generative model to use",
+                        type=str,
+                        default="gen_model_negative_numeracy_10_simple.pt")
 
 
 
