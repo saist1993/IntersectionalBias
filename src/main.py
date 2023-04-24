@@ -520,7 +520,7 @@ if __name__ == '__main__':
                         default=None)
     parser.add_argument('--dataset_name', '-dataset_name', help="twitter_hate_speech/adult_multi_group/celeb_multigroup_v3",
                         type=str,
-                        default='numeracy')
+                        default='numeracy_augmented')
 
     parser.add_argument('--log_file_name', '-log_file_name', help="the name of the log file",
                         type=str,
@@ -528,7 +528,7 @@ if __name__ == '__main__':
 
     parser.add_argument('--fairness_function', '-fairness_function', help="fairness function to concern with",
                         type=str,
-                        default='equal_opportunity')
+                        default='equal_odds')
 
     parser.add_argument('--titled_t', '-titled_t', help="fairness function to concern with",
                         type=float,
@@ -560,7 +560,7 @@ if __name__ == '__main__':
     parser.add_argument('--positive_group_model', '-positive_group_model',
                         help="positive generative model to use",
                         type=str,
-                        default="gen_model_positive_numeracy_10_simple.pt")
+                        default="gen_model_positive_numeracy_10_complex.pt")
 
     parser.add_argument('--negative_group_model', '-negative_group_model',
                         help="positive generative model to use",
