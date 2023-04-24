@@ -65,6 +65,9 @@ class SimpleClassificationDataset:
         self.max_number_of_generated_examples = params['max_number_of_generated_examples']
         self.mmd_augmentation_mechanism = params['mmd_augmentation_mechanism']
 
+        self.positive_gen_model = params['positive_gen_model']
+        self.negative_gen_model = params['negative_gen_model']
+
     def run(self):
         """Orchestrates the whole process"""
         X,y,s = self.X, self.y, self.s
@@ -92,7 +95,9 @@ class SimpleClassificationDataset:
                                        max_number_of_positive_examples=self.per_group_label_number_of_examples,
                                        max_number_of_negative_examples=self.per_group_label_number_of_examples,
                                        mmd_augmentation_mechanism=self.mmd_augmentation_mechanism,
-                                       seed=self.seed
+                                       seed=self.seed,
+                                       positive_gen_model=self.positive_gen_model,
+                                       negative_gen_model=self.negative_gen_model
                                        )
 
             if self.mmd_augmentation_mechanism == 'only_generated_data':

@@ -132,6 +132,13 @@ class DatasetTwitterHateSpeech:
 
         self.max_number_of_generated_examples = params['max_number_of_generated_examples']
         self.mmd_augmentation_mechanism = params['mmd_augmentation_mechanism']
+
+        self.positive_gen_model = params['positive_gen_model']
+        self.negative_gen_model = params['negative_gen_model']
+
+        self.seed = params['seed']
+
+
     def _check_if_encodings_are_present(self):
         location_avg = self.dataset_location / Path('train' + f'{self.lm_encoder_type}_encoding_avg.npy')
         location_cls = self.dataset_location / Path('train' + f'{self.lm_encoder_type}_encoding_cls.npy')
@@ -291,7 +298,10 @@ class DatasetTwitterHateSpeech:
                                        self.max_number_of_generated_examples,
                                        max_number_of_positive_examples=self.per_group_label_number_of_examples,
                                        max_number_of_negative_examples=self.per_group_label_number_of_examples,
-                                       mmd_augmentation_mechanism=self.mmd_augmentation_mechanism
+                                       mmd_augmentation_mechanism=self.mmd_augmentation_mechanism,
+                                       seed = self.seed,
+                                       positive_gen_model = self.positive_gen_model,
+                                       negative_gen_model = self.negative_gen_model
                                        )
 
             if self.mmd_augmentation_mechanism == 'only_generated_data':
