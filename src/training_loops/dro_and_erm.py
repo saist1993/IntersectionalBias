@@ -738,8 +738,8 @@ def orchestrator(training_loop_parameters: TrainingLoopParameters):
                                                      all_y=all_label,
                                                      size_of_each_group=size_of_each_group)
 
-    all_aux_flatten = [training_loop_parameters.other_params['s_to_flattened_s'][tuple(i)]
-             for i in all_aux]
+    all_aux_flatten = np.asarray([training_loop_parameters.other_params['s_to_flattened_s'][tuple(i)]
+             for i in all_aux])
 
 
     for ep in range(training_loop_parameters.n_epochs):
