@@ -253,7 +253,7 @@ class DatasetTwitterHateSpeech:
         # (0, 1, 1, 0), (1, 1, 0, 1), (1, 0, 0, 0), (0, 1, 0, 1), (0, 1, 0, 0), (1, 0, 0, 1), (1, 0, 1, 1)]
 
 
-        deleted_groups = [(1, 0, 0, 1), (0, 1, 0, 0), (1, 0, 1, 1), (0, 1, 1, 0), (1, 0, 0, 0)]
+        # deleted_groups = [(1, 0, 0, 1), (0, 1, 0, 0), (1, 0, 1, 1), (0, 1, 1, 0), (1, 0, 0, 0)]
         # deleted_groups = [(1, 1, 1, 1), (1, 1, 1, 0)]
 
         # for deleted_group in deleted_groups:

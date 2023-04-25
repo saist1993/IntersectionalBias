@@ -267,7 +267,7 @@ if __name__ == '__main__':
 
     parser.add_argument('--dataset', '-dataset', help="numeracy/celeb_multigroup_v4/twitter_hate_speech/adult_multi_group",
                         type=str,
-                        default='numeracy')
+                        default='twitter_hate_speech')
 
     parser.add_argument('--positive_model', '-positive_model',
                         help="simple/intermediate/complex",

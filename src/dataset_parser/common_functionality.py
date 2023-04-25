@@ -659,8 +659,14 @@ class AugmentData:
 
         classifier_models_2 = None
         classifier_models = None
+
+
         positive_gen_model = pickle.load(open(self.positive_gen_model, "rb"))
         negative_gen_model = pickle.load(open(self.negative_gen_model, "rb"))
+
+
+        # model = pickle.load(open("train_and_valid_all_twitter_hate_speech.pt", "rb"))
+        # positive_gen_model, negative_gen_model = model['a']['gen_model_positive'], model['a']['gen_model_negative']
 
         # all_unique_groups = np.unique(self.other_meta_data['raw_data']['train_s'], axis=0)
 
@@ -670,7 +676,7 @@ class AugmentData:
 
         augmented_train_X, augmented_train_y, augmented_train_s, is_instance_real = [], [], [], []  # generated - 0  and real is 1
 
-        deleted_groups = [(1, 0, 0, 1), (0, 1, 0, 0), (1, 0, 1, 1), (0, 1, 1, 0), (1, 0, 0, 0)]
+        # deleted_groups = [(1, 0, 0, 1), (0, 1, 0, 0), (1, 0, 1, 1), (0, 1, 1, 0), (1, 0, 0, 0)]
         # deleted_groups = [(1, 1, 1, 1), (1, 1, 1, 0)]
 
         for group in self.all_unique_group:
@@ -687,6 +693,9 @@ class AugmentData:
 
                 if mechanism == "only_generated_data":
                     total_examples = 0
+
+                # if example_type == 'negative':
+                #     total_examples = 0
 
                 if total_examples > max_number_of_examples:  # total_examples > max_number_of_examples or
 
