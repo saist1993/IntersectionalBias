@@ -151,6 +151,7 @@ def per_epoch_metric(epoch_output, epoch_input, fairness_function, loss_function
     all_s_flatten = np.hstack(all_s_flatten)
 
     group_metrics = {}
+    min_acc = 1.0
 
     for group in np.unique(all_s, axis=0):
         mask = generate_mask(all_s, group)
@@ -173,11 +174,18 @@ def per_epoch_metric(epoch_output, epoch_input, fairness_function, loss_function
         group_metrics[tuple(group)] = [total_group_size, positive_size, negative_size, total_accuracy,
                                        positive_accuracy, negative_accuracy]
 
+        if min_acc > min(positive_accuracy, negative_accuracy):
+            min_acc = min(positive_accuracy, negative_accuracy)
+
         if loss_function:
             total_loss = loss_function(torch.FloatTensor(all_label[mask]), torch.FloatTensor(all_prediction[mask]))/total_group_size
             positive_loss = loss_function(torch.FloatTensor(all_label[positive_mask]), torch.FloatTensor(all_prediction[positive_mask]))/positive_size
             negative_loss = loss_function(torch.FloatTensor(all_label[negative_mask]), torch.FloatTensor(all_prediction[negative_mask]))/negative_size
             group_metrics[tuple(group)].append([total_loss, positive_loss, negative_loss])
+
+        group_metrics[tuple('a', 'a', 'a', 'a')] = min_acc
+
+
 
 
 

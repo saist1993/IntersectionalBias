@@ -520,7 +520,7 @@ if __name__ == '__main__':
                         default=None)
     parser.add_argument('--dataset_name', '-dataset_name', help="twitter_hate_speech/adult_multi_group/celeb_multigroup_v3",
                         type=str,
-                        default='numeracy')
+                        default='twitter_hate_speech_augmented')
 
     parser.add_argument('--log_file_name', '-log_file_name', help="the name of the log file",
                         type=str,
@@ -555,17 +555,17 @@ if __name__ == '__main__':
     parser.add_argument('--per_group_label_number_of_examples', '-per_group_label_number_of_examples',
                         help="number of example to generate per group and label = 000+ -> 1000",
                         type=int,
-                        default=500)
+                        default=1000)
 
     parser.add_argument('--positive_group_model', '-positive_group_model',
                         help="positive generative model to use",
                         type=str,
-                        default="gen_model_positive_numeracy_10_complex.pt")
+                        default="gen_model_positive_dataset_seed_simple.pt")
 
     parser.add_argument('--negative_group_model', '-negative_group_model',
                         help="positive generative model to use",
                         type=str,
-                        default="gen_model_negative_numeracy_10_simple.pt")
+                        default="gen_model_negative_dataset_seed_simple.pt")
 
 
 
@@ -580,6 +580,12 @@ if __name__ == '__main__':
     torch.set_num_threads(2)
     torch.set_num_interop_threads(2)
 
+    positive_gen_model = args.positive_group_model
+    positive_gen_model = positive_gen_model.replace("dataset", args.dataset_name).replace("seed", str(args.seed)).replace("_augmented", "")
+
+    negative_gen_model = args.negative_group_model
+    negative_gen_model = negative_gen_model.replace("dataset", args.dataset_name).replace("seed", str(args.seed)).replace(
+        "_augmented", "")
 
     runner_arguments = RunnerArguments(
         seed=args.seed,
@@ -603,7 +609,9 @@ if __name__ == '__main__':
         max_number_of_generated_examples=args.max_number_of_generated_examples,
         use_dropout=args.use_dropout,
         use_batch_norm=args.use_batch_norm,
-        per_group_label_number_of_examples=args.per_group_label_number_of_examples
+        per_group_label_number_of_examples=args.per_group_label_number_of_examples,
+        positive_gen_model=positive_gen_model,
+        negative_gen_model=negative_gen_model
     )
 
 
