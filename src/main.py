@@ -390,6 +390,7 @@ def runner(runner_arguments:RunnerArguments):
     else:
         criterion = fairgrad_CrossEntropyLoss(reduction='none')
 
+
     # Fairness function (Later)
     # torch.autograd.set_detect_anomaly(True)
     # Training Loops
@@ -514,13 +515,13 @@ if __name__ == '__main__':
     parser.add_argument('--fairness_lambda', '-fairness_lambda', help="the lambda in the fairness loss equation", type=float,
                         default=0.0)
     parser.add_argument('--method', '-method', help="unconstrained/adversarial_single/adversarial_group", type=str,
-                            default='erm_random_single_group_equal_sampling')
+                            default='fairgrad')
 
     parser.add_argument('--save_model_as', '-save_model_as', help="unconstrained/adversarial_single/adversarial_group", type=str,
                         default=None)
     parser.add_argument('--dataset_name', '-dataset_name', help="twitter_hate_speech/adult_multi_group/celeb_multigroup_v3",
                         type=str,
-                        default='twitter_hate_speech_augmented')
+                        default='twitter_hate_speech')
 
     parser.add_argument('--log_file_name', '-log_file_name', help="the name of the log file",
                         type=str,
@@ -555,7 +556,7 @@ if __name__ == '__main__':
     parser.add_argument('--per_group_label_number_of_examples', '-per_group_label_number_of_examples',
                         help="number of example to generate per group and label = 000+ -> 1000",
                         type=int,
-                        default=3000)
+                        default=1000)
 
     parser.add_argument('--positive_group_model', '-positive_group_model',
                         help="positive generative model to use",

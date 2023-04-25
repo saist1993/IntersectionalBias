@@ -309,6 +309,7 @@ def orchestrator(training_loop_parameters: TrainingLoopParameters):
     }
 
     training_loop_parameters.criterion = fairgrad_CrossEntropyLoss(reduction='none', **fairness_related_info)
+    # training_loop_parameters.criterion = fairgrad_CrossEntropyLoss(reduction='none')
 
 
     index = np.arange(len(resampled_X))
@@ -382,12 +383,12 @@ def orchestrator(training_loop_parameters: TrainingLoopParameters):
         valid_epoch_metric, loss = test(valid_parameters)
         log_epoch_metric(logger, start_message='valid', epoch_metric=valid_epoch_metric, epoch_number=ep, loss=loss)
 
-        size_of_each_group = \
-            update_size(train_other_info=train_epoch_metric.other_info, valid_other_info=valid_epoch_metric.other_info,
-                        size_of_groups=size_of_each_group)
-
-        gen_size_of_each_group = update_size(train_other_info=train_epoch_metric.other_info, valid_other_info=valid_epoch_metric.other_info,
-                        size_of_groups=gen_size_of_each_group)
+        # size_of_each_group = \
+        #     update_size(train_other_info=train_epoch_metric.other_info, valid_other_info=valid_epoch_metric.other_info,
+        #                 size_of_groups=size_of_each_group)
+        #
+        # gen_size_of_each_group = update_size(train_other_info=train_epoch_metric.other_info, valid_other_info=valid_epoch_metric.other_info,
+        #                 size_of_groups=gen_size_of_each_group)
 
 
         # if ep%5 == 0:
@@ -418,10 +419,10 @@ def orchestrator(training_loop_parameters: TrainingLoopParameters):
 
 
 
-        resampled_iterator = create_iterators.get_iterators(train_X=resampled_X, train_s=resampled_s,
-                                                            train_y=resampled_y, generated_train_X=gen_resampled_X,
-                                                            batch_size=training_loop_parameters.other_params[
-                                                                'batch_size'])
+        # resampled_iterator = create_iterators.get_iterators(train_X=resampled_X, train_s=resampled_s,
+        #                                                     train_y=resampled_y, generated_train_X=gen_resampled_X,
+        #                                                     batch_size=training_loop_parameters.other_params[
+        #                                                         'batch_size'])
 
         if training_loop_parameters.use_wandb:
             log_and_plot_data(epoch_metric=valid_epoch_metric, loss=loss, train=True)

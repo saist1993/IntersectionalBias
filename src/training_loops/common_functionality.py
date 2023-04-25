@@ -174,8 +174,8 @@ def per_epoch_metric(epoch_output, epoch_input, fairness_function, loss_function
         group_metrics[tuple(group)] = [total_group_size, positive_size, negative_size, total_accuracy,
                                        positive_accuracy, negative_accuracy]
 
-        if min_acc > min(positive_accuracy, negative_accuracy):
-            min_acc = min(positive_accuracy, negative_accuracy)
+        if min_acc > total_accuracy:
+            min_acc = total_accuracy
 
         if loss_function:
             total_loss = loss_function(torch.FloatTensor(all_label[mask]), torch.FloatTensor(all_prediction[mask]))/total_group_size
