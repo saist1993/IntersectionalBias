@@ -183,7 +183,7 @@ def per_epoch_metric(epoch_output, epoch_input, fairness_function, loss_function
             negative_loss = loss_function(torch.FloatTensor(all_label[negative_mask]), torch.FloatTensor(all_prediction[negative_mask]))/negative_size
             group_metrics[tuple(group)].append([total_loss, positive_loss, negative_loss])
 
-        group_metrics[tuple('a', 'a', 'a', 'a')] = min_acc
+        group_metrics[tuple(['a', 'a', 'a', 'a'])] = min_acc
 
 
 
