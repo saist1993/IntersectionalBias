@@ -109,6 +109,7 @@ def train(train_parameters: TrainParameters):
         for key in items.keys():
             items[key] = items[key].to(device)
 
+
         if mode == 'train':
             optimizer.zero_grad()
             output = model(items)
