@@ -18,19 +18,18 @@ class CreateIterators:
         self.s_to_flattened_s = s_to_flattened_s
 
     def collate(self, batch):
-        labels, encoded_input, aux, generated_encoded_input = zip(*batch)
+        labels, encoded_input, aux = zip(*batch)
 
         labels = torch.LongTensor(labels)
         aux_flattened = torch.LongTensor(self.get_flatten_s(aux))
         aux = torch.LongTensor(np.asarray(aux))
         lengths = torch.LongTensor([len(x) for x in encoded_input])
         encoded_input = torch.FloatTensor(np.asarray(encoded_input))
-        generated_encoded_input = torch.FloatTensor(np.asarray(generated_encoded_input))
+        # generated_encoded_input = torch.FloatTensor(np.asarray(generated_encoded_input))
 
         input_data = {
             'labels': labels,
             'input': encoded_input,
-            'generated_input': generated_encoded_input,
             'lengths': lengths,
             'aux': aux,
             'aux_flattened': aux_flattened
@@ -38,17 +37,17 @@ class CreateIterators:
 
         return input_data
 
-    def process_data(self, X, y, s, generated_train_X, vocab):
+    def process_data(self, X, y, s, vocab):
         """raw data is assumed to be tokenized"""
 
-        final_data = [(a, b, c, d) for a, b, c, d in zip(y, X, s, generated_train_X)]
+        final_data = [(a, b, c) for a, b, c in zip(y, X, s)]
 
         label_transform = sequential_transforms()
         input_transform = sequential_transforms()
         aux_transform = sequential_transforms()
-        generated_data_transform = sequential_transforms()
+        # generated_data_transform = sequential_transforms()
 
-        transforms = (label_transform, input_transform, aux_transform, generated_data_transform)
+        transforms = (label_transform, input_transform, aux_transform)
 
         return TextClassificationDataset(final_data, vocab, transforms)
 
@@ -61,13 +60,13 @@ class CreateIterators:
     def get_flatten_s(self, s: List[List]):
         return [self.s_to_flattened_s[tuple([int(j) for j in i])] for i in s]
 
-    def get_iterators(self, train_X, train_s, train_y, generated_train_X, batch_size):
-        train_X, train_s, train_y, generated_train_X = train_X, train_s, train_y, generated_train_X
+    def get_iterators(self, train_X, train_s, train_y, batch_size):
+        # train_X, train_s, train_y, generated_train_X = train_X, train_s, train_y, generated_train_X
 
         vocab = {'<pad>': 1}  # no need of vocab in these dataset. It is there for code compatibility purposes.
 
         # need to add flatten here! And that too in the process itself!
-        train_data = self.process_data(train_X, train_y, train_s, generated_train_X, vocab=vocab)
+        train_data = self.process_data(train_X, train_y, train_s, vocab=vocab)
 
         train_iterator = torch.utils.data.DataLoader(train_data,
                                                      batch_size,
@@ -301,32 +300,31 @@ def orchestrator(training_loop_parameters: TrainingLoopParameters):
                                                              all_y=original_train_label,
                                                              size_of_each_group=size_of_each_group)
 
-    gen_resampled_X, gen_resampled_s, gen_resampled_y, gen_size_of_each_group = resample_dataset(all_X=generated_train_input,
-                                                             all_s=generated_train_aux,
-                                                             all_y=generated_train_label,
-                                                             size_of_each_group=gen_size_of_each_group)
-
-    fairness_related_info = {
-        'y_train': resampled_y,
-        's_train': np.asarray([training_loop_parameters.other_params['s_to_flattened_s'][tuple(i)] for i in resampled_s]),
-        'fairness_measure': training_loop_parameters.fairness_function,
-        'fairness_rate': 0.01,
-        'epsilon': 0.0
-    }
-
-    training_loop_parameters.criterion = fairgrad_CrossEntropyLoss(reduction='none', **fairness_related_info)
+    # gen_resampled_X, gen_resampled_s, gen_resampled_y, gen_size_of_each_group = resample_dataset(all_X=generated_train_input,
+    #                                                          all_s=generated_train_aux,
+    #                                                          all_y=generated_train_label,
+    #                                                          size_of_each_group=gen_size_of_each_group)
+    #
+    # fairness_related_info = {
+    #     'y_train': resampled_y,
+    #     's_train': np.asarray([training_loop_parameters.other_params['s_to_flattened_s'][tuple(i)] for i in resampled_s]),
+    #     'fairness_measure': training_loop_parameters.fairness_function,
+    #     'fairness_rate': 0.01,
+    #     'epsilon': 0.0
+    # }
+    #
+    # training_loop_parameters.criterion = fairgrad_CrossEntropyLoss(reduction='none', **fairness_related_info)
 
 
     index = np.arange(len(resampled_X))
     np.random.shuffle(index)
 
     resampled_X, resampled_s, resampled_y = resampled_X[index], resampled_s[index], resampled_y[index]
-    gen_resampled_X, gen_resampled_s, gen_resampled_y = gen_resampled_X[index], gen_resampled_s[index], gen_resampled_y[index]
+    # gen_resampled_X, gen_resampled_s, gen_resampled_y = gen_resampled_X[index], gen_resampled_s[index], gen_resampled_y[index]
 
 
     create_iterators = CreateIterators(s_to_flattened_s=training_loop_parameters.other_params['s_to_flattened_s'])
     resampled_iterator = create_iterators.get_iterators(train_X=resampled_X, train_s=resampled_s, train_y=resampled_y,
-                                                        generated_train_X=gen_resampled_X,
                                                         batch_size=training_loop_parameters.other_params['batch_size'])
 
     logger = logging.getLogger(training_loop_parameters.unique_id_for_run)
@@ -388,12 +386,12 @@ def orchestrator(training_loop_parameters: TrainingLoopParameters):
         valid_epoch_metric, loss = test(valid_parameters)
         log_epoch_metric(logger, start_message='valid', epoch_metric=valid_epoch_metric, epoch_number=ep, loss=loss)
 
-        size_of_each_group = \
-            update_size(train_other_info=train_epoch_metric.other_info, valid_other_info=valid_epoch_metric.other_info,
-                        size_of_groups=size_of_each_group)
-
-        gen_size_of_each_group = update_size(train_other_info=train_epoch_metric.other_info, valid_other_info=valid_epoch_metric.other_info,
-                        size_of_groups=gen_size_of_each_group)
+        # size_of_each_group = \
+        #     update_size(train_other_info=train_epoch_metric.other_info, valid_other_info=valid_epoch_metric.other_info,
+        #                 size_of_groups=size_of_each_group)
+        #
+        # gen_size_of_each_group = update_size(train_other_info=train_epoch_metric.other_info, valid_other_info=valid_epoch_metric.other_info,
+        #                 size_of_groups=gen_size_of_each_group)
 
 
         # if ep%5 == 0:
@@ -424,10 +422,10 @@ def orchestrator(training_loop_parameters: TrainingLoopParameters):
 
 
 
-        resampled_iterator = create_iterators.get_iterators(train_X=resampled_X, train_s=resampled_s,
-                                                            train_y=resampled_y, generated_train_X=gen_resampled_X,
-                                                            batch_size=training_loop_parameters.other_params[
-                                                                'batch_size'])
+        # resampled_iterator = create_iterators.get_iterators(train_X=resampled_X, train_s=resampled_s,
+        #                                                     train_y=resampled_y, generated_train_X=gen_resampled_X,
+        #                                                     batch_size=training_loop_parameters.other_params[
+        #                                                         'batch_size'])
 
         if training_loop_parameters.use_wandb:
             log_and_plot_data(epoch_metric=valid_epoch_metric, loss=loss, train=True)
