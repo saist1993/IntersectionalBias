@@ -733,10 +733,11 @@ def orchestrator(training_loop_parameters: TrainingLoopParameters):
                 training_loop_parameters.other_params['per_group_label_number_of_examples'],
                 []]
 
-    all_input, all_aux, all_label, _ =  resample_dataset(all_X=all_input,
-                                                     all_s=all_aux,
-                                                     all_y=all_label,
-                                                     size_of_each_group=size_of_each_group)
+    if 'mixup_regularizer' not in method:
+        all_input, all_aux, all_label, _ =  resample_dataset(all_X=all_input,
+                                                         all_s=all_aux,
+                                                         all_y=all_label,
+                                                         size_of_each_group=size_of_each_group)
 
     all_aux_flatten = np.asarray([training_loop_parameters.other_params['s_to_flattened_s'][tuple(i)]
              for i in all_aux])

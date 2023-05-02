@@ -390,7 +390,7 @@ if __name__ == '__main__':
                        'erm_random_group_equal_sampling_only_generated_data_mixup_generated_and_real_data_mixup_regularizer',
                        'erm_random_group_equal_sampling_mixup_generated_and_real_data_mixup_regularizer',
                        'erm_random_group_equal_sampling_only_generated_data_mixup_generated_and_real_data_mixup_regularizer_train_on_only_generated_data']:
-        mixup_scales = [1.0, 5.0, 10.0, 20.0, 30.0, 40.0, 50.0]
+        mixup_scales = [1.0, 2.0, 5.0, 10.0, 20.0, 30.0, 40.0]
         titled_scales = [0.0]
 
 
