@@ -36,6 +36,11 @@ class SimpleClassificationDataset:
 
         self.per_group_label_number_of_examples = params['per_group_label_number_of_examples']
 
+        if self.dataset_name == "numeracy_v1":
+            self.s = self.s[:,:1]
+        if self.dataset_name == "numeracy_v2":
+            self.s = self.s[:,:2]
+        # self.s[:,0]
         self.max_number_of_generated_examples = params['max_number_of_generated_examples']
         self.mmd_augmentation_mechanism = params['mmd_augmentation_mechanism']
 
